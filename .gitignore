@@ -1,0 +1,9 @@
+*.nc
+*.pyc
+*.pyo
+*.out
+*.tiff
+*.o
+
+build/
+dist/
