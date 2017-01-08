@@ -60,12 +60,12 @@ $(if $(filter $(MAKE_VERSION),$(NEED_VERSION)),,        \
 #  the .h extension. For example, the upwelling application includes the
 #  "upwelling.h" header file.
 
-ROMS_APPLICATION := NWA
+ROMS_APPLICATION := GB
 
 #  If application header files is not located in "ROMS/Include",
 #  provide an alternate directory FULL PATH.
 
-MY_HEADER_DIR ?= /home/zhuomin/NWA0702/run01
+MY_HEADER_DIR ?= /Users/chuning/git/gb_roms/run01
 
 #  If your application requires analytical expressions and they are
 #  not located in "ROMS/Functionals", provide an alternate directory.
@@ -169,7 +169,7 @@ USE_DEBUG ?=
 #  Set directory for temporary objects.
 #--------------------------------------------------------------------------
 
-SCRATCH_DIR ?= /home/zhuomin/NWA0702/run01
+SCRATCH_DIR ?= /Users/chuning/git/gb_roms/run01
  clean_list := core *.ipo $(SCRATCH_DIR)
 
 ifeq "$(strip $(SCRATCH_DIR))" "."
