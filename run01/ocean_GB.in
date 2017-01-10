@@ -73,7 +73,7 @@
 ! Input variable information file name.  This file needs to be processed
 ! first so all information arrays can be initialized properly.
 
-     VARNAME = Users/chuning/projects/gb_roms/scripts/varinfo.dat
+     VARNAME = ./varinfo.dat
 
 ! Number of nested grids.
 
@@ -109,79 +109,93 @@ GridsInLayer =  1
       NtileI == 8                               ! I-direction partition
       NtileJ == 16                              ! J-direction partition
 
-! ! Set lateral boundary conditions keyword. Notice that a value is expected
-! ! for each boundary segment per nested grid for each state variable.
-! !
-! ! Each tracer variable requires [1:4,1:NAT+NPT,Ngrids] values. Otherwise,
-! ! [1:4,1:Ngrids] values are expected for other variables. The boundary
-! ! order is: 1=west, 2=south, 3=east, and 4=north. That is, anticlockwise
-! ! starting at the western boundary.
-! !
-! ! The keyword is case insensitive and usually has three characters. However,
-! ! it is possible to have compound keywords, if applicable. For example, the
-! ! keyword "RadNud" implies radiation boundary condition with nudging. This
-! ! combination is usually used in active/passive radiation conditions.
-! !
-! !   Keyword    Lateral Boundary Condition Type
-! !
-! !   Cha        Chapman_implicit (free-surface)
-! !   Che        Chapman_explicit (free-surface)
-! !   Cla        Clamped
-! !   Clo        Closed
-! !   Fla        Flather (2D momentum)                  _____N_____     j=Mm
-! !   Gra        Gradient                              |     4     |
-! !   Nes        Nested (refinement)                   |           |
-! !   Nud        Nudging                             1 W           E 3
-! !   Per        Periodic                              |           |
-! !   Rad        Radiation                             |_____S_____|
-! !   Red        Reduced Physics (2D momentum)               2          j=1
-! !   Shc        Shchepetkin (2D momentum)            i=1         i=Lm
-! !
-! !                   W       S       E       N
-! !                   e       o       a       o
-! !                   s       u       s       r
-! !                   t       t       t       t
-! !                           h               h
-! !
-! !                   1       2       3       4
-! 
-!    LBC(isFsur) ==   Per     Clo     Per     Clo         ! free-surface
-!    LBC(isUbar) ==   Per     Clo     Per     Clo         ! 2D U-momentum
-!    LBC(isVbar) ==   Per     Clo     Per     Clo         ! 2D V-momentum
-!    LBC(isUvel) ==   Per     Clo     Per     Clo         ! 3D U-momentum
-!    LBC(isVvel) ==   Per     Clo     Per     Clo         ! 3D V-momentum
-!    LBC(isMtke) ==   Per     Clo     Per     Clo         ! mixing TKE
-! 
-!    LBC(isTvar) ==   Per     Clo     Per     Clo \       ! temperature
-!                     Per     Clo     Per     Clo         ! salinity
-! 
-! ! Adjoint-based algorithms can have different lateral boundary
-! ! conditions keywords.
-! 
-! ad_LBC(isFsur) ==   Per     Clo     Per     Clo         ! free-surface
-! ad_LBC(isUbar) ==   Per     Clo     Per     Clo         ! 2D U-momentum
-! ad_LBC(isVbar) ==   Per     Clo     Per     Clo         ! 2D U-momentum
-! ad_LBC(isUvel) ==   Per     Clo     Per     Clo         ! 3D U-momentum
-! ad_LBC(isVvel) ==   Per     Clo     Per     Clo         ! 3D V-momentum
-! ad_LBC(isMtke) ==   Per     Clo     Per     Clo         ! mixing TKE
-! 
-! ad_LBC(isTvar) ==   Per     Clo     Per     Clo \       ! temperature
-!                     Per     Clo     Per     Clo         ! salinity
-! 
-! ! Set lateral open boundary edge volume conservation switch for
-! ! nonlinear model and adjoint-based algorithms. Usually activated
-! ! with radiation boundary conditions to enforce global mass
-! ! conservation, except if tidal forcing is enabled. [1:Ngrids].
-! 
-!    VolCons(west)  ==  F                            ! western  boundary
-!    VolCons(east)  ==  F                            ! eastern  boundary
-!    VolCons(south) ==  F                            ! southern boundary
-!    VolCons(north) ==  F                            ! northern boundary
-! 
-! ad_VolCons(west)  ==  F                            ! western  boundary
-! ad_VolCons(east)  ==  F                            ! eastern  boundary
-! ad_VolCons(south) ==  F                            ! southern boundary
-! ad_VolCons(north) ==  F                            ! northern boundary
+! Set lateral boundary conditions keyword. Notice that a value is expected
+! for each boundary segment per nested grid for each state variable.
+!
+! Each tracer variable requires [1:4,1:NAT+NPT,Ngrids] values. Otherwise,
+! [1:4,1:Ngrids] values are expected for other variables. The boundary
+! order is: 1=west, 2=south, 3=east, and 4=north. That is, anticlockwise
+! starting at the western boundary.
+!
+! The keyword is case insensitive and usually has three characters. However,
+! it is possible to have compound keywords, if applicable. For example, the
+! keyword "RadNud" implies radiation boundary condition with nudging. This
+! combination is usually used in active/passive radiation conditions.
+!
+!   Keyword    Lateral Boundary Condition Type
+!
+!   Cha        Chapman_implicit (free-surface)
+!   Che        Chapman_explicit (free-surface)
+!   Cla        Clamped
+!   Clo        Closed
+!   Fla        Flather (2D momentum)                  _____N_____     j=Mm
+!   Gra        Gradient                              |     4     |
+!   Nes        Nested (refinement)                   |           |
+!   Nud        Nudging                             1 W           E 3
+!   Per        Periodic                              |           |
+!   Rad        Radiation                             |_____S_____|
+!   Red        Reduced Physics (2D momentum)               2          j=1
+!   Shc        Shchepetkin (2D momentum)            i=1         i=Lm
+!
+!                   W       S       E       N
+!                   e       o       a       o
+!                   s       u       s       r
+!                   t       t       t       t
+!                           h               h
+!
+!                   1       2       3       4
+
+   LBC(isFsur) ==   Cha     Cha     Cha     Clo         ! free-surface
+   LBC(isUbar) ==   Fla     Fla     Fla     Clo         ! 2D U-momentum
+   LBC(isVbar) ==   Fla     Fla     Fla     Clo         ! 2D V-momentum
+   LBC(isUvel) ==   RadNud  RadNud  RadNud  Clo         ! 3D U-momentum
+   LBC(isVvel) ==   RadNud  RadNud  RadNud  Clo         ! 3D V-momentum
+   LBC(isMtke) ==   Gra     Gra     Gra     Clo         ! mixing TKE
+
+   LBC(isTvar) ==   RadNud  RadNud  RadNud  Clo \       ! temperature
+                    RadNud  RadNud  RadNud  Clo         ! salinity
+
+! Ice boundary conditions
+
+   LBC(isAice) ==   Clo     Clo     Clo     Clo         ! ice concentration
+   LBC(isHice) ==   Clo     Clo     Clo     Clo         ! ice thickness
+   LBC(isHsno) ==   Clo     Clo     Clo     Clo         ! snow thickness
+   LBC(isTice) ==   Clo     Clo     Clo     Clo         ! ice temperature
+   LBC(isApond)==   Clo     Clo     Clo     Clo         ! surface water
+   LBC(isHpond)==   Clo     Clo     Clo     Clo         ! surface water
+   LBC(isSig11)==   Clo     Clo     Clo     Clo         ! sigma-11
+   LBC(isSig12)==   Clo     Clo     Clo     Clo         ! sigma-12
+   LBC(isSig22)==   Clo     Clo     Clo     Clo         ! sigma-22
+   LBC(isUice) ==   Clo     Clo     Clo     Clo         ! ice U-momentum
+   LBC(isVice) ==   Clo     Clo     Clo     Clo         ! ice V-momentum
+
+! Adjoint-based algorithms can have different lateral boundary
+! conditions keywords.
+
+ad_LBC(isFsur) ==   Cha     Cha     Cha     Clo         ! free-surface
+ad_LBC(isUbar) ==   Fla     Fla     Fla     Clo         ! 2D U-momentum
+ad_LBC(isVbar) ==   Fla     Fla     Fla     Clo         ! 2D U-momentum
+ad_LBC(isUvel) ==   RadNud  RadNud  RadNud  Clo         ! 3D U-momentum
+ad_LBC(isVvel) ==   RadNud  RadNud  RadNud  Clo         ! 3D V-momentum
+ad_LBC(isMtke) ==   Gra     Gra     Gra     Clo         ! mixing TKE
+                                                        
+ad_LBC(isTvar) ==   RadNud  RadNud  RadNud  Clo \       ! temperature
+                    RadNud  RadNud  RadNud  Clo         ! salinity
+
+! Set lateral open boundary edge volume conservation switch for
+! nonlinear model and adjoint-based algorithms. Usually activated
+! with radiation boundary conditions to enforce global mass
+! conservation, except if tidal forcing is enabled. [1:Ngrids].
+
+   VolCons(west)  ==  F                            ! western  boundary
+   VolCons(east)  ==  F                            ! eastern  boundary
+   VolCons(south) ==  F                            ! southern boundary
+   VolCons(north) ==  F                            ! northern boundary
+
+ad_VolCons(west)  ==  F                            ! western  boundary
+ad_VolCons(east)  ==  F                            ! eastern  boundary
+ad_VolCons(south) ==  F                            ! southern boundary
+ad_VolCons(north) ==  F                            ! northern boundary
 
 ! Time-Stepping parameters.
 
@@ -206,11 +220,11 @@ GridsInLayer =  1
 
 ! Input/Output parameters.
 
-       NRREC == -1
+       NRREC == 0
    LcycleRST == T
         NRST == 480
-        NSTA == 20
-        NFLT == 20
+        NSTA == 480
+        NFLT == 480
        NINFO == 1
 
 ! Output history, quicksave, average, and diagnostic files parameters.
@@ -255,17 +269,11 @@ GridsInLayer =  1
         TNU2 == 5.0d0  5.0d0                    ! m2/s
         TNU4 == 2*0.0d0                         ! m4/s
 
-!      ad_TNU2 == 0.0d0  0.0d0                    ! m2/s
-!      ad_TNU4 == 0.0d0  0.0d0                    ! m4/s
-
 ! Harmonic/biharmonic, horizontal viscosity coefficient for nonlinear model
 ! and adjoint-based algorithms: [Ngrids].
 
        VISC2 == 25.0d0                          ! m2/s
        VISC4 == 0.0d0                           ! m4/s
-
-!     ad_VISC2 == 0.0d0                           ! m2/s
-!     ad_VISC4 == 0.0d0                           ! m4/s
 
 ! Logical switches (TRUE/FALSE) to increase/decrease horizontal viscosity
 ! and/or diffusivity in specific areas of the application domain (like
@@ -279,14 +287,10 @@ LtracerSponge == F F                            ! temperature, salinity, inert
 
      AKT_BAK == 1.0d-6 1.0d-6                   ! m2/s
 
-  ad_AKT_fac == 1.0d0  1.0d0                    ! nondimensional
-
 ! Vertical mixing coefficient for momentum for nonlinear model and
 ! basic state scale factor in adjoint-based algorithms: [Ngrids].
 
      AKV_BAK == 1.0d-5                          ! m2/s
-
-!   ad_AKV_fac == 1.0d0                           ! nondimensional
 
 ! Turbulent closure parameters.
 
@@ -297,7 +301,7 @@ LtracerSponge == F F                            ! temperature, salinity, inert
 
 ! Generic length-scale turbulence closure parameters.
 
-       GLS_P == -1.0d0                          ! K-epsilon
+       GLS_P == -1.0d0                          ! K-omega
        GLS_M == 0.5d0
        GLS_N == -1.0d0
     GLS_Kmin == 7.6d-6
@@ -313,10 +317,10 @@ LtracerSponge == F F                            ! temperature, salinity, inert
 
 ! Constants used in surface turbulent kinetic energy flux computation.
 
-!   CHARNOK_ALPHA == 1400.0d0         ! Charnok surface roughness
-!  ZOS_HSIG_ALPHA == 0.5d0            ! roughness from wave amplitude
-!        SZ_ALPHA == 0.25d0           ! roughness from wave dissipation
-!       CRGBAN_CW == 100.0d0          ! Craig and Banner wave breaking
+  CHARNOK_ALPHA == 1400.0d0         ! Charnok surface roughness
+ ZOS_HSIG_ALPHA == 0.5d0            ! roughness from wave amplitude
+       SZ_ALPHA == 0.25d0           ! roughness from wave dissipation
+      CRGBAN_CW == 100.0d0          ! Craig and Banner wave breaking
 
 ! Constants used in momentum stress computation.
 
@@ -369,10 +373,10 @@ LtracerSponge == F F                            ! temperature, salinity, inert
 ! Nudging/relaxation time scales, inverse scales will be computed
 ! internally, [1:Ngrids].
 
-       TNUDG == 2*0.0d0                    ! days
-       ZNUDG == 0.0d0                      ! days
-      M2NUDG == 0.0d0                      ! days
-      M3NUDG == 0.0d0                      ! days
+       TNUDG == 2*360.0d0                  ! days
+       ZNUDG == 360.0d0                    ! days
+      M2NUDG == 360.0d0                    ! days
+      M3NUDG == 360.0d0                    ! days
 
 ! Factor between passive (outflow) and active (inflow) open boundary
 ! conditions, [1:Ngrids]. If OBCFAC > 1, nudging on inflow is stronger
@@ -390,7 +394,7 @@ LtracerSponge == F F                            ! temperature, salinity, inert
 
 ! Slipperiness parameter: 1.0 (free slip) or -1.0 (no slip)
 
-      GAMMA2 == 1.0d0
+      GAMMA2 == -1.0d0
 
 ! Logical switches (TRUE/FALSE) to activate horizontal momentum transport
 ! point Sources/Sinks (like river runoff transport) and mass point
