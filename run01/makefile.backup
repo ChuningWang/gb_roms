@@ -1,6 +1,6 @@
-# svn $Id$
+# $Id: makefile 1218 2010-05-19 21:49:28Z kate $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
-# Copyright (c) 2002-2016 The ROMS/TOMS Group             Kate Hedstrom :::
+# Copyright (c) 2002-2010 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -28,17 +28,17 @@
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
- $(error This makefile requires GNU make version 3.80 or higher. \
-		Your current version is: $(MAKE_VERSION))
-endif
+NEED_VERSION := 3.80 3.81
+$(if $(filter $(MAKE_VERSION),$(NEED_VERSION)),,        \
+ $(error This makefile requires one of GNU make version $(NEED_VERSION).))
 
 #--------------------------------------------------------------------------
 #  Initialize some things.
 #--------------------------------------------------------------------------
 
   sources    :=
-  c_sources  :=
+  libraries  :=
+  c_sources  := 
 
 #==========================================================================
 #  Start of user-defined options. In some macro definitions below: "on" or
@@ -60,12 +60,12 @@ endif
 #  the .h extension. For example, the upwelling application includes the
 #  "upwelling.h" header file.
 
-ROMS_APPLICATION ?= GB
+ROMS_APPLICATION := GB
 
 #  If application header files is not located in "ROMS/Include",
 #  provide an alternate directory FULL PATH.
 
-MY_HEADER_DIR ?= ${HOME}/git/gb_roms/run01 
+MY_HEADER_DIR ?= /Users/chuning/git/gb_roms/run01
 
 #  If your application requires analytical expressions and they are
 #  not located in "ROMS/Functionals", provide an alternate directory.
@@ -75,11 +75,7 @@ MY_HEADER_DIR ?= ${HOME}/git/gb_roms/run01
 #  If applicable, also used this directory to place your customized
 #  biology model header file (like fennel.h, nemuro.h, ecosim.h, etc).
 
-MY_ANALYTICAL_DIR ?=
-
-# If applicable, where does CICE put its binary files?
-
-# MY_CICE_DIR ?= /center/w/kate/CICE/NEP/compile
+MY_ANALYTICAL_DIR ?= 
 
 #  Sometimes it is desirable to activate one or more CPP options to
 #  run different variants of the same application without modifying
@@ -92,9 +88,15 @@ MY_ANALYTICAL_DIR ?=
 
 MY_CPP_FLAGS ?=
 
+#  Set number of ROMS nested and/or composed grid.  Currently, only
+#  one grid is supported.  This option will be available in the near
+#  future.
+
+NestedGrids ?= 1
+
 #  Activate debugging compiler options:
 
-   USE_DEBUG ?=
+USE_DEBUG ?=
 
 #  If parallel applications, use at most one of these definitions
 #  (leave both definitions blank in serial applications):
@@ -110,7 +112,7 @@ MY_CPP_FLAGS ?=
 #  In this, case the user need to select the desired compiler below and
 #  turn on both USE_MPI and USE_MPIF90 macros.
 
-  USE_MPIF90 ?= on
+  USE_MPIF90 ?=  on
 
 #  If applicable, activate 64-bit compilation:
 
@@ -121,6 +123,12 @@ MY_CPP_FLAGS ?=
 
  USE_NETCDF4 ?= on
 
+#  If applicable, activate Data Access Protocol (like OPeNDAP) support
+#  for input NetCDF files.  This is only possible for NetCDF library
+#  version 4.1.1 or higher.
+
+     USE_DAP ?=
+     USE_SEAICE ?= 
 #--------------------------------------------------------------------------
 #  We are going to include a file with all the settings that depend on
 #  the system and the compiler. We are going to build up the name of the
@@ -161,7 +169,7 @@ MY_CPP_FLAGS ?=
 #  Set directory for temporary objects.
 #--------------------------------------------------------------------------
 
-SCRATCH_DIR ?= Build
+SCRATCH_DIR ?= /Users/chuning/git/gb_roms/run01
  clean_list := core *.ipo $(SCRATCH_DIR)
 
 ifeq "$(strip $(SCRATCH_DIR))" "."
@@ -172,29 +180,6 @@ ifeq "$(strip $(SCRATCH_DIR))" "./"
   clean_list := core *.o *.oo *.ipo *.mod *.f90 lib*.a *.bak
   clean_list += $(CURDIR)/*.ipo
 endif
-
-#--------------------------------------------------------------------------
-#  Notice that the token "libraries" is initialize with the ROMS/Utility
-#  library to account for calls to objects in other ROMS libraries or
-#  cycling dependencies. These type of dependencies are problematic in
-#  some compilers during linking. This library appears twice at linking
-#  step (begining and almost the end of ROMS library list).
-#--------------------------------------------------------------------------
-
-  libraries  := $(SCRATCH_DIR)/libMODS.a
-
-#--------------------------------------------------------------------------
-#  Set Pattern rules.
-#--------------------------------------------------------------------------
-
-%.o: %.F
-
-%.o: %.f90
-	cd $(SCRATCH_DIR); $(FC) -c $(FFLAGS) $(notdir $<)
-
-%.f90: %.F
-	$(CPP) $(CPPFLAGS) $(MY_CPP_FLAGS) $< > $*.f90
-	$(CLEAN) $*.f90
 
 CLEAN := ROMS/Bin/cpp_clean
 
@@ -259,7 +244,7 @@ clean_list += $(MAKE_MACROS)
 source-dir-to-binary-dir = $(addprefix $(SCRATCH_DIR)/, $(notdir $1))
 
 # $(call source-to-object, source-file-list)
-source-to-object = $(call source-dir-to-binary-dir,   \
+source-to-object = $(call source-dir-to-binary-dir,       \
                    $(subst .F,.o,$1))
 
 # $(call source-to-object, source-file-list)
@@ -283,7 +268,7 @@ define make-c-library
    libraries += $(SCRATCH_DIR)/$1
    c_sources += $2
 
-   $(SCRATCH_DIR)/$1: $(call source-dir-to-binary-dir,    \
+   $(SCRATCH_DIR)/$1: $(call source-dir-to/-binary-dir,    \
                       $(subst .c,.o,$(filter %.c,$2))     \
                       $(subst .cc,.o,$(filter %.cc,$2)))
 	$(AR) $(ARFLAGS) $$@ $$^
@@ -334,7 +319,7 @@ ifdef USE_DEBUG
   BIN := $(BINDIR)/oceanG
 else
  ifdef USE_MPI
-   BIN := $(BINDIR)/oceanM
+   BIN := $(BINDIR)/oceanM.run01
  endif
  ifdef USE_OpenMP
    BIN := $(BINDIR)/oceanO
@@ -372,7 +357,7 @@ ifndef FORT
 endif
 
 ifneq "$(MAKECMDGOALS)" "clean"
-  include $(COMPILERS)/$(OS)-$(strip $(FORT)).mk
+  include $(COMPILERS)/$(OS)-$(s/trip $(FORT)).mk
 endif
 
 ifdef USE_MPI
@@ -393,6 +378,7 @@ CPPFLAGS += -D$(shell echo ${FORT} | tr "-" "_" | tr [a-z] [A-Z])
 CPPFLAGS += -D'ROOT_DIR="$(ROOTDIR)"'
 ifdef ROMS_APPLICATION
   CPPFLAGS  += $(ROMS_CPPFLAGS)
+  CPPFLAGS  += -DNestedGrids=$(NestedGrids)
   MDEPFLAGS += -DROMS_HEADER="$(HEADER)"
 endif
 
@@ -421,9 +407,6 @@ endif
 
 .PHONY: all
 
-ifdef USE_CICE
-all: $(SCRATCH_DIR) $(SCRATCH_DIR)/libCICE.a
-endif
 all: $(SCRATCH_DIR) $(SCRATCH_DIR)/MakeDepend $(BIN) rm_macros
 
  modules  :=
@@ -442,16 +425,13 @@ endif
  modules  +=	ROMS/Nonlinear \
 		ROMS/Nonlinear/Biology \
 		ROMS/Nonlinear/Sediment \
-		ROMS/Functionals
+		ROMS/Functionals \
+		ROMS/Modules
 ifdef USE_SEAICE
  modules  +=	ROMS/SeaIce
 endif
-ifdef USE_CICE
- modules  +=	SeaIce/Extra
-    LIBS  +=    $(SCRATCH_DIR)/libCICE.a
-endif
- modules  +=	ROMS/Utility \
-		ROMS/Modules
+ modules  +=    ROMS/Utility \
+                ROMS/Modules
 
  includes :=	ROMS/Include
 ifdef MY_ANALYTICAL
@@ -552,34 +532,6 @@ $(SCRATCH_DIR)/$(NETCDF_MODFILE): | $(SCRATCH_DIR)
 
 $(SCRATCH_DIR)/$(TYPESIZES_MODFILE): | $(SCRATCH_DIR)
 	cp -f $(NETCDF_INCDIR)/$(TYPESIZES_MODFILE) $(SCRATCH_DIR)
-
-$(SCRATCH_DIR)/libCICE.a: $(MY_CICE_DIR)/libCICE.a
-	cp -f $(MY_CICE_DIR)/libCICE.a $(MY_CICE_DIR)/*.mod $(SCRATCH_DIR)
-
-$(MY_CICE_DIR)/libCICE.a:
-	SeaIce/comp_ice
-ifdef USE_CICE
-$(SCRATCH_DIR)/initial.o: $(MY_CICE_DIR)/CICE_InitMod.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/CICE_RunMod.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_blocks.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_broadcast.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_calendar.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_communicate.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_constants.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_domain.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_domain_size.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_fileunits.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_flux.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_gather_scatter.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_grid.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_history.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_init.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_kinds_mod.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_restart.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_restart_shared.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_state.o
-$(SCRATCH_DIR)/ice_fakecpl.o: $(MY_CICE_DIR)/ice_timers.o
-endif
 
 $(SCRATCH_DIR)/MakeDepend: makefile \
                            $(SCRATCH_DIR)/$(NETCDF_MODFILE) \
