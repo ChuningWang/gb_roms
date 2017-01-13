@@ -10,8 +10,11 @@ from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
 # grid dimension
-Lg = 256  # horizontal
-Mg = 512  # vertical
+Lg = 500   # horizontal
+Mg = 1000  # vertical
+
+# Lg = 250   # horizontal
+# Mg = 500   # vertical
 
 # ----------------------------------------------------------------------------------------------------------
 # defind the boundary of mapping domain
@@ -26,8 +29,8 @@ lon_0 = 0.5 * (lon_min + lon_max)
 # ----------------------------------------------------------------------------------------------------------
 # These coords are handpicked using the Boundary Interactor.
 
-lon_bry = np.array([-137.50, -136.70, -135.00, -135.80])
-lat_bry = np.array([59.05,  57.75,  58.05,  59.35])
+lon_bry = np.array([    -137.40,    -136.30,    -135.00,    -136.10])
+lat_bry = np.array([    59.10,      57.80,      58.05,      59.35])
 beta = np.array([ 1., 1., 1., 1.])
 
 # # other test cases
@@ -67,7 +70,7 @@ beta = np.array([ 1., 1., 1., 1.])
 
 # ----------------------------------------------------------------------------------------------------------
 # generate hgrid
-bdryInteractor = 0
+bdryInteractor = 2
 if bdryInteractor == 1:
     # use boundary interactor
     m = Basemap(projection='lcc', width = 12000000, height = 9000000,
@@ -118,7 +121,7 @@ if GUImsk == 1:
     # or (this is faster 'I guess')
     coast = pyroms.utility.get_coast_from_map(m)
     pyroms.grid.edit_mask_mesh_ij(hgrd, coast=coast)
-else:
+elif GUImsk == 2:
     # laod from mask_change.txt
     msk_c = np.loadtxt('mask_change.txt')
     for i in range(len(msk_c)):
@@ -195,5 +198,5 @@ grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
 # grd.hgrid.lon_psi = grd.hgrid.lon_psi + 360
 
 # write grid file
-pyroms.grid.write_ROMS_grid(grd, filename='../../data/GB_grd_nocurv.nc')
+pyroms.grid.write_ROMS_grid(grd, filename='/Users/chuning/data/GB_grd_nocurv.nc')
 
