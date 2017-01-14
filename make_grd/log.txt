@@ -1,3 +1,15 @@
+
+** (process:38417): WARNING **: Trying to register gtype 'GMountMountFlags' as enum when in fact it is of type 'GFlags'
+
+** (process:38417): WARNING **: Trying to register gtype 'GDriveStartFlags' as enum when in fact it is of type 'GFlags'
+
+** (process:38417): WARNING **: Trying to register gtype 'GSocketMsgFlags' as enum when in fact it is of type 'GFlags'
 lpsolve55.so not found.
 Linear programming method will not be available.
 hgrid generated
+mask done...
+Traceback (most recent call last):
+  File "make_grd.py", line 134, in <module>
+    fh = netCDF4.Dataset(bathydir, mode='r')
+  File "netCDF4/_netCDF4.pyx", line 1547, in netCDF4._netCDF4.Dataset.__init__ (netCDF4/_netCDF4.c:9847)
+RuntimeError: No such file or directory
