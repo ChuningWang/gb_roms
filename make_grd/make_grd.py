@@ -109,18 +109,19 @@ if (bdryInteractor == 1) | (bdryInteractor == 2):
         hgrd.mask_polygon(verts)
 
 # using masking GUI to change land mask
-GUImsk = 0
+GUImsk = 1
 if GUImsk == 1:
     m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,
                 urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
                 resolution='f')
     plt.ion()
-    # plt.figure()
-    # m.drawcoastlines()
-    # pyroms.grid.edit_mask_mesh(hgrd, proj=m)
+    plt.figure()
+    m.drawcoastlines()
+    plt.show()
+    pyroms.grid.edit_mask_mesh(hgrd, proj=m)
     # or (this is faster 'I guess')
-    coast = pyroms.utility.get_coast_from_map(m)
-    pyroms.grid.edit_mask_mesh_ij(hgrd, coast=coast)
+    # coast = pyroms.utility.get_coast_from_map(m)
+    # pyroms.grid.edit_mask_mesh(hgrd, coast=coast)
 elif GUImsk == 2:
     # laod from mask_change.txt
     msk_c = np.loadtxt('mask_change.txt')
@@ -130,7 +131,7 @@ elif GUImsk == 2:
 print 'mask done...'
 
 # generate the bathy
-bathydir = '../../data/ARDEMv2.0.nc'
+bathydir = '/Users/CnWang/projects/glacierbay/data/ARDEMv2.0.nc'
 fh = netCDF4.Dataset(bathydir, mode='r')
 topo = fh.variables['z'][:]
 lons = fh.variables['lon'][:] 
@@ -149,7 +150,7 @@ topo = topo[msk2,:][:,msk1]
 topo = -topo
 
 # fix minimum depth
-hmin = 1
+hmin = -10
 topo = pyroms_toolbox.change(topo, '<', hmin, hmin)
 
 # interpolate new bathymetry
@@ -182,7 +183,7 @@ h[idx] = hmin
 
 # vertical coordinate
 theta_b = 2.0
-theta_s = 8.0
+theta_s = 7.0
 Tcline = 10
 N = 40
 vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)
@@ -198,5 +199,5 @@ grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
 # grd.hgrid.lon_psi = grd.hgrid.lon_psi + 360
 
 # write grid file
-pyroms.grid.write_ROMS_grid(grd, filename='/Users/chuning/data/GB_grd_nocurv.nc')
+pyroms.grid.write_ROMS_grid(grd, filename='/Users/CnWang/projects/glacierbay/data/GB_grd_nocurv.nc')
 
