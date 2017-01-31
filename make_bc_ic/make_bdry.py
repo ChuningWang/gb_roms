@@ -12,7 +12,7 @@ my_year = 2000
 
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
 data_dir_year = data_dir + str(my_year) + '/'
-dst_dir='../../data/'
+dst_dir='/Users/chuning/projects/gb_roms/data/'
 
 filelst = subprocess.check_output(['ls', data_dir_year]).replace('/n',' ').split()
 

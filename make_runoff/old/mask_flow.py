@@ -12,10 +12,7 @@ outfile = "runoff.nc"
 out = netCDF4.Dataset(outfile, 'w', format='NETCDF3_64BIT')
 
 slow = nc.variables['discharge_cmd'][:]
-#hours = nc.variables['time'][:]
 mask = mc.variables['coast_cells'][0,:,:]
-#print hours.shape
-#print hours[:]
 
 ntime, numy, numx = slow.shape
 

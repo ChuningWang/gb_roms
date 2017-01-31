@@ -14,11 +14,12 @@ import pyroms_toolbox
 from remap import remap
 from remap_uv import remap_uv
 
-my_year=int(sys.argv[-1])
+my_year = int(sys.argv[-2])
+dst_dir = sys.argv[-1]
 
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
 data_dir_year = data_dir + 'monthly/'
-dst_dir='/Volumes/R1/scratch/chuning/data/gb_roms/clim/'
+# dst_dir='/Users/chuning/projects/gb_roms/data/clim/'
 
 filelst = subprocess.check_output(['ls', data_dir_year]).replace('/n',' ').split()
 

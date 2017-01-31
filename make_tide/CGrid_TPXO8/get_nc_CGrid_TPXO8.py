@@ -44,5 +44,5 @@ def get_nc_CGrid_TPXO8(grdfile, name='TPXO8', \
     # yrange = [6600, 6900]
     return CGrid_TPXO8(lonhh, lathh, lonuu, latuu, lonvv, latvv, \
                                    h_msk, u_msk, v_msk, \
-                                   zh, zu, zv, missing_value, 'TPXO8', xrange, yrange)
+                                   zh, zu, zv, missing_value, name, xrange, yrange)
 

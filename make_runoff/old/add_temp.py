@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 
 vlevel = 3
 
-fh = nc.Dataset('../../data/ctd.nc', 'r')
+fh = nc.Dataset('/Users/chuning/projects/gb_roms/data/ctd.nc', 'r')
 mt = fh.variables['mtime'][:]
 stn = fh.variables['station'][:]
 t = fh.variables['temperature'][:]

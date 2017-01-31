@@ -2,6 +2,7 @@ from __future__ import print_function
 import numpy as np
 import netCDF4
 import sys
+#import Ngl
 
 # This thing was originally written in C++ before there was a standard
 # (1994 or 1995). Unfortunately, it needed to be recompiled for each
@@ -332,13 +333,22 @@ def main():
     lpoints = []
     ipoints = []
 
-    count = color_water(imask)
+#    wks_type = "X11"
+#    wks = Ngl.open_wks(wks_type,"maskedge")
+#    res = Ngl.Resources()
+#    res.cnFillOn = True
 
+#    Ngl.contour(wks,imask,res)
+    count = color_water(imask)
+#    Ngl.contour(wks,imask,res)
     iland = 0
     for iwat in range(2, count+2):
         edges(imask, lpoints, iwat, iland)
+#        Ngl.contour(wks,imask,res)
         interior(imask, ipoints, iwat, iland)
+#        Ngl.contour(wks,imask,res)
 	set_values(imask, iland, iwat)
+#        Ngl.contour(wks,imask,res)
 	iland = iwat
 
     # Islands first, then peninsulas
@@ -349,6 +359,7 @@ def main():
 	i,j = point
         print(i, j)
     print(-10, -10)
+#    Ngl.end()
 
 if __name__ == "__main__":
     main()

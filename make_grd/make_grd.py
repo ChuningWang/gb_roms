@@ -70,7 +70,7 @@ beta = np.array([ 1., 1., 1., 1.])
 
 # ----------------------------------------------------------------------------------------------------------
 # generate hgrid
-bdryInteractor = 2
+bdryInteractor = -1
 if bdryInteractor == 1:
     # use boundary interactor
     m = Basemap(projection='lcc', width = 12000000, height = 9000000,
@@ -109,7 +109,7 @@ if (bdryInteractor == 1) | (bdryInteractor == 2):
         hgrd.mask_polygon(verts)
 
 # using masking GUI to change land mask
-GUImsk = 1
+GUImsk = 2
 if GUImsk == 1:
     m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,
                 urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
@@ -131,7 +131,7 @@ elif GUImsk == 2:
 print 'mask done...'
 
 # generate the bathy
-bathydir = '/Users/CnWang/projects/glacierbay/data/ARDEMv2.0.nc'
+bathydir = '/Users/chuning/projects/gb_roms/data/ARDEMv2.0.nc'
 fh = netCDF4.Dataset(bathydir, mode='r')
 topo = fh.variables['z'][:]
 lons = fh.variables['lon'][:] 
@@ -199,5 +199,5 @@ grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
 # grd.hgrid.lon_psi = grd.hgrid.lon_psi + 360
 
 # write grid file
-pyroms.grid.write_ROMS_grid(grd, filename='/Users/CnWang/projects/glacierbay/data/GB_grd_nocurv.nc')
+pyroms.grid.write_ROMS_grid(grd, filename='/Users/chuning/projects/gb_roms/data/GB_grd_nocurv.nc')
 

@@ -2,6 +2,7 @@ import re
 import numpy as np
 import netCDF4
 import sys
+import pdb
 
 def add_to_lists(pairs, i, j, sign, dir):
     x1, y1 = pairs[0]
@@ -56,6 +57,8 @@ j = []
 sign = []
 dir = []
 
+#pdb.set_trace()
+
 for line in f:
     a, b, c = re.split('\s+', line)
     if a=='-10':
@@ -77,7 +80,7 @@ out.source = 'David Hill and Jordan Beamer'
 
 out.createDimension('river_time', None)
 out.createDimension('river', len(i))
-out.createDimension('s_rho', 40)
+out.createDimension('s_rho', 50)
 
 times = out.createVariable('river_time', 'f8', ('river_time'))
 times.units = 'days'

@@ -39,6 +39,7 @@ import CGrid_TPXO8
 
 # tidal constituents
 consts =['Q1', 'O1', 'O1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
+consts2 = ['MF', 'MM', 'MN4', 'MS4']
 # consts =['M2'] 
 consts_num = len(consts)
 
@@ -54,13 +55,17 @@ wts_file_u = 'remap_weights_TPXO8_to_GlacierBay_bilinear_u_to_rho.nc'
 wts_file_v = 'remap_weights_TPXO8_to_GlacierBay_bilinear_v_to_rho.nc' 
 
 # read TPXO8 files
-pth_tpxo = "/Volumes/R1/scratch/chuning/data/tpxo8nc/"
+pth_tpxo = "/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/"
 srcgrd = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8atlas_30_v1.nc")
+srcgrd_lr = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8_atlas6.nc", name='TPXO8atlas6', xrange=(870, 910), yrange=(1320, 1380))
 dstgrd = pyroms.grid.get_ROMS_grid('GB')
 
 # grid sub-sample
 xrange = srcgrd.xrange
 yrange = srcgrd.yrange
+
+xrange_lr = srcgrd_lr.xrange
+yrange_lr = srcgrd_lr.yrange
 
 # initiate variables
 hamp = np.zeros((consts_num, eta, xi))*np.nan
@@ -155,7 +160,7 @@ if savedata == 1:
 
     # -------------------------------------------------------------------------
     # create nc file
-    fh = nc.Dataset('../../data/GB_tides_otps.nc', 'w')
+    fh = nc.Dataset('/Users/chuning/projects/gb_roms/data/GB_tides_otps.nc', 'w')
     fh.createDimension('namelen', 4)
     fh.createDimension('tide_period', 8)
     fh.createDimension('eta_rho', eta)

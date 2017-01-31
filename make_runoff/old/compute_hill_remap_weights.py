@@ -7,10 +7,11 @@ import pyroms_toolbox
 
 ##  load 2-dimentional interannual discharge data 
 print 'Load lat_lon'
-nc_data = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/GOA_RUNOFF.2000.nc', 'r')
+nc_data = netCDF.Dataset('/Volumes/R1/ROMS/hydrology/GOA/lat_lon.nc', 'r')
+#runoff = nc_data.variables['runoff'][:]
 lon = nc_data.variables['lon'][:]
 lat = nc_data.variables['lat'][:]
-# mask = nc_data.variables['coast_cells'][:]
+mask = nc_data.variables['coast_cells'][:]
 mask = np.where(mask < 0, 0, mask)
 Mp, Lp = lon.shape
 
@@ -32,7 +33,7 @@ lat_corner[:,Lp] = 2*lat_corner[:,Lp-1] - lat_corner[:,Lp-2]
 ##  create data remap file for scrip
 print 'Create remap grid file for Hill and Beamer runoff'
 remap_filename = 'remap_grid_runoff.nc'
-# nc = netCDF.Dataset(remap_filename, 'w', format='NETCDF3_CLASSIC')
+nc = netCDF.Dataset(remap_filename, 'w', format='NETCDF3_CLASSIC')
 nc.Description = 'remap grid file for Hill and Beamer runoff data'
 nc.Author = 'build_runoff'
 nc.Created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

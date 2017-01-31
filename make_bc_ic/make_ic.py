@@ -9,10 +9,10 @@ from remap_uv import remap_uv
 
 #date to remap
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
-dst_dir='../../data/'
+dst_dir='/Users/chuning/projects/gb_roms/data/'
 
-my_year = '1980/'
-tag='1980_01_08'
+my_year = '2000/'
+tag='2000_01_03'
 filein=data_dir+my_year+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
 
 # load grids

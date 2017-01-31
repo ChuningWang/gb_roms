@@ -2,6 +2,7 @@ import re
 import numpy as np
 import netCDF4
 import sys
+import pdb
 from datetime import datetime
 import pyroms
 
@@ -38,22 +39,14 @@ def add_to_lists(pairs, i, j, sign, dir):
 	x1 = x2
 	y1 = y2
 
-def plt_fig(grd, grid_center_lon, grid_center_lat, grid_corner_lon, grid_corner_lat)
-
-    lat = grd.hgrid.lat_rho
-    lon = grd.hgrid.lon_rho
-    import matplotlib.pyplot as plt
-    plt.plot(lon, lat, lw=0.1)
-    plt.plot(lon.T, lat.T, lw=0.1)
-    # plt.plot(grid_center_lon[:10], grid_center_lat[:10], 'ok')
-    # plt.plot(grid_corner_lon[:10, :], grid_corner_lat[:10, :], '.r')
-    plt.plot(grid_center_lon, grid_center_lat, 'ok')
-    plt.plot(grid_corner_lon, grid_corner_lat, '.r')
-    plt.show()
-
-
 #outfile = sys.argv[1]
 outfile = 'remap_grid_GB_rivers.nc'
+
+# We need to parse the output of the maskedge program for two
+# different purposes:
+#  1. Create the rivers file for ROMS, at least the locations part.
+#  2. Create a scrip grid file for the river locations.
+# This routine will only do #2.
 
 # Read the landmask boundaries
 f = open('maskedge.out', 'r')
@@ -66,6 +59,8 @@ i = []
 j = []
 sign = []
 dir = []
+
+#pdb.set_trace()
 
 for line in f:
     a, b, c = re.split('\s+', line)
@@ -116,7 +111,6 @@ for it in range(Nr):
         grid_corner_lon[it,3] = grd.hgrid.lon_rho[j[it],i[it]]
         grid_corner_lat[it,3] = grd.hgrid.lat_rho[j[it],i[it]]
 
-# plt_fig(grd, grid_center_lon, grid_center_lat, grid_corner_lon, grid_corner_lat)
 
 # create file with all the objects
 nc = netCDF4.Dataset(outfile, 'w', format='NETCDF3_64BIT')
