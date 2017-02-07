@@ -38,15 +38,16 @@ import pyroms_toolbox
 import CGrid_TPXO8
 
 # tidal constituents
-consts =['Q1', 'O1', 'O1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
-consts2 = ['MF', 'MM', 'MN4', 'MS4']
+consts1 =['Q1', 'O1', 'O1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
+consts2 = ['MF']
+consts = consts1+consts2
 # consts =['M2'] 
 consts_num = len(consts)
 
-# read roms grid
-dst_grd = pyroms.grid.get_ROMS_grid('GB')
-lat = dst_grd.hgrid.lat_rho
-lon = dst_grd.hgrid.lon_rho
+# read ROMS grid
+dstgrd = pyroms.grid.get_ROMS_grid('GB')
+lat = dstgrd.hgrid.lat_rho
+lon = dstgrd.hgrid.lon_rho
 eta, xi = lat.shape
 
 # read weights file
@@ -54,11 +55,16 @@ wts_file_t = 'remap_weights_TPXO8_to_GlacierBay_bilinear_t_to_rho.nc'
 wts_file_u = 'remap_weights_TPXO8_to_GlacierBay_bilinear_u_to_rho.nc' 
 wts_file_v = 'remap_weights_TPXO8_to_GlacierBay_bilinear_v_to_rho.nc' 
 
+wts_file_t_lr = 'remap_weights_TPXO8atlas6_to_GlacierBay_bilinear_t_to_rho.nc' 
+wts_file_u_lr = 'remap_weights_TPXO8atlas6_to_GlacierBay_bilinear_u_to_rho.nc' 
+wts_file_v_lr = 'remap_weights_TPXO8atlas6_to_GlacierBay_bilinear_v_to_rho.nc' 
+
 # read TPXO8 files
 pth_tpxo = "/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/"
 srcgrd = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8atlas_30_v1.nc")
 srcgrd_lr = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8_atlas6.nc", name='TPXO8atlas6', xrange=(870, 910), yrange=(1320, 1380))
-dstgrd = pyroms.grid.get_ROMS_grid('GB')
+
+missing_value = srcgrd.missing_value
 
 # grid sub-sample
 xrange = srcgrd.xrange
@@ -79,16 +85,28 @@ k = -1
 for cst in consts:
     k = k+1
 
-    fid = nc.Dataset(pth_tpxo+'hf.'+cst.lower()+'_tpxo8_atlas_30c_v1.nc', 'r')
-    hRe = fid.variables['hRe'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
-    hIm = fid.variables['hIm'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+    if cst in consts1: 
+        fid = nc.Dataset(pth_tpxo+'hf.'+cst.lower()+'_tpxo8_atlas_30c_v1.nc', 'r')
+        hRe = fid.variables['hRe'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+        hIm = fid.variables['hIm'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+    elif cst in consts2:
+        fid = nc.Dataset(pth_tpxo+'hf.'+cst.lower()+'_tpxo8_atlas_6.nc', 'r')
+        hRe = fid.variables['hRe'][yrange_lr[0]:yrange_lr[1]+1, xrange_lr[0]:xrange_lr[1]+1]
+        hIm = fid.variables['hIm'][yrange_lr[0]:yrange_lr[1]+1, xrange_lr[0]:xrange_lr[1]+1]
     fid.close()
 
-    fid = nc.Dataset(pth_tpxo+'uv.'+cst.lower()+'_tpxo8_atlas_30c_v1.nc', 'r')
-    uRe = fid.variables['uRe'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
-    uIm = fid.variables['uIm'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
-    vRe = fid.variables['vRe'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
-    vIm = fid.variables['vIm'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+    if cst in consts1:
+        fid = nc.Dataset(pth_tpxo+'uv.'+cst.lower()+'_tpxo8_atlas_30c_v1.nc', 'r')
+        uRe = fid.variables['uRe'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+        uIm = fid.variables['uIm'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+        vRe = fid.variables['vRe'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+        vIm = fid.variables['vIm'][yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
+    elif cst in consts2:
+        fid = nc.Dataset(pth_tpxo+'uv.'+cst.lower()+'_tpxo8_atlas_6.nc', 'r')
+        uRe = fid.variables['uRe'][yrange_lr[0]:yrange_lr[1]+1, xrange_lr[0]:xrange_lr[1]+1]
+        uIm = fid.variables['uIm'][yrange_lr[0]:yrange_lr[1]+1, xrange_lr[0]:xrange_lr[1]+1]
+        vRe = fid.variables['vRe'][yrange_lr[0]:yrange_lr[1]+1, xrange_lr[0]:xrange_lr[1]+1]
+        vIm = fid.variables['vIm'][yrange_lr[0]:yrange_lr[1]+1, xrange_lr[0]:xrange_lr[1]+1]
     fid.close()
 
     hRe = hRe*1.0
@@ -107,26 +125,51 @@ for cst in consts:
     vIm = vIm/10000.  # cm2s-1 to m2s-1
 
     # convert vertical transport (uRe, vRe) to velocity
-    uRe = uRe/srcgrd.z_u  # ms-1
-    uIm = uIm/srcgrd.z_u  # ms-1
-    vRe = vRe/srcgrd.z_v  # ms-1
-    vIm = vIm/srcgrd.z_v  # ms-1
+    if cst in consts1:
+        zu = srcgrd.z_u
+        zv = srcgrd.z_v
+    elif cst in consts2:
+        zu = srcgrd_lr.z_u
+        zv = srcgrd_lr.z_v
 
-    # mask invalid data
-    hRe = np.ma.masked_where(~srcgrd.mask_t, hRe)
-    hIm = np.ma.masked_where(~srcgrd.mask_t, hIm)
-    uRe = np.ma.masked_where(~srcgrd.mask_u, uRe)
-    uIm = np.ma.masked_where(~srcgrd.mask_u, uIm)
-    vRe = np.ma.masked_where(~srcgrd.mask_v, vRe)
-    vIm = np.ma.masked_where(~srcgrd.mask_v, vIm)
+    uRe = uRe/zu  # ms-1
+    uIm = uIm/zu  # ms-1
+    vRe = vRe/zv  # ms-1
+    vIm = vIm/zv  # ms-1
 
-    # remap h, u, v
-    hRe = pyroms.remapping.remap(hRe, wts_file_t, spval=srcgrd.missing_value)
-    hIm = pyroms.remapping.remap(hIm, wts_file_t, spval=srcgrd.missing_value)
-    uRe = pyroms.remapping.remap(uRe, wts_file_u, spval=srcgrd.missing_value)
-    uIm = pyroms.remapping.remap(uIm, wts_file_u, spval=srcgrd.missing_value)
-    vRe = pyroms.remapping.remap(vRe, wts_file_v, spval=srcgrd.missing_value)
-    vIm = pyroms.remapping.remap(vIm, wts_file_v, spval=srcgrd.missing_value)
+    if cst in consts1:
+        # mask invalid data
+        hRe = np.ma.masked_where(~srcgrd.mask_t, hRe)
+        hIm = np.ma.masked_where(~srcgrd.mask_t, hIm)
+        uRe = np.ma.masked_where(~srcgrd.mask_u, uRe)
+        uIm = np.ma.masked_where(~srcgrd.mask_u, uIm)
+        vRe = np.ma.masked_where(~srcgrd.mask_v, vRe)
+        vIm = np.ma.masked_where(~srcgrd.mask_v, vIm)
+
+        # remap h, u, v
+        hRe = pyroms.remapping.remap(hRe, wts_file_t, spval=missing_value)
+        hIm = pyroms.remapping.remap(hIm, wts_file_t, spval=missing_value)
+        uRe = pyroms.remapping.remap(uRe, wts_file_u, spval=missing_value)
+        uIm = pyroms.remapping.remap(uIm, wts_file_u, spval=missing_value)
+        vRe = pyroms.remapping.remap(vRe, wts_file_v, spval=missing_value)
+        vIm = pyroms.remapping.remap(vIm, wts_file_v, spval=missing_value)
+
+    elif cst in consts2:
+        # mask invalid data
+        hRe = np.ma.masked_where(~srcgrd_lr.mask_t, hRe)
+        hIm = np.ma.masked_where(~srcgrd_lr.mask_t, hIm)
+        uRe = np.ma.masked_where(~srcgrd_lr.mask_u, uRe)
+        uIm = np.ma.masked_where(~srcgrd_lr.mask_u, uIm)
+        vRe = np.ma.masked_where(~srcgrd_lr.mask_v, vRe)
+        vIm = np.ma.masked_where(~srcgrd_lr.mask_v, vIm)
+
+        # remap h, u, v
+        hRe = pyroms.remapping.remap(hRe, wts_file_t_lr, spval=missing_value)
+        hIm = pyroms.remapping.remap(hIm, wts_file_t_lr, spval=missing_value)
+        uRe = pyroms.remapping.remap(uRe, wts_file_u_lr, spval=missing_value)
+        uIm = pyroms.remapping.remap(uIm, wts_file_u_lr, spval=missing_value)
+        vRe = pyroms.remapping.remap(vRe, wts_file_v_lr, spval=missing_value)
+        vIm = pyroms.remapping.remap(vIm, wts_file_v_lr, spval=missing_value)
 
     hamp[k, :, :] = (hRe**2+hIm**2)**0.5  # mm
     hpha[k, :, :] = np.arctan(-hIm/hRe)/np.pi*180.  # deg
@@ -142,10 +185,10 @@ for cst in consts:
 
 # -------------------------------------------------------------------------
 # mask land grid points
-cmax[:, dstgrd.hgrid.mask_rho==0] = srcgrd.missing_value
-cmin[:, dstgrd.hgrid.mask_rho==0] = srcgrd.missing_value
-cang[:, dstgrd.hgrid.mask_rho==0] = srcgrd.missing_value
-cpha[:, dstgrd.hgrid.mask_rho==0] = srcgrd.missing_value
+cmax[:, dstgrd.hgrid.mask_rho==0] = missing_value
+cmin[:, dstgrd.hgrid.mask_rho==0] = missing_value
+cang[:, dstgrd.hgrid.mask_rho==0] = missing_value
+cpha[:, dstgrd.hgrid.mask_rho==0] = missing_value
 
 # -------------------------------------------------------------------------
 savedata = 1
@@ -154,15 +197,17 @@ if savedata == 1:
     # -------------------------------------------------------------------------
     # define tidal constituents names and periods
     tide_name = np.array([ list('Q1'), list('O1'), list('P1'), list('K1'),
-                           list('N2'), list('M2'), list('S2'), list('K2')])
+                           list('N2'), list('M2'), list('S2'), list('K2'),
+                           list('MF')])
     tide_period = np.array([26.8683567047119, 25.8193397521973, 24.0658893585205, 23.9344692230225, 
-                            12.6583499908447, 12.420599937439, 12, 11.9672346115112])
+                            12.6583499908447, 12.420599937439, 12, 11.9672346115112,
+                            13.66079*24])
 
     # -------------------------------------------------------------------------
     # create nc file
-    fh = nc.Dataset('/Users/chuning/projects/gb_roms/data/GB_tides_otps.nc', 'w')
+    fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GB_tides_otps.nc', 'w')
     fh.createDimension('namelen', 4)
-    fh.createDimension('tide_period', 8)
+    fh.createDimension('tide_period', consts_num)
     fh.createDimension('eta_rho', eta)
     fh.createDimension('xi_rho', xi)
 

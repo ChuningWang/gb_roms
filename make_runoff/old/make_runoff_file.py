@@ -5,16 +5,36 @@ from datetime import datetime
 import pyroms
 import pyroms_toolbox
 
+#You need to edit and run compute_daitren_remap_weights.py first
+#then edit and run make_ARCTIC2_runoff.py to generate the runoff file.
+#In make_ARCTIC2_runoff.py you can tune the number of cell defining the
+#littoral band where you will have a runoff value (look for "width"
+#variable) and the area over which the runoff is spread in order
+#homogenize and to avoid large runoff value (variable "rspread").
 
 # load 2-dimentional interannual discharge data 
 # from 1948-2007. See Dai and Trenberth (2002) and Dai et al. (2009)
 print 'Load interannual discharge data'
-nc_data = netCDF.Dataset('/archive/u1/uaf/kate/CORE2/runoff.daitren.clim.10FEB2011.nc', 'r')
+nc_data = netCDF.Dataset('/archive/u1/uaf/kate/CORE2/runoff.daitren.iaf.10FEB2011.nc', 'r')
 data = nc_data.variables['runoff'][:]
-
-# time: cyclic year (365.25 days)
-time = np.array([15.21875, 45.65625, 76.09375, 106.53125, 136.96875, 167.40625, \
-    197.84375, 228.28125, 258.71875, 289.15625, 319.59375, 350.03125])
+# time with leap year
+time = np.zeros(data.shape[0])
+t0 = 17530 #12/31/1947
+tidx=0
+for year in range(1948,2008):
+    if year%4 == 0:
+      daysinmonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    else :
+      daysinmonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    for month in range(12):
+      if tidx == 0:
+        time[tidx] = t0 + daysinmonth[month]/2.
+      else:
+        if month == 0:
+          time[tidx] = time[tidx-1] + daysinmonth[month]/2. + 31/2.
+        else :
+          time[tidx] = time[tidx-1] + daysinmonth[month]/2. + daysinmonth[month-1]/2.
+      tidx = tidx + 1
 
 
 # load ARCTIC2 grid object
@@ -32,9 +52,9 @@ rspread = 6
 
 # create runoff file
 #runoff_file = 'runoff_ARCTIC2_daitren_inter_annual_2002-2004.nc'
-runoff_file = 'runoff_ARCTIC2_daitren_clim.nc'
-nc = netCDF.Dataset(runoff_file, 'w', format='NETCDF3_64BIT')
-nc.Description = 'Dai & Trenberth monthly climatology river discharge'
+runoff_file = 'runoff_ARCTIC2_daitren_inter_annual_1948-2007.nc'
+nc = netCDF.Dataset(runoff_file, 'w', format='NETCDF3_CLASSIC')
+nc.Description = 'Dai & Trenberth Interannual monthly river discharge, 1948-2007'
 nc.Author = 'make_ARCTIC2_runoff.py'
 nc.Created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 nc.title = 'Dai & Trenberth river discharge'
@@ -42,7 +62,7 @@ nc.title = 'Dai & Trenberth river discharge'
 # creat dimensions and variables
 nc.createDimension('xi_rho', np.size(grd.hgrid.mask_rho,1))
 nc.createDimension('eta_rho', np.size(grd.hgrid.mask_rho,0))
-nc.createDimension('runoff_time', (12))
+nc.createDimension('runoff_time', None)
 
 nc.createVariable('lon_rho', 'f8', ('eta_rho', 'xi_rho'))
 nc.variables['lon_rho'].long_name = 'longitude of RHO-points'
@@ -59,7 +79,6 @@ nc.variables['lat_rho'][:] = grd.hgrid.lat_rho
 nc.createVariable('runoff_time', 'f8', ('runoff_time'))
 nc.variables['runoff_time'].long_name = 'time'
 nc.variables['runoff_time'].units = 'days since 1900-01-01 00:00:00'
-nc.variables['runoff_time'].cycle_length = 365.25
 nc.variables['runoff_time'][:] = time
 
 nc.createVariable('Runoff_raw', 'f8', ('runoff_time', 'eta_rho', 'xi_rho'))

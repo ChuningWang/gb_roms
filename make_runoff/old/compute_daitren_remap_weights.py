@@ -5,38 +5,26 @@ import netCDF4 as netCDF
 import pyroms
 import pyroms_toolbox
 
-##  load 2-dimentional interannual discharge data 
-print 'Load lat_lon'
-nc_data = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/gb_discharge.nc', 'r')
-lon = nc_data.variables['lon'][:]
-lat = nc_data.variables['lat'][:]
-mask = nc_data.variables['coast'][:]
-mask = np.where(mask < 0, 0, mask)
-Mp, Lp = lon.shape
 
-lon_corner = np.zeros([Mp+1,Lp+1])
-lat_corner = np.zeros([Mp+1,Lp+1])
-lon_corner[1:Mp,1:Lp] = 0.25*(lon[:Mp-1,:Lp-1] + lon[1:Mp,:Lp-1] + \
-                              lon[:Mp-1,1:Lp] + lon[1:Mp,1:Lp])
-lat_corner[1:Mp,1:Lp] = 0.25*(lat[:Mp-1,:Lp-1] + lat[1:Mp,:Lp-1] + \
-                              lat[:Mp-1,1:Lp] + lat[1:Mp,1:Lp])
-lon_corner[0,1:Lp] = 2*lon_corner[1,1:Lp] - lon_corner[2,1:Lp]
-lon_corner[Mp,1:Lp] = 2*lon_corner[Mp-1,1:Lp] - lon_corner[Mp-2,1:Lp]
-lon_corner[:,0] = 2*lon_corner[:,1] - lon_corner[:,2]
-lon_corner[:,Lp] = 2*lon_corner[:,Lp-1] - lon_corner[:,Lp-2]
-lat_corner[0,1:Lp] = 2*lat_corner[1,1:Lp] - lat_corner[2,1:Lp]
-lat_corner[Mp,1:Lp] = 2*lat_corner[Mp-1,1:Lp] - lat_corner[Mp-2,1:Lp]
-lat_corner[:,0] = 2*lat_corner[:,1] - lat_corner[:,2]
-lat_corner[:,Lp] = 2*lat_corner[:,Lp-1] - lat_corner[:,Lp-2]
+##  load 2-dimentional interannual discharge data 
+##  from 1948-2007. See Dai and Trenberth (2002) and Dai et al. (2009)
+print 'Load interannual discharge data'
+nc_data = netCDF.Dataset('/archive/u1/uaf/kate/CORE2/runoff.daitren.iaf.10FEB2011.nc', 'r')
+runoff = nc_data.variables['runoff'][:]
+lon = nc_data.variables['xc'][:]
+lat = nc_data.variables['yc'][:]
+lon_corner = nc_data.variables['xv'][:]
+lat_corner = nc_data.variables['yv'][:]
+mask = nc_data.variables['mask'][:]
 
 ##  create data remap file for scrip
-print 'Create remap grid file for Hill and Beamer runoff'
-remap_filename = 'remap_grid_runoff.nc'
+print 'Create remap grid file for Dai and Trenberth runoff'
+remap_filename = 'remap_grid_daitren.nc'
 nc = netCDF.Dataset(remap_filename, 'w', format='NETCDF3_CLASSIC')
-nc.Description = 'remap grid file for Hill and Beamer runoff data'
+nc.Description = 'remap grid file for Dai and Trenberth runoff data'
 nc.Author = 'build_runoff'
 nc.Created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-nc.title = 'Hill and Beamer runoff'
+nc.title = 'Dai and Trenberth runoff'
 
 grid_center_lon = lon.flatten()
 grid_center_lat = lat.flatten()
@@ -48,14 +36,14 @@ grid_corner_lat = np.zeros((grid_size, 4))
 k = 0
 for j in range(Mp):
     for i in range(Lp):
-        grid_corner_lon[k,0] = lon_corner[j,i]
-        grid_corner_lat[k,0] = lat_corner[j,i]
-        grid_corner_lon[k,1] = lon_corner[j,i+1]
-        grid_corner_lat[k,1] = lat_corner[j,i+1]
-        grid_corner_lon[k,2] = lon_corner[j+1,i+1]
-        grid_corner_lat[k,2] = lat_corner[j+1,i+1]
-        grid_corner_lon[k,3] = lon_corner[j+1,i]
-        grid_corner_lat[k,3] = lat_corner[j+1,i]
+        grid_corner_lon[k,0] = lon_corner[0,j,i]
+        grid_corner_lat[k,0] = lat_corner[0,j,i]
+        grid_corner_lon[k,1] = lon_corner[1,j,i]
+        grid_corner_lat[k,1] = lat_corner[1,j,i]
+        grid_corner_lon[k,2] = lon_corner[2,j,i]
+        grid_corner_lat[k,2] = lat_corner[2,j,i]
+        grid_corner_lon[k,3] = lon_corner[3,j,i]
+        grid_corner_lat[k,3] = lat_corner[3,j,i]
         k = k + 1
 
 nc.createDimension('grid_size', grid_size)
@@ -95,21 +83,22 @@ nc.variables['grid_corner_lat'][:] = grid_corner_lat
 nc.close()
 
 
-#  create GB remap file for scrip
-print 'Create remap grid file for GB grid'
-dstgrd = pyroms.grid.get_ROMS_grid('GB')
+##  create Arctic2 remap file for scrip
+print 'Create remap grid file for Arctic2 grid'
+dstgrd = pyroms.grid.get_ROMS_grid('ARCTIC2')
 dstgrd.hgrid.mask_rho = np.ones(dstgrd.hgrid.mask_rho.shape)
 pyroms.remapping.make_remap_grid_file(dstgrd, Cpos='rho')
+
 
 ## compute remap weights
 print 'compute remap weights using scrip'
 # input namelist variables for conservative remapping at rho points
-grid1_file = 'remap_grid_runoff.nc'
-grid2_file = 'remap_grid_GlacierBay_rho.nc'
-interp_file1 = 'remap_weights_runoff_to_GB_conservative_nomask.nc'
-interp_file2 = 'remap_weights_GB_to_runoff_conservative_nomask.nc'
-map1_name = 'runoff to GB conservative Mapping'
-map2_name = 'GB to runoff conservative Mapping'
+grid1_file = 'remap_grid_daitren.nc'
+grid2_file = 'remap_grid_ARCTIC2_rho.nc'
+interp_file1 = 'remap_weights_daitren_to_ARCTIC2_conservative_nomask.nc'
+interp_file2 = 'remap_weights_ARCTIC2_to_daitren_conservative_nomask.nc'
+map1_name = 'daitren to ARCTIC2 conservative Mapping'
+map2_name = 'ARCTIC2 to daitren conservative Mapping'
 num_maps = 1
 map_method = 'conservative'
 
