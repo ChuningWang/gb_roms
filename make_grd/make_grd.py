@@ -183,7 +183,7 @@ h[idx] = hmin
 
 # vertical coordinate
 theta_b = 2.0
-theta_s = 7.0
+theta_s = 8.0
 Tcline = 10
 N = 40
 vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)

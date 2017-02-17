@@ -11,7 +11,7 @@ import pdb
 # load 2-dimentional discharge data 
 print 'Load discharge data'
 nc_data = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/runoff_GB_hill.nc', 'r')
-nc_rivers = netCDF.Dataset('Glacier_Bay_rivers.nc', 'a')
+nc_rivers = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/Glacier_Bay_rivers.nc', 'a')
 data = nc_data.variables['Runoff'][:]
 time = nc_data.variables['time'][:]
 nc_data.close()

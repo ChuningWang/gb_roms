@@ -11,7 +11,7 @@ tag = 'JRA55do'
 vlist = ['rain', 'snow']
 ttag1 = '30Jun2016'
 ttag2 = '15Dec2016'
-save_dir = '/Volumes/R1/scratch/chuning/data/jra/jra55do/' + str(my_year) + '/'
+save_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/jra55do/' + str(my_year) + '/'
 
 if not os.path.exists(save_dir):
     subprocess.call('mkdir ' + save_dir, shell=True)

@@ -9,7 +9,7 @@ from remap_uv import remap_uv
 
 #date to remap
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
-dst_dir='/Users/chuning/projects/gb_roms/data/'
+dst_dir='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
 
 my_year = '2000/'
 tag='2000_01_03'
