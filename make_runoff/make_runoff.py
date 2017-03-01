@@ -12,16 +12,46 @@ import pyroms_toolbox
 # variable) and the area over which the runoff is spread in order
 # homogenize and to avoid large runoff value (variable "rspread").
 
+def get_discharge_avgbox(t, lat, lon, discharge, coast, box):
+    from matplotlib import path
+
+    # ------------------------------------------------------------------------------------------------------
+    # Get points in boxes
+    hydro_box = np.ones(lon.shape)*(-1)
+    p0 = path.Path(box)
+
+    for i in range(lon.shape[0]):
+        for j in range(lon.shape[1]):
+            if p0.contains_points([(lon[i, j], lat[i, j])]):
+                hydro_box[i, j] = 0
+
+    # Find coastal cells
+    hydro_box[coast.mask] = -1
+
+    # ------------------------------------------------------------------------------------------------------
+    print 'Sum up data in box...'
+    d = np.empty(t.size)
+    d[:] = np.NaN
+    for i in range(t.size):
+        d0 = np.squeeze(discharge[i, :, :])
+        d0[d0<=0] = np.NaN
+        d[i] = np.nansum(d0[hydro_box==0])
+
+    return d
+
 # Select time range (days since 1900)
 t_base = datetime(1900, 01, 01)
 t_ini = datetime(1999, 12, 31)
-# t_end = datetime(2001, 01, 01)
+# t_end = datetime(2000, 01, 05)
 t_end = datetime(2001, 01, 01)
 
 # load 2-dimentional interannual discharge data 
 print 'Load interannual discharge data'
 fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/gb_discharge.nc', 'r')
 time = fh.variables['t'][:]
+lat = fh.variables['lat'][:]
+lon = fh.variables['lon'][:]
+coast = fh.variables['coast'][:]
 t1 = int((t_ini-t_base).days-time[0])
 t2 = int((t_end-t_base).days-time[0])
 time = time[t1:t2]
@@ -30,6 +60,11 @@ fh.close()
  
 # load Glacier Bay grid object
 grd = pyroms.grid.get_ROMS_grid('GB')
+
+box = np.array([[-137.40, 59.10],
+                [-136.30, 57.80],
+                [-135.00, 58.05],
+                [-136.10, 59.35]])
 
 # define some variables
 wts_file = 'remap_weights_runoff_to_GB_conservative_nomask.nc'
@@ -99,6 +134,17 @@ for t in range(nt):
 
     nct = nct + 1
 
+# scale the total discharge to origin grid
+d1 =  get_discharge_avgbox(time, lat, lon, data, coast, box)
+coast_gb = np.zeros(grd.hgrid.lat_rho.shape) 
+coast_gb = np.ma.masked_array(coast_gb, mask=0)
+d2 =  get_discharge_avgbox(time, grd.hgrid.lat_rho, grd.hgrid.lon_rho, runoff_raw_nc, coast_gb, box)
+
+rr = np.mean(d1/d2)
+
+runoff_raw_nc = runoff_raw_nc*rr
+runoff_spread_nc = runoff_spread_nc*rr
+
 # create runoff file
 print 'create runoff file'
 # runoff_file = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/runoff_GB_hill.nc'
@@ -143,7 +189,7 @@ fh.variables['Runoff_raw'][:] = runoff_raw_nc
 fh.createVariable('Runoff', 'f8', ('runoff_time', 'eta_rho', 'xi_rho'))
 fh.variables['Runoff'].long_name = 'Hill River Runoff'
 fh.variables['Runoff'].missing_value = str(spval)
-fh.variables['Runoff'].units = 'kg/s/m^2'
+fh.variables['Runoff'].units = 'm^3/s'
 fh.variables['Runoff'][:] = runoff_spread_nc
 
 fh.close()

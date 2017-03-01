@@ -55,13 +55,13 @@ def get_discharge(pth, savepth, latlim, lonlim):
     dx = 0.5*(dx[:-1, :]+dx[1:, :])
     dy = 0.5*(dy[:, :-1]+dy[:, 1:])
 
-    # calculate grid area in [m^2]
-    area = np.zeros(lon.shape)
-    for i in range(Mp):
-        for j in range(Lp):
-            dxi = vincenty((lat[i, j], lon[i, j]-0.5*dx[i, j]), (lat[i, j], lon[i, j]+0.5*dx[i, j])).meters
-            dyi = vincenty((lat[i, j]-0.5*dy[i, j], lon[i, j]), (lat[i, j]+0.5*dy[i, j], lon[i, j])).meters
-            area[i, j] = dxi*dyi
+    # # calculate grid area in [m^2]
+    # area = np.zeros(lon.shape)
+    # for i in range(Mp):
+    #     for j in range(Lp):
+    #         dxi = vincenty((lat[i, j], lon[i, j]-0.5*dx[i, j]), (lat[i, j], lon[i, j]+0.5*dx[i, j])).meters
+    #         dyi = vincenty((lat[i, j]-0.5*dy[i, j], lon[i, j]), (lat[i, j]+0.5*dy[i, j], lon[i, j])).meters
+    #         area[i, j] = dxi*dyi
            
     # base time
     t0 = datetime(1900, 01, 01)
@@ -105,12 +105,12 @@ def get_discharge(pth, savepth, latlim, lonlim):
     lat_dim = d.shape[2]
 
     # unit coversion
-    # first, convert discharge unit from m3day-1 to kgs-1
-    d = d*1000./24./60./60.
+    # first, convert discharge unit from m3day-1 to m3s-1
+    d = d/24./60./60.
 
-    # second, divide by grid area to get kg/s/m^2
-    for i in range(d.shape[0]):
-        d[i, :, :] = d[i, :, :]/area
+    # # second, divide by grid area to get m3/s/m2
+    # for i in range(d.shape[0]):
+    #     d[i, :, :] = d[i, :, :]/area
 
     svdata = 1
     if svdata == 1:
@@ -142,7 +142,7 @@ def get_discharge(pth, savepth, latlim, lonlim):
         t_nc[:] = t
         lat_nc[:, :] = lat
         lon_nc[:, :] = lon
-        area_nc[:, :] = area
+        # area_nc[:, :] = area
         coast_nc[:, :] = coast
         d_nc[:, :, :] = d
 
