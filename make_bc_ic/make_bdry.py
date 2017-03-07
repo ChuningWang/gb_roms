@@ -8,11 +8,11 @@ import pyroms_toolbox
 from remap_bdry import remap_bdry
 from remap_bdry_uv import remap_bdry_uv
 
-my_year = 2000
+my_year = 1999
 
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
 data_dir_year = data_dir + str(my_year) + '/'
-dst_dir='/Users/chuning/projects/gb_roms/data/'
+dst_dir='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
 
 filelst = subprocess.check_output(['ls', data_dir_year]).replace('/n',' ').split()
 
