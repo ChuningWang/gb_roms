@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, shiftgrid
 import netCDF4
 
@@ -79,7 +80,7 @@ if bdryInteractor == 1:
     xp, yp = m(lon_bry, lat_bry)
     plt.figure()
     m.drawcoastlines()
-    plt.show()
+    # plt.show()
     bry = pyroms.hgrid.BoundaryInteractor(xp, yp, beta, shp=(Mg+3,Lg+3), proj=m)
     hgrd =bry.grd
 elif bdryInteractor == 2:
