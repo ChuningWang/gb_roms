@@ -132,7 +132,7 @@ elif GUImsk == 2:
 print 'mask done...'
 
 # generate the bathy
-bathydir = '/Users/chuning/projects/gb_roms/data/ARDEMv2.0.nc'
+bathydir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/ARDEMv2.0.nc'
 fh = netCDF4.Dataset(bathydir, mode='r')
 topo = fh.variables['z'][:]
 lons = fh.variables['lon'][:] 
@@ -151,7 +151,7 @@ topo = topo[msk2,:][:,msk1]
 topo = -topo
 
 # fix minimum depth
-hmin = -10
+hmin = 10
 topo = pyroms_toolbox.change(topo, '<', hmin, hmin)
 
 # interpolate new bathymetry
@@ -200,5 +200,5 @@ grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
 # grd.hgrid.lon_psi = grd.hgrid.lon_psi + 360
 
 # write grid file
-pyroms.grid.write_ROMS_grid(grd, filename='/Users/chuning/projects/gb_roms/data/GB_grd_nocurv.nc')
+pyroms.grid.write_ROMS_grid(grd, filename='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GB_grd_nocurv.nc')
 

@@ -8,7 +8,7 @@ import pyroms_toolbox
 from remap_bdry import remap_bdry
 from remap_bdry_uv import remap_bdry_uv
 
-my_year = 1999
+my_year = 2000
 
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
 data_dir_year = data_dir + str(my_year) + '/'
@@ -22,11 +22,11 @@ dst_grd = pyroms.grid.get_ROMS_grid('GB')
 for filein in filelst:
     tag = filein.replace('soda3.3.1_5dy_ocean_reg_','').replace('.nc','')
     print '\nBuild OBC file for time %s' %filein
-    zeta_dst_file = dst_dir + dst_grd.name + '_bdry_zeta_' + tag + '_' + src_grd.name + '.nc'
-    temp_dst_file = dst_dir + dst_grd.name + '_bdry_temp_' + tag + '_' + src_grd.name + '.nc'
-    salt_dst_file = dst_dir + dst_grd.name + '_bdry_salt_' + tag + '_' + src_grd.name + '.nc'
-    u_dst_file    = dst_dir + dst_grd.name + '_bdry_u_'    + tag + '_' + src_grd.name + '.nc'
-    v_dst_file    = dst_dir + dst_grd.name + '_bdry_v_'    + tag + '_' + src_grd.name + '.nc'
+    zeta_dst_file = dst_dir + 'temp/' + dst_grd.name + '_bdry_zeta_' + tag + '_' + src_grd.name + '.nc'
+    temp_dst_file = dst_dir + 'temp/' +  dst_grd.name + '_bdry_temp_' + tag + '_' + src_grd.name + '.nc'
+    salt_dst_file = dst_dir + 'temp/' +  dst_grd.name + '_bdry_salt_' + tag + '_' + src_grd.name + '.nc'
+    u_dst_file    = dst_dir + 'temp/' +  dst_grd.name + '_bdry_u_'    + tag + '_' + src_grd.name + '.nc'
+    v_dst_file    = dst_dir + 'temp/' +  dst_grd.name + '_bdry_v_'    + tag + '_' + src_grd.name + '.nc'
 
     # remap ssh
     zeta = remap_bdry('ssh', data_dir_year + filein, src_grd, dst_grd, zeta_dst_file, dst_dir=dst_dir)
@@ -40,7 +40,7 @@ for filein in filelst:
     remap_bdry_uv(data_dir_year + filein, src_grd, dst_grd, u_dst_file, v_dst_file, dst_dir=dst_dir)
 
     # merge file
-    bdry_file = dst_dir + dst_grd.name + '_bdry_' + tag + '_' + src_grd.name + '.nc'
+    bdry_file = dst_dir + 'temp/' + dst_grd.name + '_bdry_' + tag + '_' + src_grd.name + '.nc'
 
     command1 = 'mv '      + zeta_dst_file + ' '    + bdry_file
     command2 = 'ncks -A ' + temp_dst_file + ' -o ' + bdry_file
@@ -59,3 +59,9 @@ for filein in filelst:
     os.remove(salt_dst_file)
     os.remove(u_dst_file)
     os.remove(v_dst_file)
+
+# concatenate
+cmd1 = 'ncrcat ' + dst_dir + 'temp/' + dst_grd.name + '_bdry_' + str(my_year) + '_*_' + src_grd.name + '.nc ' + \
+        dst_dir + dst_grd.name + '_bdry_' + str(my_year) + '_' + src_grd.name + '.nc',
+subprocess.call(cmd1, shell=True)
+subprocess.call('rm ' + dst_dir + 'temp/*', shell=True)

@@ -24,7 +24,7 @@ clevs = np.linspace(-200, 200, 21)
 # ctd = rd_ctd('../data/ctd.nc')
 
 # Read topography
-fh = nc.Dataset('../data/ARDEMv2.0.nc', mode='r')
+fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/ARDEMv2.0.nc', mode='r')
 lont = fh.variables['lon'][:]
 lont = lont-360
 latt = fh.variables['lat'][:]
@@ -34,7 +34,7 @@ fh.close()
 # stn = np.arange(24)
 
 # Read grid
-fh = nc.Dataset('../data/GlacierBay_bdry_1980_01_08_SODA3.3.1.nc', mode='r')
+fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_bdry_2000_SODA3.3.1.nc', mode='r')
 lon_psi = fh.variables['lon_psi'][:]
 lat_psi = fh.variables['lat_psi'][:]
 lon_rho = fh.variables['lon_rho'][:]
@@ -55,74 +55,48 @@ s_rho = fh.variables['s_rho'][:]
 s_w = fh.variables['s_w'][:]
 msk = fh.variables['mask_psi'][:]
 
-s_n = fh.variables['salt_north'][:].squeeze()
-s_s = fh.variables['salt_south'][:].squeeze()
-# s_e = fh.variables['salt_east'][:].squeeze()
-s_w = fh.variables['salt_west'][:].squeeze()
+s_e = fh.variables['salt_east'][0, :].squeeze()
+s_w = fh.variables['salt_west'][0, :].squeeze()
 
-t_n = fh.variables['temp_north'][:].squeeze()
-t_s = fh.variables['temp_south'][:].squeeze()
-# t_e = fh.variables['temp_east'][:].squeeze()
-t_w = fh.variables['temp_west'][:].squeeze()
+t_e = fh.variables['temp_east'][0, :].squeeze()
+t_w = fh.variables['temp_west'][0, :].squeeze()
 
-u_n = fh.variables['u_north'][:].squeeze()
-u_s = fh.variables['u_south'][:].squeeze()
-# u_e = fh.variables['u_east'][:].squeeze()
-u_w = fh.variables['u_west'][:].squeeze()
+u_e = fh.variables['u_east'][0, :].squeeze()
+u_w = fh.variables['u_west'][0, :].squeeze()
 
-v_n = fh.variables['v_north'][:].squeeze()
-v_s = fh.variables['v_south'][:].squeeze()
-# v_e = fh.variables['v_east'][:].squeeze()
-v_w = fh.variables['v_west'][:].squeeze()
+v_e = fh.variables['v_east'][0, :].squeeze()
+v_w = fh.variables['v_west'][0, :].squeeze()
 
 fh.close()
 
 lyr = np.size(s_rho)
 
-lat_st_n = np.tile(lat_rho[-1, :].squeeze(), (40, 1))
-lat_st_s = np.tile(lat_rho[0, :].squeeze(), (40, 1))
 lat_st_e = np.tile(lat_rho[:, -1].squeeze(), (40, 1))
 lat_st_w = np.tile(lat_rho[:, 0].squeeze(), (40, 1))
 
-lon_st_n = np.tile(lon_rho[-1, :].squeeze(), (40, 1))
-lon_st_s = np.tile(lon_rho[0, :].squeeze(), (40, 1))
 lon_st_e = np.tile(lon_rho[:, -1].squeeze(), (40, 1))
 lon_st_w = np.tile(lon_rho[:, 0].squeeze(), (40, 1))
 
-lat_u_n = np.tile(lat_u[-1, :].squeeze(), (40, 1))
-lat_u_s = np.tile(lat_u[0, :].squeeze(), (40, 1))
 lat_u_e = np.tile(lat_u[:, -1].squeeze(), (40, 1))
 lat_u_w = np.tile(lat_u[:, 0].squeeze(), (40, 1))
 
-lon_u_n = np.tile(lon_u[-1, :].squeeze(), (40, 1))
-lon_u_s = np.tile(lon_u[0, :].squeeze(), (40, 1))
 lon_u_e = np.tile(lon_u[:, -1].squeeze(), (40, 1))
 lon_u_w = np.tile(lon_u[:, 0].squeeze(), (40, 1))
 
-lat_v_n = np.tile(lat_v[-1, :].squeeze(), (40, 1))
-lat_v_s = np.tile(lat_v[0, :].squeeze(), (40, 1))
 lat_v_e = np.tile(lat_v[:, -1].squeeze(), (40, 1))
 lat_v_w = np.tile(lat_v[:, 0].squeeze(), (40, 1))
 
-lon_v_n = np.tile(lon_v[-1, :].squeeze(), (40, 1))
-lon_v_s = np.tile(lon_v[0, :].squeeze(), (40, 1))
 lon_v_e = np.tile(lon_v[:, -1].squeeze(), (40, 1))
 lon_v_w = np.tile(lon_v[:, 0].squeeze(), (40, 1))
 
 s_rho = np.matrix(s_rho).T
 
-h_st_n = s_rho*np.matrix(h[-1, :])
-h_st_s = s_rho*np.matrix(h[0, :])
 h_st_e = s_rho*np.matrix(h[:, -1])
 h_st_w = s_rho*np.matrix(h[:, 0])
 
-h_u_n = 0.5*(h_st_n[:, :-1]+h_st_n[:, 1:])
-h_u_s = 0.5*(h_st_s[:-1]+h_st_s[1:])
 h_u_e = h_st_e
 h_u_w = h_st_w
 
-h_v_n = h_st_n
-h_v_s = h_st_s
 h_v_e = 0.5*(h_st_e[:-1]+h_st_e[1:])
 h_v_w = 0.5*(h_st_w[:-1]+h_st_w[1:])
 
@@ -131,30 +105,21 @@ fig = plt.figure()
 
 clevs = np.arange(30., 35., 0.05)
 
+plt.contourf(lat_st_e, h_st_e, s_e)
+plt.colorbar()
+plt.title('Salinity [PSU] at East Boundary')
+plt.xlabel('Latitude')
+plt.ylabel('Depth [m]')
+plt.savefig('/Volumes/R1/scratch/chuning/gb_roms/figs/bdry_e_s.eps',format='eps')
+plt.close()
+
 plt.contourf(lat_st_w, h_st_w, s_w)
 plt.colorbar()
 plt.title('Salinity [PSU] at West Boundary')
 plt.xlabel('Latitude')
 plt.ylabel('Depth [m]')
-plt.savefig('../figs/bdry_w_s.eps',format='eps')
+plt.savefig('/Volumes/R1/scratch/chuning/gb_roms/figs/bdry_w_s.eps',format='eps')
 plt.close()
-
-plt.contourf(lon_st_n, h_st_n, s_n)
-plt.colorbar()
-plt.title('Salinity [PSU] at North Boundary')
-plt.xlabel('Longitude')
-plt.ylabel('Depth [m]')
-plt.savefig('../figs/bdry_n_s.eps',format='eps')
-plt.close()
-
-plt.contourf(lon_st_s, h_st_s, s_s)
-plt.colorbar()
-plt.title('Salinity [PSU] at South Boundary')
-plt.xlabel('Longitude')
-plt.ylabel('Depth [m]')
-plt.savefig('../figs/bdry_s_s.eps',format='eps')
-plt.close()
-
 
 
 # plt.close()

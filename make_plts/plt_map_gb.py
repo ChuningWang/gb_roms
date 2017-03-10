@@ -51,7 +51,7 @@ m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
 #     plt.text(xstn[i]+1000, ystn[i], "%02d"%i, fontsize=5, va='center')
 
 # m.drawcoastlines(linewidth=.1)
-m.fillcontinents(color='lightgrey')
+m.drawcoastlines(linewidth=0.01)
 mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
 pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
 # setlabelrot(mr,-90)
