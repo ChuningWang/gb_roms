@@ -48,6 +48,7 @@ consts_num = len(consts)
 dstgrd = pyroms.grid.get_ROMS_grid('GB')
 lat = dstgrd.hgrid.lat_rho
 lon = dstgrd.hgrid.lon_rho
+msk = dstgrd.hgrid.mask_rho
 eta, xi = lat.shape
 
 # read weights file
@@ -215,7 +216,10 @@ if savedata == 1:
     fh.history = 'Tides from TPXO8'
     import time
     fh.creation_date = time.strftime('%c')
-    fh.type = 'Forcing File'
+    fh.Type = 'ROMS Tidal Forcing File'
+    fh.Title = 'Forcing for' + dstgrd.name + 'domain'
+    fh.grid_file = dstgrd.name
+    fh.Source = 'OTPS'
 
 
     name_nc = fh.createVariable('tide_name', 'c', ('tide_period', 'namelen'))
@@ -225,6 +229,20 @@ if savedata == 1:
     period_nc.long_name = 'tidal angular period'
     period_nc.units = 'hours'
 
+    lat_nc = fh.createVariable('lat_rho', 'd', ('eta_rho', 'xi_rho'))
+    lat_nc.field = 'lat_rho, scalar'
+    lat_nc.long_name = 'latitude of RHO-points'
+    lat_nc.units = 'degree north'
+
+    lon_nc = fh.createVariable('lon_rho', 'd', ('eta_rho', 'xi_rho'))
+    lon_nc.field = 'lon_rho, scalar'
+    lon_nc.long_name = 'longitude of RHO-points'
+    lon_nc.units = 'degree east'
+
+    msk_nc = fh.createVariable('mask_rho', 'd', ('eta_rho', 'xi_rho'))
+    msk_nc.long_name = 'mask on RHO-points'
+    msk_nc.option_0 = 'land'
+    msk_nc.option_1 = 'water'
 
     Eamp_nc = fh.createVariable('tide_Eamp', 'd', ('tide_period', 'eta_rho', 'xi_rho'), fill_value=-9999)
     Eamp_nc.field = 'tide_Eamp, scalar'
@@ -261,6 +279,9 @@ if savedata == 1:
     name_nc[:, 0:2] = tide_name
     period_nc[:] = tide_period
 
+    lat_nc[:, :] = lat
+    lon_nc[:, :] = lon
+    msk_nc[:, :] = msk
     Eamp_nc[:, :, :] = hamp
     Ephase_nc[:, :, :] = hpha
     Cmax_nc[:, :, :] = cmax

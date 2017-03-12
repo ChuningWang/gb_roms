@@ -61,7 +61,7 @@ for filein in filelst:
     os.remove(v_dst_file)
 
 # concatenate
-cmd1 = 'ncrcat ' + dst_dir + 'temp/' + dst_grd.name + '_bdry_' + str(my_year) + '_*_' + src_grd.name + '.nc ' + \
+cmd1 = 'ncrcat -O ' + dst_dir + 'temp/' + dst_grd.name + '_bdry_' + str(my_year) + '_*_' + src_grd.name + '.nc ' + \
         dst_dir + dst_grd.name + '_bdry_' + str(my_year) + '_' + src_grd.name + '.nc',
 subprocess.call(cmd1, shell=True)
 subprocess.call('rm ' + dst_dir + 'temp/*', shell=True)
