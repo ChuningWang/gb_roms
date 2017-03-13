@@ -43,7 +43,7 @@ def get_discharge_avgbox(t, lat, lon, discharge, coast, box):
 t_base = datetime(1900, 01, 01)
 t_ini = datetime(1999, 12, 31)
 # t_end = datetime(2000, 01, 05)
-t_end = datetime(2001, 01, 01)
+t_end = datetime(2002, 01, 01)
 
 # load 2-dimentional interannual discharge data 
 print 'Load interannual discharge data'
@@ -52,10 +52,11 @@ time = fh.variables['t'][:]
 lat = fh.variables['lat'][:]
 lon = fh.variables['lon'][:]
 coast = fh.variables['coast'][:]
-t1 = int((t_ini-t_base).days-time[0])
-t2 = int((t_end-t_base).days-time[0])
-time = time[t1:t2]
-data = fh.variables['discharge'][t1:t2, :, :]
+t1 = (t_ini-t_base).days
+t2 = (t_end-t_base).days
+msk = (time>=t1) & (time<=t2)
+time = time[msk]
+data = fh.variables['discharge'][msk, :, :]
 fh.close()
  
 # load Glacier Bay grid object

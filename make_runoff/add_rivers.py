@@ -36,7 +36,7 @@ def add_to_lists(pairs, i, j, sign, dir):
 	x1 = x2
 	y1 = y2
 
-outfile = sys.argv[1]
+outfile = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_rivers.nc'
 
 # We need to parse the output of the maskedge program for two
 # different purposes:
@@ -80,9 +80,7 @@ out.createDimension('river', len(i))
 out.createDimension('s_rho', 40)
 
 times = out.createVariable('river_time', 'f8', ('river_time'))
-times.units = 'days'
-times.cycle_length = 365.25
-#times.units = 'days since 1900-01-01 00:00:00'
+times.units = 'days since 1900-01-01 00:00:00'
 times.long_name = 'river runoff time'
 
 river = out.createVariable('river', 'i4', ('river'))
