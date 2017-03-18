@@ -151,7 +151,7 @@ topo = topo[msk2,:][:,msk1]
 topo = -topo
 
 # fix minimum depth
-hmin = 10
+hmin = -5  # negative to allow dry_wet
 topo = pyroms_toolbox.change(topo, '<', hmin, hmin)
 
 # interpolate new bathymetry
@@ -164,14 +164,12 @@ print 'griddata done...'
 hraw = h.copy()
 
 # smooth bathymetry
-rx0_max = 0.35
+rx0_max = 0.30
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, hgrd.mask_rho)
 print 'Max Roughness value is: ', RoughMat.max()
 h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(hgrd.mask_rho, h, rx0_max)
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, hgrd.mask_rho)
 print 'Max Roughness value is: ', RoughMat.max()
-
-hgrd.h = h
 
 # insure that depth is always deeper than hmin
 h = pyroms_toolbox.change(h, '<', hmin, hmin)
@@ -179,6 +177,8 @@ h = pyroms_toolbox.change(h, '<', hmin, hmin)
 # set depth to hmin where masked
 idx = np.where(hgrd.mask_rho == 0)
 h[idx] = hmin
+
+hgrd.h = h
 
 # ----------------------------------------------------------------------------------------------------------
 
