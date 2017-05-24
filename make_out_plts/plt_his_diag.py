@@ -33,20 +33,21 @@ flist = glob.glob(inpath + '*.nc')
 
 rx = rx0(h, grd.hgrid.mask)
 
-fh = flist[0]
+fl = flist[0]
+fname = fl.split('/')[-1]
 
 varlist = ['u', 'v', 'temp', 'salt']
 for var in varlist:
     # var = 'u'
 
-    fh = nc.Dataset(inpath + fh)
+    fh = nc.Dataset(fl)
 
     # u_rst = fh.variables['u'][:].squeeze()
     # v_rst = fh.variables['v'][:].squeeze()
     # temp_rst = fh.variables['temp'][:, 0, :, :, :].squeeze()
     # salt_rst = fh.variables['salt'][:, 0, :, :, :].squeeze()
 
-    data = fh.variables[var][:, 0, :, :, :].squeeze()
+    data = fh.variables[var][:, :, :, :].squeeze()
     if var=='u':
         data = np.ma.masked_where(np.tile(msku==0, (40, 1, 1)), data)
     elif var=='v':
@@ -64,7 +65,7 @@ for var in varlist:
     elif ex=='min':
         idx = np.where(data == data.min())
     zlevel = idx[0].data[0]
-    zlevel = 40  # surface
+    zlevel = 39  # surface
     yy = idx[1].data[0]
     xx = idx[2].data[0]
 
@@ -87,7 +88,7 @@ for var in varlist:
     plt.ylim(xmin, xmax)
     plt.colorbar()
     plt.title(str(xx)+ ',' + str(yy) + ',' + str(zlevel))
-    plt.savefig(outpath + fh + '_his_' + var + '_' + ex + '.png', format='png', dpi=900)
+    plt.savefig(outpath + fname + '_his_' + var + '_' + ex + '.png', format='png', dpi=900)
     plt.close()
 
     if plth==1:
@@ -97,12 +98,12 @@ for var in varlist:
         plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
         plt.xlim(ymin, ymax)
         plt.ylim(xmin, xmax)
-        # plt.clim(0, 500)
-        plt.clim(-5, 5)
+        plt.clim(0, 500)
+        # plt.clim(-5, 5)
         plt.colorbar()
         plt.title('h [m]')
         plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-        plt.savefig(outpath + fh + '_h_' + var + '_' + ex + '.png', format='png', dpi=900)
+        plt.savefig(outpath + fname + '_h_' + var + '_' + ex + '.png', format='png', dpi=900)
         plt.close()
 
         plt.figure()
@@ -111,12 +112,12 @@ for var in varlist:
         plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
         plt.xlim(ymin, ymax)
         plt.ylim(xmin, xmax)
-        # plt.clim(0, 500)
-        plt.clim(-5, 5)
+        plt.clim(0, 500)
+        # plt.clim(-5, 5)
         plt.colorbar()
         plt.title('hraw [m]')
         plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-        plt.savefig(outpath + fh + '_hraw_' + var + '_' + ex + '.png', format='png', dpi=900)
+        plt.savefig(outpath + fname + '_hraw_' + var + '_' + ex + '.png', format='png', dpi=900)
         plt.close()
 
         plt.figure()
@@ -128,7 +129,7 @@ for var in varlist:
         plt.colorbar()
         plt.title('hdiff [m]')
         plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-        plt.savefig(outpath + fh + '_hdiff_' + var + '_' + ex + '.png', format='png', dpi=900)
+        plt.savefig(outpath + fname + '_hdiff_' + var + '_' + ex + '.png', format='png', dpi=900)
         plt.close()
 
         plt.figure()
@@ -137,12 +138,12 @@ for var in varlist:
         plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
         plt.xlim(ymin, ymax)
         plt.ylim(xmin, xmax)
-        # plt.clim(0, 0.3)
-        plt.clim(0, 1)
+        plt.clim(0, 0.3)
+        # plt.clim(0, 1)
         plt.colorbar()
         plt.title('rx0')
         plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-        plt.savefig(outpath + fh + '_rx0_' + var + '_' + ex + '.png', format='png', dpi=900)
+        plt.savefig(outpath + fname + '_rx0_' + var + '_' + ex + '.png', format='png', dpi=900)
         plt.close()
 
         # plt.figure()
@@ -155,6 +156,6 @@ for var in varlist:
         # plt.colorbar()
         # plt.title('wet_dry')
         # plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-        # plt.savefig(outpath + fh + '_wdmsk_' + var + '_' + ex + '.png', format='png', dpi=900)
+        # plt.savefig(outpath + fname + '_wdmsk_' + var + '_' + ex + '.png', format='png', dpi=900)
         # plt.close()
 

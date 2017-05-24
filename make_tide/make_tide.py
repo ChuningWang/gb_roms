@@ -38,7 +38,7 @@ import pyroms_toolbox
 import CGrid_TPXO8
 
 # tidal constituents
-consts1 =['Q1', 'O1', 'O1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
+consts1 =['Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
 consts2 = ['MF']
 consts = consts1+consts2
 # consts =['M2'] 
