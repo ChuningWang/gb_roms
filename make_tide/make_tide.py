@@ -37,6 +37,9 @@ import pyroms_toolbox
 
 import CGrid_TPXO8
 
+from datetime import datetime, timedelta
+from tide_astro import t_vuf
+
 # tidal constituents
 consts1 =['Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
 consts2 = ['MF']
@@ -44,6 +47,17 @@ consts = consts1+consts2
 # consts =['M2'] 
 consts_num = len(consts)
 
+# define tidal constituents names and periods
+tide_name = np.array([ list('Q1  '), list('O1  '), list('P1  '), list('K1  '),
+                       list('N2  '), list('M2  '), list('S2  '), list('K2  '),
+                       list('MF  ')])
+tide_period = np.array([26.8683567047119, 25.8193397521973, 24.0658893585205, 23.9344692230225, 
+                        12.6583499908447, 12.420599937439, 12, 11.9672346115112,
+                        13.66079*24])
+
+nodal_corr = 1
+
+# -------------------------------------------------------------------------
 # read ROMS grid
 dstgrd = pyroms.grid.get_ROMS_grid('GB')
 lat = dstgrd.hgrid.lat_rho
@@ -74,6 +88,30 @@ yrange = srcgrd.yrange
 xrange_lr = srcgrd_lr.xrange
 yrange_lr = srcgrd_lr.yrange
 
+# -------------------------------------------------------------------------
+# preparation for nodal correction
+if nodal_corr==1:
+    d0 = datetime(1899, 12, 31, 12, 00, 00)
+    # jd = [datetime(2000, 07, 01, 00, 00, 00), datetime(2001, 07, 01, 00, 00, 00)]
+    jd = [datetime(2000, 01, 01, 00, 00, 00)]
+    d = np.array([(jd[i]-d0).total_seconds()/timedelta(days=1).total_seconds() for i in range(len(jd))])
+    # ltype = 'nodal'
+    fh = nc.Dataset('tide_consts.nc', 'r')
+    name = fh.variables['const_name'][:]
+    fh.close()
+    ju = 6
+    lat = 58
+
+    # idx = np.zeros(consts_num)*np.NaN
+    idx = list()
+    for i in range(consts_num):
+        idx.append(np.where(np.all(name==tide_name[i], axis=1))[0][0])
+
+    V, U, F = t_vuf(d, idx, lat)
+    V = V*360  # convert phase to degree
+    U = U*360  # convert phase to degree
+
+# -------------------------------------------------------------------------
 # initiate variables
 hamp = np.zeros((consts_num, eta, xi))*np.nan
 hpha = np.zeros((consts_num, eta, xi))*np.nan
@@ -179,13 +217,25 @@ for cst in consts:
     vamp = (vRe**2+vIm**2)**0.5  # mm
     vpha = np.arctan(-vIm/vRe)/np.pi*180.  # deg
 
+    # -------------------------------------------------------------------------
+    # nodal correction
+    if nodal_corr==1:
+        hamp[k, :, :] = hamp[k, :, :]*F[k]
+        hpha[k, :, :] = hpha[k, :, :]-U[k]
+        uamp = uamp*F[k]
+        upha = upha-U[k]
+        vamp = vamp*F[k]
+        vpha = vpha-U[k]
 
+    # -------------------------------------------------------------------------
     # convert ap to ep
     cmax[k, :, :], ecc, cang[k, :, :], cpha[k, :, :], w = CGrid_TPXO8.tidal_ellipse.ap2ep(uamp, upha, vamp, vpha)
     cmin[k, :, :] = cmax[k, :, :]*ecc
 
 # -------------------------------------------------------------------------
 # mask land grid points
+hamp[:, dstgrd.hgrid.mask_rho==0] = missing_value
+hpha[:, dstgrd.hgrid.mask_rho==0] = missing_value
 cmax[:, dstgrd.hgrid.mask_rho==0] = missing_value
 cmin[:, dstgrd.hgrid.mask_rho==0] = missing_value
 cang[:, dstgrd.hgrid.mask_rho==0] = missing_value
@@ -195,15 +245,6 @@ cpha[:, dstgrd.hgrid.mask_rho==0] = missing_value
 savedata = 1
 if savedata == 1:
     # write tidal information to nc file
-    # -------------------------------------------------------------------------
-    # define tidal constituents names and periods
-    tide_name = np.array([ list('Q1'), list('O1'), list('P1'), list('K1'),
-                           list('N2'), list('M2'), list('S2'), list('K2'),
-                           list('MF')])
-    tide_period = np.array([26.8683567047119, 25.8193397521973, 24.0658893585205, 23.9344692230225, 
-                            12.6583499908447, 12.420599937439, 12, 11.9672346115112,
-                            13.66079*24])
-
     # -------------------------------------------------------------------------
     # create nc file
     fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GB_tides_otps.nc', 'w')
@@ -276,7 +317,7 @@ if savedata == 1:
 
     # -------------------------------------------------------------------------
     # write data
-    name_nc[:, 0:2] = tide_name
+    name_nc[:, :] = tide_name
     period_nc[:] = tide_period
 
     lat_nc[:, :] = lat

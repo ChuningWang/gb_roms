@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import io
 from scipy import sparse
+import netCDF4 as nc
 
 def t_astron(d):
     
@@ -36,21 +37,94 @@ def t_astron(d):
 
     return astro, ader
 
-def t_vuf(ltype, d, ju, lat, consts_file = 't_tide/t_constituents.mat'):
+def t_getconsts(outfile, consts_file = 't_tide/t_constituents.mat'):
+    
+    consts = 146
 
-    consts = io.loadmat(consts_file)
-    doodson = consts['const']['doodson'][0, 0].squeeze()
-    semi = consts['const']['semi'][0, 0].squeeze()
-    isat = consts['const']['isat'][0, 0].squeeze()
-    ishallow = consts['const']['ishallow'][0, 0].squeeze()
-    nshallow = consts['const']['nshallow'][0, 0].squeeze()
-    rr = consts['sat']['amprat'][0, 0].squeeze()
-    ilatfac = consts['sat']['ilatfac'][0, 0].squeeze()
-    deldood = consts['sat']['deldood'][0, 0].squeeze()
-    phcorr = consts['sat']['phcorr'][0, 0].squeeze()
-    iconst = consts['sat']['iconst'][0, 0].squeeze()
-    shallow_iname = consts['shallow']['iname'][0, 0].squeeze()
-    shallow_coef = consts['shallow']['coef'][0, 0].squeeze()
+    c = io.loadmat(consts_file)
+
+    fh = nc.Dataset(outfile, 'w')
+    fh.createDimension('namelen', 4)
+    fh.createDimension('doodson', 6)
+    fh.createDimension('deldood', 3)
+    fh.createDimension('consts', consts)
+    fh.createDimension('sat', 162)
+    fh.createDimension('shallow', 251)
+
+    fh.Title = 'Constants from t_tide'
+    fh.Source = 't_tide/t_consts.mat'
+
+    const_name = fh.createVariable('const_name', 'c', ('consts', 'namelen'))
+    const_freq = fh.createVariable('const_freq', 'd', ('consts'))
+    const_kmpr = fh.createVariable('const_kmpr', 'c', ('consts', 'namelen'))
+    const_ikmpr = fh.createVariable('const_ikmpr', 'd', ('consts'))
+    const_df = fh.createVariable('const_df', 'd', ('consts'))
+    const_doodson = fh.createVariable('const_doodson', 'd', ('consts', 'doodson'))
+    const_semi = fh.createVariable('const_semi', 'd', ('consts'))
+    const_isat = fh.createVariable('const_isat', 'd', ('consts'))
+    const_nsat = fh.createVariable('const_nsat', 'd', ('consts'))
+    const_ishallow = fh.createVariable('const_ishallow', 'd', ('consts'))
+    const_nshallow = fh.createVariable('const_nshallow', 'd', ('consts'))
+    const_doodsonamp = fh.createVariable('const_doodsonamp', 'd', ('consts'))
+    const_doodsonspecies = fh.createVariable('const_doodsonspecies', 'd', ('consts'))
+
+    sat_deldood = fh.createVariable('sat_deldood', 'd', ('sat', 'deldood'))
+    sat_phcorr = fh.createVariable('sat_phcorr', 'd', ('sat'))
+    sat_amprat = fh.createVariable('sat_amprat', 'd', ('sat'))
+    sat_ilatfac = fh.createVariable('sat_ilatfac', 'd', ('sat'))
+    sat_iconst = fh.createVariable('sat_iconst', 'd', ('sat'))
+
+    shallow_iconst = fh.createVariable('shallow_iconst', 'd', ('shallow'))
+    shallow_coef = fh.createVariable('shallow_coef', 'd', ('shallow'))
+    shallow_iname = fh.createVariable('shallow_iname', 'd', ('shallow'))
+
+    for i in range(consts):
+
+        const_name[i, :] = list(c['const']['name'][0, 0][i])
+        const_kmpr[i, :] = list(c['const']['kmpr'][0, 0][i])
+
+    const_freq[:] = c['const']['freq'][0, 0].squeeze()
+    const_ikmpr[:] = c['const']['ikmpr'][0, 0].squeeze()
+    const_df[:] = c['const']['df'][0, 0].squeeze()
+    const_doodson[:, :] = c['const']['doodson'][0, 0].squeeze()
+    const_semi[:] = c['const']['semi'][0, 0].squeeze()
+    const_isat[:] = c['const']['isat'][0, 0].squeeze()
+    const_nsat[:] = c['const']['nsat'][0, 0].squeeze()
+    const_ishallow[:] = c['const']['ishallow'][0, 0].squeeze()
+    const_nshallow[:] = c['const']['nshallow'][0, 0].squeeze()
+    const_doodsonamp[:] = c['const']['doodsonamp'][0, 0].squeeze()
+    const_doodsonspecies[:] = c['const']['doodsonspecies'][0, 0].squeeze()
+
+    sat_deldood[:, :] = c['sat']['deldood'][0, 0].squeeze()
+    sat_phcorr[:] = c['sat']['phcorr'][0, 0].squeeze()
+    sat_amprat[:] = c['sat']['amprat'][0, 0].squeeze()
+    sat_ilatfac[:] = c['sat']['ilatfac'][0, 0].squeeze()
+    sat_iconst[:] = c['sat']['iconst'][0, 0].squeeze()
+
+    shallow_iconst[:] = c['shallow']['iconst'][0, 0].squeeze()
+    shallow_coef[:] = c['shallow']['coef'][0, 0].squeeze()
+    shallow_iname[:] = c['shallow']['iname'][0, 0].squeeze()
+
+    fh.close()
+
+def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
+
+    fh = nc.Dataset('tide_consts.nc', 'r')
+    doodson = fh.variables['const_doodson'][:]
+    semi = fh.variables['const_semi'][:]
+    isat = fh.variables['const_isat'][:]
+    ishallow = fh.variables['const_ishallow'][:]
+    nshallow = fh.variables['const_nshallow'][:]
+
+    rr = fh.variables['sat_amprat'][:]
+    ilatfac = fh.variables['sat_ilatfac'][:]
+    deldood = fh.variables['sat_deldood'][:]
+    phcorr = fh.variables['sat_phcorr'][:]
+    iconst = fh.variables['sat_iconst'][:]
+
+    shallow_iname = fh.variables['shallow_iname'][:]
+    shallow_coef = fh.variables['shallow_coef'][:]
+    fh.close()
 
     # Calculate astronomical arguments at mid-point of data time series.
     astro, ader = t_astron(d)
@@ -91,14 +165,17 @@ def t_vuf(ltype, d, ju, lat, consts_file = 't_tide/t_constituents.mat'):
     # Compute amplitude and phase corrections for shallow water constituents. 
     for k in np.where(np.isfinite(ishallow.squeeze()))[0].tolist():
         ik = (ishallow[k] + np.arange(nshallow[k]) - 1).tolist()
-        f[k] = np.prod(f[shallow_iname[ik]-1]**abs(shallow_coef[ik]))
-        u[k] = np.sum(u[shallow_iname[ik]-1]*shallow_coef[ik])
-        v[k] = np.sum(v[shallow_iname[ik]-1]*shallow_coef[ik])
+
+        f[k] = np.prod(f[shallow_iname[ik].astype(int)-1]**abs(shallow_coef[ik]))
+        u[k] = np.sum(u[shallow_iname[ik].astype(int)-1]*shallow_coef[ik])
+        v[k] = np.sum(v[shallow_iname[ik].astype(int)-1]*shallow_coef[ik])
 
     f=f[ju]
     u=u[ju]
     v=v[ju]
     return v, u, f
+
+t_getconsts('tide_consts.nc')
 
 # from datetime import datetime, timedelta
 # d0 = datetime(1899, 12, 31, 12, 00, 00)
@@ -110,4 +187,5 @@ def t_vuf(ltype, d, ju, lat, consts_file = 't_tide/t_constituents.mat'):
 # ju = 6
 # lat = 58
 # 
-# v, u, f = t_vuf(ltype, d, ju, lat)
+# v, u, f = t_vuf(d, ju, lat)
+
