@@ -109,7 +109,7 @@ def fix_frc():
 
     for i in range(len(vlist)):
         fileout = dir_out + vlist[i] + '_' + tag + '.nc'
-        command1 = 'ncks -d ' + vlist2[i] + '_time,16,23 ' + dir_in + vlist[i] + '_2000_JRA55v1.1.nc' + ' ' + \
+        command1 = 'ncks -d ' + vlist2[i] + '_time,15,22 ' + dir_in + vlist[i] + '_2000_JRA55v1.1.nc' + ' ' + \
                    fileout
         subprocess.call(command1, shell=True)
 
@@ -152,4 +152,14 @@ def fix_river():
     subprocess.call('rm ' + dir_out + 'temp/*.nc', shell=True)
 
 
-fix_river()
+filein = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_clim_SODA3.3.1_y2000.nc'
+dir_out = '/Volumes/R1/scratch/chuning/gb_spinup_roms/data/'
+fileout = dir_out + 'GlacierBay_clim_2000.nc'
+
+cmd1 = 'ncks -d ocean_time,0,0 ' + filein + ' ' + fileout
+subprocess.call(cmd1, shell=True)
+
+# fh = nc.Dataset(filein, 'r')
+# ocean_time = fh.variables['ocean_time'][:]
+# fh.close()
+
