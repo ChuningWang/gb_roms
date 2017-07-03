@@ -5,13 +5,21 @@ from datetime import datetime
 import pyroms
 import pyroms_toolbox
 
-import pdb
+my_year = 2000
 
+# load GB grid object
+grd = pyroms.grid.get_ROMS_grid('GB')
 
 # load 2-dimentional discharge data 
 print 'Load discharge data'
-nc_data = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/runoff_GB_hill.nc', 'r')
-nc_rivers = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_rivers.nc', 'a')
+tag = 'Hill'
+in_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/'
+in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag '.nc'
+out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag '.nc'
+
+nc_data = netCDF.Dataset(in_file, 'r')
+nc_rivers = netCDF.Dataset(out_file, 'a')
 data = nc_data.variables['Runoff'][:]
 time = nc_data.variables['time'][:]
 nc_data.close()
@@ -19,9 +27,6 @@ sign = nc_rivers.variables['river_sign'][:]
 xi = nc_rivers.variables['river_Xposition'][:]
 eta = nc_rivers.variables['river_Eposition'][:]
 dir = nc_rivers.variables['river_direction'][:]
-
-# load GB grid object
-grd = pyroms.grid.get_ROMS_grid('GB')
 
 # define some variables
 nt = data.shape[0]

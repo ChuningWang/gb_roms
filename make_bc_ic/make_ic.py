@@ -11,13 +11,14 @@ from remap_uv import remap_uv
 data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
 dst_dir='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
 
+my_grd = 'GB3'
 my_year = '2000/'
 tag='2000_01_03'
 filein=data_dir+my_year+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
 
 # load grids
 src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
-dst_grd = pyroms.grid.get_ROMS_grid('GB')
+dst_grd = pyroms.grid.get_ROMS_grid(my_grd)
 
 print '\nBuild IC file from %s' %filein
 
@@ -31,7 +32,7 @@ v_dst_file    = dst_dir + dst_grd.name + '_ic_v_'    + tag + '_' + src_grd.name 
 zeta = remap('ssh', filein, src_grd, dst_grd, zeta_dst_file, dst_dir=dst_dir)
 
 # reload grid with zeta (more accurate)
-dst_grd = pyroms.grid.get_ROMS_grid('GB', zeta=zeta)
+dst_grd = pyroms.grid.get_ROMS_grid(my_grd, zeta=zeta)
 
 # regrid temp, salt and velocities
 remap('temp',filein, src_grd, dst_grd, temp_dst_file, dst_dir=dst_dir)

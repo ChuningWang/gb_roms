@@ -59,7 +59,7 @@ nodal_corr = 1
 
 # -------------------------------------------------------------------------
 # read ROMS grid
-dstgrd = pyroms.grid.get_ROMS_grid('GB')
+dstgrd = pyroms.grid.get_ROMS_grid('GB3')
 lat = dstgrd.hgrid.lat_rho
 lon = dstgrd.hgrid.lon_rho
 msk = dstgrd.hgrid.mask_rho
@@ -87,6 +87,10 @@ yrange = srcgrd.yrange
 
 xrange_lr = srcgrd_lr.xrange
 yrange_lr = srcgrd_lr.yrange
+
+# set output file
+out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+out_file = dstgrd.name + '_tides_otps.nc'
 
 # -------------------------------------------------------------------------
 # preparation for nodal correction
@@ -247,7 +251,7 @@ if savedata == 1:
     # write tidal information to nc file
     # -------------------------------------------------------------------------
     # create nc file
-    fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GB_tides_otps.nc', 'w')
+    fh = nc.Dataset(out_dir + out_file, 'w')
     fh.createDimension('namelen', 4)
     fh.createDimension('tide_period', consts_num)
     fh.createDimension('eta_rho', eta)

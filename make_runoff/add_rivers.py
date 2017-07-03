@@ -36,7 +36,14 @@ def add_to_lists(pairs, i, j, sign, dir):
 	x1 = x2
 	y1 = y2
 
-outfile = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_rivers.nc'
+my_year = 2000
+tag = 'Hill'
+
+# load GB grid object
+grd = pyroms.grid.get_ROMS_grid('GB')
+
+out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag '.nc'
 
 # We need to parse the output of the maskedge program for two
 # different purposes:
@@ -70,7 +77,7 @@ for line in f:
         pairs.append([int(a),int(b)]) 
 
 # create file with all the objects
-out = netCDF4.Dataset(outfile, 'w', format='NETCDF3_64BIT')
+out = netCDF4.Dataset(out_file, 'w', format='NETCDF3_64BIT')
 out.type = 'ROMS RIVERS file'
 out.title = 'Glacier Bay'
 out.source = 'David Hill and Jordan Beamer'

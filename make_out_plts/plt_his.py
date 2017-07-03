@@ -15,19 +15,17 @@ msku = grd.hgrid.mask_u
 mskv = grd.hgrid.mask_v
 
 plth = 0
-outpath = '/Volumes/R1/scratch/chuning/gb_roms/sync/'
+outpath = '/Volumes/R1/scratch/chuning/gb_spinup_roms/figs/'
+
+dd = 4  # quiver density
 
 h = grd.vgrid.h
 h = np.ma.masked_where(grd.hgrid.mask==0, h)
 hraw = grd.vgrid.hraw.squeeze()
 hraw = np.ma.masked_where(grd.hgrid.mask==0, hraw)
 
-inpath = '/Volumes/R1/scratch/chuning/gb_roms/outputs/01/his/'
+inpath = '/Volumes/R1/scratch/chuning/his/'
 flist = glob.glob(inpath + '*.nc')
-
-# fh = nc.Dataset(inpath + flist[0])
-# wdmsk = fh.variables['wetdry_mask_psi'][:].squeeze()
-# fh.close()
 
 rx = rx0(h, grd.hgrid.mask)
 
@@ -45,10 +43,11 @@ x2 = 0.5*(x[1:]+x[:-1])
 y2 = 0.5*(y[1:]+y[:-1])
 
 varlist = ['temp', 'salt']
+# varlist = []
 
 for fl in flist:
-    # fl = flist[0]
-    fname = fl.split('/')[-1]
+    # fl = flist[-1]
+    fname = fl.split('/')[-1].split('.')[0]
 
     for var in varlist:
 
@@ -62,7 +61,7 @@ for fl in flist:
         plt.ylim(xmin, xmax)
         plt.colorbar()
         plt.title(var)
-        plt.savefig(outpath + 'his/' + var + '_surf_' + fname + '_his' + '.png', format='png', dpi=900)
+        plt.savefig(outpath + 'his/' + var + '_surf_' + fname + '.png', format='png', dpi=900)
         plt.close()
 
         plt.figure()
@@ -71,7 +70,7 @@ for fl in flist:
         plt.ylim(xmin, xmax)
         plt.colorbar()
         plt.title(var)
-        plt.savefig(outpath + 'his/' + var + '_bott_' + fname + '_his' + '.png', format='png', dpi=900)
+        plt.savefig(outpath + 'his/' + var + '_bott_' + fname + '.png', format='png', dpi=900)
         plt.close()
 
     # plot zeta & velocity vector
@@ -94,11 +93,14 @@ for fl in flist:
     plt.pcolor(y, x, zeta.squeeze())
     plt.xlim(ymin, ymax)
     plt.ylim(xmin, xmax)
+    plt.clim(-1, 4)
     plt.colorbar()
-    plt.quiver(y2[::10], x2[::10], ubar[::10, ::10], vbar[::10, ::10], 
-               headwidth=1, headaxislength=2, color='k')
+    Q = plt.quiver(y2[::dd], x2[::dd], ubar[::dd, ::dd], vbar[::dd, ::dd], 
+                   headwidth=1, headaxislength=2, color='k', units='x', scale=0.05)
+    qk = plt.quiverkey(Q, 0.6, 0.8, 1, r'1 m$\cdot$s$^{-1}$', labelpos='E',
+                       coordinates='figure')
     plt.title('zeta')
-    plt.savefig(outpath + 'his/' + 'zeta_' + fname + '_his_surf' + '.png', format='png', dpi=900)
+    plt.savefig(outpath + 'his/' + 'zeta_' + fname + '.png', format='png', dpi=900)
     plt.close()
 
 

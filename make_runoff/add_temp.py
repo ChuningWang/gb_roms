@@ -5,14 +5,23 @@ from datetime import datetime, timedelta
 
 from gb_toolbox import gb_ctd
 
-outfile = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_rivers.nc'
+my_year = 2000
+tag = 'Hill'
 
-out = netCDF4.Dataset(outfile, 'a', format='NETCDF3_64BIT')
+# load GB grid object
+grd = pyroms.grid.get_ROMS_grid('GB')
+
+out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag '.nc'
+
+temp_file = '/Volumes/R1/scratch/chuning/gb_roms/data/ctd/ctd.nc'
+
+out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 river_time = out.variables['river_time'][:]
 out.close()
 
 # Read the river temperatures
-ctd = gb_ctd.rd_ctd('/Volumes/R1/scratch/chuning/gb_roms/data/ctd/ctd.nc')
+ctd = gb_ctd.rd_ctd(temp_file)
 
 # calculate climatology
 clm_ctd = gb_ctd.cal_ctd_climatology(ctd)
@@ -36,7 +45,7 @@ river_temp = np.interp(river_yearday, river_source_time, river_temp)
 river_salt = np.zeros(river_temp.shape)
 
 # create file with all the objects
-out = netCDF4.Dataset(outfile, 'a', format='NETCDF3_64BIT')
+out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 
 # out.createDimension('river_tracer_time', len(river_time))
 # 

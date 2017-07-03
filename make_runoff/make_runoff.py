@@ -39,11 +39,13 @@ def get_discharge_avgbox(t, lat, lon, discharge, coast, box):
 
     return d
 
+my_year = 2000
+
 # Select time range (days since 1900)
 t_base = datetime(1900, 01, 01)
-t_ini = datetime(1999, 12, 31)
-# t_end = datetime(2000, 01, 05)
-t_end = datetime(2002, 01, 01)
+t_ini = datetime(my_year, 01, 01)
+t_end = datetime(my_year+1, 01, 01)
+# t_end = datetime(2002, 01, 01)
 
 # load 2-dimentional interannual discharge data 
 print 'Load interannual discharge data'
@@ -66,6 +68,11 @@ box = np.array([[-137.40, 59.10],
                 [-136.30, 57.80],
                 [-135.00, 58.05],
                 [-136.10, 59.35]])
+
+# specify output file
+out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/'
+tag = 'Hill'
+out_file = out_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag '.nc'
 
 # define some variables
 wts_file = 'remap_weights_runoff_to_GB_conservative_nomask.nc'
@@ -148,9 +155,7 @@ runoff_spread_nc = runoff_spread_nc*rr
 
 # create runoff file
 print 'create runoff file'
-# runoff_file = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/runoff_GB_hill.nc'
-runoff_file = '/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/runoff_GB_hill.nc'
-fh = nc.Dataset(runoff_file, 'w', format='NETCDF3_64BIT')
+fh = nc.Dataset(out_file, 'w', format='NETCDF3_64BIT')
 fh.Description = 'Hill & Beamer Glacier Bay freshwater runoff, 1980-2007'
 fh.Author = 'make_runoff.py'
 fh.Created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
