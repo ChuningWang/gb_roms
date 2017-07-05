@@ -8,15 +8,15 @@ import pyroms_toolbox
 my_year = 2000
 
 # load GB grid object
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid('GB3')
 
 # load 2-dimentional discharge data 
 print 'Load discharge data'
 tag = 'Hill'
-in_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/'
-in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag '.nc'
-out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
-out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag '.nc'
+in_dir = '/glade/p/work/chuning/data/'
+in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag + '.nc'
+out_dir = '/glade/p/work/chuning/gb_roms/frc/'
+out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 nc_data = netCDF.Dataset(in_file, 'r')
 nc_rivers = netCDF.Dataset(out_file, 'a')

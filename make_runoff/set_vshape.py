@@ -4,11 +4,15 @@ import netCDF4
 import sys
 import pdb
 
-outfile = sys.argv[1]
+my_year = 2000
+grd = pyroms.grid.get_ROMS_grid('GB3')
+tag = 'Hill'
+out_dir = '/glade/p/work/chuning/gb_roms/frc/'
+out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 # Set the vertical distribution of the river transport.
 
-out = netCDF4.Dataset(outfile, 'a', format='NETCDF3_64BIT')
+out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 N = len(out.dimensions['s_rho'])
 Nr = len(out.dimensions['river'])
 
