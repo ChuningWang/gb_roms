@@ -47,9 +47,14 @@ t_ini = datetime(my_year, 01, 01)
 t_end = datetime(my_year+1, 01, 01)
 # t_end = datetime(2002, 01, 01)
 
+script_dir = '/glade/u/home/chuning/git/gb_roms/make_runoff/'
+in_dir = '/glade/p/work/chuning/data/'
+dis_file = in_dir + 'gb_discharge.nc'
+grd1 = 'GB3'
+
 # load 2-dimentional interannual discharge data 
 print 'Load interannual discharge data'
-fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/gb_discharge.nc', 'r')
+fh = nc.Dataset(dis_file, 'r')
 time = fh.variables['t'][:]
 lat = fh.variables['lat'][:]
 lon = fh.variables['lon'][:]
@@ -62,7 +67,7 @@ data = fh.variables['discharge'][msk, :, :]
 fh.close()
  
 # load Glacier Bay grid object
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
 box = np.array([[-137.40, 59.10],
                 [-136.30, 57.80],
@@ -70,12 +75,12 @@ box = np.array([[-137.40, 59.10],
                 [-136.10, 59.35]])
 
 # specify output file
-out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/'
+out_dir = in_dir
 tag = 'Hill'
-out_file = out_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag '.nc'
+out_file = out_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag + '.nc'
 
 # define some variables
-wts_file = 'remap_weights_runoff_to_GB_conservative_nomask.nc'
+wts_file = script_dir + 'remap_weights_runoff_to_' + grd.name + '_conservative_nomask.nc'
 nt = time.shape[0]
 Mp, Lp = grd.hgrid.mask_rho.shape
 spval = -1e30

@@ -11,155 +11,104 @@ import pyroms_toolbox
 from remap_bdry import remap_bdry
 from remap_bdry_uv import remap_bdry_uv
 
+data_dir = '/glade/p/work/chuning/data/'
+bc_ic_dir = '/glade/p/work/chuning/gb_roms/bc_ic/'
+frc_dir = '/glade/p/work/chuning/gb_roms/frc/'
+tag = 'SODA3.3.1'
+tag1 = 'JRA55v1.1'
+tag2 = '2000_01_03'
+tag3 = 'Hill'
+grd1 = 'GB3'
+my_year = 2000
 
-def fix_ic():
+t0 = (datetime(2000, 1, 3, 0, 0, 0)-datetime(1900, 1, 1, 0, 0, 0)).days
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
-    t0 = (datetime(2000, 1, 3, 0, 0, 0)-datetime(1900, 1, 1, 0, 0, 0)).days
-    fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_spinup_roms/data/GlacierBay_ic_2000.nc', 'a')
+fix_ic = 0
+fix_bc = 0
+fix_frc = 0
+fix_river = 1
+
+
+if fix_ic == 1:
+
+    fh = nc.Dataset(bc_ic_dir + grd.name + '_ic_' + tag2 + '_' + tag + '.nc', 'a')
     fh.variables['ocean_time'][:] = t0
     fh.close()
 
+if fix_bc == 1:
 
-def make_bc():
-
-    filein = '/Volumes/P1/Data/SODA/SODA_3.3.1/2000/soda3.3.1_5dy_ocean_reg_2000_01_03.nc'
-    dst_dir= '/Volumes/R1/scratch/chuning/gb_spinup_roms/data/'
-    src_grd_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/grid/SODA3_0.5deg_grid.nc'
-
-    tag = '2000'
-
-    src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(src_grd_dir, name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280) )
-    dst_grd = pyroms.grid.get_ROMS_grid('GB')
-
-    zeta_dst_file = dst_dir + 'temp/' + dst_grd.name + '_bdry_zeta_' + tag + '_' + src_grd.name + '.nc'
-    temp_dst_file = dst_dir + 'temp/' +  dst_grd.name + '_bdry_temp_' + tag + '_' + src_grd.name + '.nc'
-    salt_dst_file = dst_dir + 'temp/' +  dst_grd.name + '_bdry_salt_' + tag + '_' + src_grd.name + '.nc'
-    u_dst_file    = dst_dir + 'temp/' +  dst_grd.name + '_bdry_u_'    + tag + '_' + src_grd.name + '.nc'
-    v_dst_file    = dst_dir + 'temp/' +  dst_grd.name + '_bdry_v_'    + tag + '_' + src_grd.name + '.nc'
-
-    # remap ssh
-    zeta = remap_bdry('ssh', filein, src_grd, dst_grd, zeta_dst_file, dst_dir=dst_dir)
-
-    # reload grid with zeta (more accurate)
-    dst_grd = pyroms.grid.get_ROMS_grid('GB', zeta=zeta)
-
-    # regrid temp, salt and velocities
-    remap_bdry('temp',filein, src_grd, dst_grd, temp_dst_file, dst_dir=dst_dir)
-    remap_bdry('salt',filein, src_grd, dst_grd, salt_dst_file, dst_dir=dst_dir)
-    remap_bdry_uv(filein, src_grd, dst_grd, u_dst_file, v_dst_file, dst_dir=dst_dir)
-
-    # merge file
-    bdry_file = dst_dir + dst_grd.name + '_bdry_' + tag + '.nc'
-
-    command1 = 'mv '      + zeta_dst_file + ' '    + bdry_file
-    command2 = 'ncks -A ' + temp_dst_file + ' -o ' + bdry_file
-    command3 = 'ncks -A ' + salt_dst_file + ' -o ' + bdry_file
-    command4 = 'ncks -A ' + u_dst_file    + ' -o ' + bdry_file
-    command5 = 'ncks -A ' + v_dst_file    + ' -o ' + bdry_file
-
-    subprocess.call(command1,shell=True)
-    subprocess.call(command2,shell=True)
-    subprocess.call(command3,shell=True)
-    subprocess.call(command4,shell=True)
-    subprocess.call(command5,shell=True)
-
-    # clean up
-    os.remove(temp_dst_file)
-    os.remove(salt_dst_file)
-    os.remove(u_dst_file)
-    os.remove(v_dst_file)
-
-
-def fix_bc():
-
-    k = 5
+    k = 10
     dt = 7
 
-    # make a few copies of the boundary condition file
-    dst_dir = '/Volumes/R1/scratch/chuning/gb_spinup_roms/data/'
-    tag = 'GlacierBay_bdry_2000'
-
-    t0 = (datetime(2000, 1, 3, 0, 0, 0)-datetime(1900, 1, 1, 0, 0, 0)).days
+    # in_file = bc_ic_dir + grd.name + '_bdry_' + str(my_year) + '_' + tag + '.nc'
+    in_file = bc_ic_dir + 'GlacierBay' + '_bdry_' + str(my_year) + '_' + tag + '.nc'
+    out_file = bc_ic_dir + grd.name + '_bdry_spinup_' + tag + '.nc'
 
     for i in range(k):
-        subprocess.call('cp ' + dst_dir + tag + '.nc ' + dst_dir + 'temp/' + tag + '.' + str(i) + '.nc', shell=True)
+
+        out_file_temp = bc_ic_dir + 'temp/' + "%02d" % i + '.nc'
+        command1 = 'ncks -d ocean_time,0,0 ' + in_file + ' ' + out_file_temp
+        subprocess.call(command1, shell=True)
         # change time stamp
-        fh = nc.Dataset(dst_dir + 'temp/' + tag + '.' + str(i) + '.nc', 'a')
+        fh = nc.Dataset(out_file_temp, 'a')
         fh.variables['ocean_time'][:] = t0 + dt*i
         fh.close()
 
     # concatenate
-    cmd1 = 'ncrcat -O ' + dst_dir + 'temp/' + tag + '.*.nc ' + \
-            dst_dir + tag + '_repeat.nc',
+    cmd1 = 'ncrcat -O ' + bc_ic_dir + 'temp/*.nc -o ' + out_file,
     subprocess.call(cmd1, shell=True)
-    subprocess.call('rm ' + dst_dir + 'temp/*', shell=True)
+    subprocess.call('rm ' + bc_ic_dir + 'temp/*.nc', shell=True)
 
+if fix_frc == 1:
 
-def fix_frc():
-
-    dir_in = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/frc/'
-    dir_out = '/Volumes/R1/scratch/chuning/gb_spinup_roms/data/frc/'
-    tag = '2000'
-
-    k = 28
+    k = 70
     dt = 1
 
     vlist = ['Qair', 'rain', 'snow', 'lwrad_down', 'swrad', 'Pair', 'Tair', 'Uwind', 'Vwind']
     vlist2 = ['qair', 'rain', 'snow', 'lrf', 'srf', 'pair', 'tair', 'wind', 'wind']
 
     for i in range(len(vlist)):
-        fileout = dir_out + vlist[i] + '_' + tag + '.nc'
-        command1 = 'ncks -d ' + vlist2[i] + '_time,15,22 ' + dir_in + vlist[i] + '_2000_JRA55v1.1.nc' + ' ' + \
-                   fileout
+        in_file = frc_dir + vlist[i] + '_' + str(my_year) + '_' + tag1 + '.nc'
+        out_file = frc_dir + vlist[i] + '_spinup_' + tag1 + '.nc'
+        command1 = 'ncks -d ' + vlist2[i] + '_time,15,22 ' + in_file + ' ' + out_file
         subprocess.call(command1, shell=True)
 
         for j in range(k):
-            subprocess.call('cp ' + fileout + ' ' + dir_out + vlist[i] + '_' + tag + '.' + "%02d" % j + '.nc', shell=True)
+            out_file_temp = frc_dir + 'temp/' + vlist[i] + '_' + tag1 + '_' + "%02d" % j + '.nc'
+            subprocess.call('cp ' + out_file + ' ' + out_file_temp, shell=True)
             # change time stamp
-            fh = nc.Dataset(dir_out + vlist[i] + '_' + tag + '.' + "%02d" % j + '.nc', 'a')
+            fh = nc.Dataset(out_file_temp, 'a')
             fh.variables[vlist2[i]+'_time'][:] = fh.variables[vlist2[i]+'_time'][:] + dt*j
             fh.close()
 
         # concatenate
-        cmd1 = 'ncrcat -O ' + dir_out + vlist[i] + '_' + tag + '.*.nc -o ' + \
-                dir_out + vlist[i] + '_' + tag + '.nc',
+        cmd1 = 'ncrcat -O ' + frc_dir + 'temp/' + vlist[i] + '_' + tag1 + '_*.nc -o ' + \
+                out_file,
         subprocess.call(cmd1, shell=True)
-        subprocess.call('rm ' + dir_out + vlist[i] + '_' + tag + '.*.nc', shell=True)
+        subprocess.call('rm ' + frc_dir + 'temp/' + vlist[i] + '_' + tag1 + '_*.nc', shell=True)
 
+if fix_river == 1:
 
-def fix_river():
-
-    filein = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_rivers.nc'
-    dir_out = '/Volumes/R1/scratch/chuning/gb_spinup_roms/data/'
-    fileout = dir_out + 'GlacierBay_rivers_2000.nc'
-    cmd1 = 'ncks -d river_time,3,3 ' + filein + ' ' + fileout
+    in_file = frc_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag3 + '.nc'
+    out_file = frc_dir + grd.name + '_rivers_spinup_' + tag3 + '.nc'
+    cmd1 = 'ncks -d river_time,2,2 ' + in_file + ' ' + out_file
 
     subprocess.call(cmd1, shell=True)
 
-    k = 5
+    k = 10
     dt = 7
 
     for j in range(k):
-        subprocess.call('cp ' + fileout + ' ' + dir_out + 'temp/GlacierBay_rivers_2000' + '.' + "%02d" % j + '.nc', shell=True)
-        fh = nc.Dataset(dir_out + 'temp/GlacierBay_rivers_2000' + '.' + "%02d" % j + '.nc', 'a')
+        out_file_temp = frc_dir + 'temp/rivers_' + "%02d" % j + '.nc'
+        subprocess.call('cp ' + out_file + ' ' + out_file_temp, shell=True)
+        fh = nc.Dataset(out_file_temp, 'a')
         fh.variables['river_time'][:] = fh.variables['river_time'][:] + dt*j
         fh.close()
 
     # concatenate
-    cmd1 = 'ncrcat -O ' + dir_out + 'temp/GlacierBay_rivers_2000.*.nc -o ' + \
-            fileout,
+    cmd1 = 'ncrcat -O ' + frc_dir + 'temp/rivers_*.nc -o ' + \
+            out_file,
     subprocess.call(cmd1, shell=True)
-    subprocess.call('rm ' + dir_out + 'temp/*.nc', shell=True)
-
-
-filein = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_clim_SODA3.3.1_y2000.nc'
-dir_out = '/Volumes/R1/scratch/chuning/gb_spinup_roms/data/'
-fileout = dir_out + 'GlacierBay_clim_2000.nc'
-
-cmd1 = 'ncks -d ocean_time,0,0 ' + filein + ' ' + fileout
-subprocess.call(cmd1, shell=True)
-
-# fh = nc.Dataset(filein, 'r')
-# ocean_time = fh.variables['ocean_time'][:]
-# fh.close()
+    subprocess.call('rm ' + frc_dir + 'temp/*.nc', shell=True)
 

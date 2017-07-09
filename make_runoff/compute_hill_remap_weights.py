@@ -5,9 +5,12 @@ import netCDF4 as netCDF
 import pyroms
 import pyroms_toolbox
 
+grd1 = '/glade/p/work/chuning/data/gb_discharge.nc'
+grd2 = 'GB3'
+
 ##  load 2-dimentional interannual discharge data 
 print 'Load lat_lon'
-nc_data = netCDF.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/hydrology/gb_discharge.nc', 'r')
+nc_data = netCDF.Dataset(grd1, 'r')
 lon = nc_data.variables['lon'][:]
 lat = nc_data.variables['lat'][:]
 mask = nc_data.variables['coast'][:]
@@ -95,21 +98,21 @@ nc.variables['grid_corner_lat'][:] = grid_corner_lat
 nc.close()
 
 
-#  create GB remap file for scrip
-print 'Create remap grid file for GB grid'
-dstgrd = pyroms.grid.get_ROMS_grid('GB')
+#  create remap file for scrip
+print 'Create remap grid file for target grid'
+dstgrd = pyroms.grid.get_ROMS_grid(grd2)
 dstgrd.hgrid.mask_rho = np.ones(dstgrd.hgrid.mask_rho.shape)
 pyroms.remapping.make_remap_grid_file(dstgrd, Cpos='rho')
 
 ## compute remap weights
 print 'compute remap weights using scrip'
 # input namelist variables for conservative remapping at rho points
-grid1_file = 'remap_grid_runoff.nc'
-grid2_file = 'remap_grid_GlacierBay_rho.nc'
-interp_file1 = 'remap_weights_runoff_to_GB_conservative_nomask.nc'
-interp_file2 = 'remap_weights_GB_to_runoff_conservative_nomask.nc'
-map1_name = 'runoff to GB conservative Mapping'
-map2_name = 'GB to runoff conservative Mapping'
+grid1_file = remap_filename
+grid2_file = 'remap_grid_' + dstgrd.name + '_rho.nc'
+interp_file1 = 'remap_weights_runoff_to_' + dstgrd.name + '_conservative_nomask.nc'
+interp_file2 = 'remap_weights_' + dstgrd.name + '_to_runoff_conservative_nomask.nc'
+map1_name = 'runoff to ' + dstgrd.name + ' conservative Mapping'
+map2_name = dstgrd.name + ' to runoff conservative Mapping'
 num_maps = 1
 map_method = 'conservative'
 

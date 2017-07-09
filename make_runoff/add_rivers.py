@@ -2,6 +2,7 @@ import re
 import numpy as np
 import netCDF4
 import sys
+import pyroms
 
 def add_to_lists(pairs, i, j, sign, dir):
     x1, y1 = pairs[0]
@@ -40,10 +41,13 @@ my_year = 2000
 tag = 'Hill'
 
 # load GB grid object
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid('GB3')
 
-out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
-out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag '.nc'
+# out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+out_dir = '/glade/p/work/chuning/gb_roms/frc/'
+out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
+
+msk_dir = '/glade/u/home/chuning/git/gb_roms/make_runoff/maskedge.out'
 
 # We need to parse the output of the maskedge program for two
 # different purposes:
@@ -52,7 +56,7 @@ out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag '.nc'
 # This routine will only do #1 (so far).
 
 # Read the landmask boundaries
-f = open('maskedge.out', 'r')
+f = open(msk_dir, 'r')
 pairs = []
 # Eat first line so we don't trigger the add_to_lists routine
 f.readline()
