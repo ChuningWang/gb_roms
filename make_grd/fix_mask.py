@@ -28,8 +28,8 @@ m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,
 # plt.figure()
 # m.drawcoastlines()
 # plt.show()
-pyroms.grid.edit_mask_mesh(hgrd, proj=m)
+# pyroms.grid.edit_mask_mesh(hgrd, proj=m)
 # or (this is faster 'I guess')
-# coast = pyroms.utility.get_coast_from_map(m)
-# pyroms.grid.edit_mask_mesh(hgrd, coast=coast)
+coast = pyroms.utility.get_coast_from_map(m)
+# pyroms.grid.edit_mask_mesh_ij(hgrd, coast=coast)
 
