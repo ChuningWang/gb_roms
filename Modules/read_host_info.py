@@ -2,8 +2,9 @@ import csv
 import socket
 
 def read_host_info():
-    hostname = socket.gethostname()[:5]
+    hostname = socket.gethostname()
     print('hostname: ' +hostname)
+    hostname = hostname[:5]
 
     if hostname=='yslog' or hostname=='yello' or hostname=='geyse' or hostname=='calde':
         file_in = '/glade/u/home/chuning/git/gb_roms/Modules/yellowstone.info'

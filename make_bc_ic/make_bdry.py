@@ -13,6 +13,8 @@ sv = read_host_info.read_host_info()
 dst_dir = sv['out_dir']
 data_dir = sv['soda_dir']
 
+grd1 = 'GB_USGS'
+
 my_year = 2000
 
 data_dir_year = data_dir + str(my_year) + '/'
@@ -20,7 +22,7 @@ data_dir_year = data_dir + str(my_year) + '/'
 filelst = subprocess.check_output(['ls', data_dir_year]).replace('/n',' ').split()
 
 src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir+'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280) )
-dst_grd = pyroms.grid.get_ROMS_grid('GB')
+dst_grd = pyroms.grid.get_ROMS_grid(grd1)
 
 for filein in filelst:
     tag = filein.replace('soda3.3.1_5dy_ocean_reg_','').replace('.nc','')
@@ -35,7 +37,7 @@ for filein in filelst:
     zeta = remap_bdry('ssh', data_dir_year + filein, src_grd, dst_grd, zeta_dst_file, dst_dir=dst_dir)
 
     # reload grid with zeta (more accurate)
-    dst_grd = pyroms.grid.get_ROMS_grid('GB', zeta=zeta)
+    dst_grd = pyroms.grid.get_ROMS_grid(grd1, zeta=zeta)
 
     # regrid temp, salt and velocities
     remap_bdry('temp',data_dir_year + filein, src_grd, dst_grd, temp_dst_file, dst_dir=dst_dir)
