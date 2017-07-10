@@ -177,15 +177,3 @@ def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
 
 t_getconsts('tide_consts.nc')
 
-# from datetime import datetime, timedelta
-# d0 = datetime(1899, 12, 31, 12, 00, 00)
-# # jd = [datetime(2000, 07, 01, 00, 00, 00), datetime(2001, 07, 01, 00, 00, 00)]
-# jd = [datetime(2000, 07, 01, 00, 00, 00)]
-# d = np.array([(jd[i]-d0).total_seconds()/timedelta(days=1).total_seconds() for i in range(len(jd))])
-# 
-# ltype = 'nodal'
-# ju = 6
-# lat = 58
-# 
-# v, u, f = t_vuf(d, ju, lat)
-

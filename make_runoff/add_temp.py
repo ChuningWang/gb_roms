@@ -3,16 +3,18 @@ from scipy import signal
 import netCDF4
 from datetime import datetime, timedelta
 
+import pyroms
 from gb_toolbox import gb_ctd
 
 my_year = 2000
+grd1 = 'GB3'
 tag = 'Hill'
 
 # load GB grid object
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
 # out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
-out_dir = '/glade/p/work/chuning/data/'
+out_dir = '/glade/p/work/chuning/gb_roms/frc/'
 out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 # temp_file = '/Volumes/R1/scratch/chuning/gb_roms/data/ctd/ctd.nc'

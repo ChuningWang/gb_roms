@@ -41,8 +41,8 @@ if fix_bc == 1:
     k = 10
     dt = 7
 
-    # in_file = bc_ic_dir + grd.name + '_bdry_' + str(my_year) + '_' + tag + '.nc'
-    in_file = bc_ic_dir + 'GlacierBay' + '_bdry_' + str(my_year) + '_' + tag + '.nc'
+    in_file = bc_ic_dir + grd.name + '_bdry_' + str(my_year) + '_' + tag + '.nc'
+    # in_file = bc_ic_dir + 'GlacierBay' + '_bdry_' + str(my_year) + '_' + tag + '.nc'
     out_file = bc_ic_dir + grd.name + '_bdry_spinup_' + tag + '.nc'
 
     for i in range(k):

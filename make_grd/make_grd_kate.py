@@ -11,6 +11,13 @@ from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 from matplotlib import path
 
+grd1 = 'GB'
+grd_name = 'GlacierBay_Kate'
+tag = ''
+bathydir = '/glade/p/work/chuning/data/ARDEMv2.0.nc'
+out_file = '/glade/p/work/chuning/gb_roms/grd/' + grd_name + '_grd_' + tag + '.nc'
+
+# ----------------------------------------------------------------------------------------------------------
 # grid dimension
 Lg = 500   # horizontal
 Mg = 1000  # vertical
@@ -93,7 +100,7 @@ elif bdryInteractor == 2:
     hgrd = pyroms.grid.Gridgen(lon_bry, lat_bry, beta, (Mg+3, Lg+3), proj=m)
 else:
     # load grid that has been generated before
-    hgrd = pyroms.grid.get_ROMS_hgrid('GB')
+    hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
 
 print 'hgrid generated'
 
@@ -133,9 +140,7 @@ elif GUImsk == 2:
 print 'mask done...'
 
 # generate the bathy
-h = pyroms.grid.get_ROMS_vgrid('GB').h
-
-bathydir = '/Volumes/R1/scratch/chuning/data/kate/Glacier_Bay_grd_kate.nc'
+h = pyroms.grid.get_ROMS_vgrid(grd1).h
 
 fh = netCDF4.Dataset(bathydir, mode='r')
 topo = fh.variables['h'][:]
@@ -204,7 +209,6 @@ Tcline = 10
 N = 40
 vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)
 
-grd_name = 'GlacierBay_Kate'
 grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
 
 # # longitude between 0 and 360
@@ -228,5 +232,5 @@ msk0[:150, :150] = 0
 h0 = pyroms_toolbox.shapiro_filter.shapiro2(h0, 32)
 
 # write grid file
-pyroms.grid.write_ROMS_grid(grd, filename='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GB_grd_kate.nc')
+pyroms.grid.write_ROMS_grid(grd, filename=out_file)
 

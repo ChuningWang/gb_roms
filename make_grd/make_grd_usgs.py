@@ -22,15 +22,15 @@ h = pyroms.grid.get_ROMS_vgrid(grd1).h
 water = hgrd.mask_rho
 
 # fix bathymetry with USGS and NOAA data
-bathydir = '/Volumes/R1/scratch/chuning/data/bathy/'
+bathy_dir = '/Volumes/R1/scratch/chuning/data/bathy/'
 
-fh = nc.Dataset(bathydir + 'bathy_noaa.nc', 'r')
+fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
 lon1 = fh.variables['lon'][:]
 lat1 = fh.variables['lat'][:]
 z1 = fh.variables['z'][:]
 fh.close()
 
-fh = nc.Dataset(bathydir + 'bathy_usgs.nc', 'r')
+fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
 lon2 = fh.variables['lon'][:][1::3, 1::3]
 lat2 = fh.variables['lat'][:][1::3, 1::3]
 z2 = fh.variables['z'][:][1::3, 1::3]

@@ -4,7 +4,12 @@ import pyroms
 import pyroms_toolbox
 import bathy_smoother
 
-grd = pyroms.grid.get_ROMS_grid('GB3')
+grd1 = 'GB3'
+grd_name = 'GlacierBay_Kate'
+tag = 'smooth'
+out_file = '/glade/p/work/chuning/gb_roms/grd/' + grd_name + '_grd_' + tag + '.nc'
+
+grd = pyroms.grid.get_ROMS_grid(grd1)
 h0 = grd.vgrid.h
 msk0 = grd.hgrid.mask_rho
 
@@ -78,4 +83,4 @@ grd.vgrid.h[x0-dx:x0+dx, y0-dy:y0+dy] = hs
 rx0_max = 0.35
 grd.vgrid.h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(grd.hgrid.mask_rho, grd.vgrid.h, rx0_max)
 
-pyroms.grid.write_ROMS_grid(grd, filename='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GB_grd_kate_smooth.nc')
+pyroms.grid.write_ROMS_grid(grd, filename=out_file)
