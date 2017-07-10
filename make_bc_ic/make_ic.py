@@ -12,7 +12,7 @@ sv = read_host_info.read_host_info()
 dst_dir = sv['out_dir']
 data_dir = sv['soda_dir']
 
-my_grd = 'GB3'
+my_grd = 'GB_USGS'
 my_year = '2000/'
 tag='2000_01_03'
 filein=data_dir+my_year+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
