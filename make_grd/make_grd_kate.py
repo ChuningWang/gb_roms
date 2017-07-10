@@ -11,11 +11,16 @@ from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 from matplotlib import path
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+
 grd1 = 'GB'
-grd_name = 'GlacierBay_Kate'
+grd_name = 'GlacierBay'
 tag = ''
-bathydir = '/glade/p/work/chuning/data/ARDEMv2.0.nc'
-out_file = '/glade/p/work/chuning/gb_roms/grd/' + grd_name + '_grd_' + tag + '.nc'
+bathy_dir = in_dir + 'Glacier_Bay_grd_kate.nc'
+out_file = out_dir + 'grd/' + grd_name + '_grd' + tag + '.nc'
 
 # ----------------------------------------------------------------------------------------------------------
 # grid dimension

@@ -79,15 +79,17 @@ def plot_polygon(polygon):
     return fig
 
 # --------------------------------------------------------------
-bathydir = '/Volumes/R1/scratch/chuning/data/bathy/'
+import read_host_info
+sv = read_host_info.read_host_info()
+bathy_dir = sv['out_dir']
 
-fh = nc.Dataset(bathydir + 'bathy_noaa.nc', 'r')
+fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
 lon1 = fh.variables['lon'][:]
 lat1 = fh.variables['lat'][:]
 z1 = fh.variables['z'][:]
 fh.close()
 
-fh = nc.Dataset(bathydir + 'bathy_usgs.nc', 'r')
+fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
 lon2 = fh.variables['lon'][:][2::5, 2::5]
 lat2 = fh.variables['lat'][:][2::5, 2::5]
 z2 = fh.variables['z'][:][2::5, 2::5]

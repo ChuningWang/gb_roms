@@ -2,12 +2,18 @@ import pyroms
 import pyroms_toolbox
 import CGrid_TPXO8
 
-pth_tpxo = "/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/"
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+
+grd1 = 'GB_USGS'
+pth_tpxo = in_dir + 'tpxo8nc/'
 
 # step 1, TPXO8atlas30
 # load the grid
 srcgrd = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+'grid_tpxo8atlas_30_v1.nc')
-dstgrd = pyroms.grid.get_ROMS_grid('GB')
+dstgrd = pyroms.grid.get_ROMS_grid(grd1)
 
 # make remap grid file for scrip
 CGrid_TPXO8.make_remap_grid_file(srcgrd, Cpos='t')
@@ -53,7 +59,7 @@ pyroms.remapping.compute_remap_weights(grid1_file, grid2_file, \
 # step 2, TPXO8atlas6
 # load the grid
 srcgrd = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8_atlas6.nc", name='TPXO8atlas6', xrange=(870, 910), yrange=(1320, 1380))
-dstgrd = pyroms.grid.get_ROMS_grid('GB')
+dstgrd = pyroms.grid.get_ROMS_grid(grd1)
 
 # make remap grid file for scrip
 CGrid_TPXO8.make_remap_grid_file(srcgrd, Cpos='t')

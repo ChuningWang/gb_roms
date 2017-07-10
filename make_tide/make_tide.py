@@ -40,6 +40,27 @@ import CGrid_TPXO8
 from datetime import datetime, timedelta
 from tide_astro import t_vuf
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+
+grd1 = 'GB_USGS'
+
+# read ROMS grid
+dst_grd = pyroms.grid.get_ROMS_grid(grd1)
+lat = dst_grd.hgrid.lat_rho
+lon = dst_grd.hgrid.lon_rho
+msk = dst_grd.hgrid.mask_rho
+eta, xi = lat.shape
+
+# read TPXO8 files
+pth_tpxo = in_dir + "tpxo8nc/"
+src_grd = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8atlas_30_v1.nc")
+src_grd_lr = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8_atlas6.nc", name='TPXO8atlas6', xrange=(870, 910), yrange=(1320, 1380))
+missing_value = src_grd.missing_value
+
+# -------------------------------------------------------------------------
 # tidal constituents
 consts1 =['Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
 consts2 = ['MF']
@@ -58,39 +79,24 @@ tide_period = np.array([26.8683567047119, 25.8193397521973, 24.0658893585205, 23
 nodal_corr = 1
 
 # -------------------------------------------------------------------------
-# read ROMS grid
-dstgrd = pyroms.grid.get_ROMS_grid('GB3')
-lat = dstgrd.hgrid.lat_rho
-lon = dstgrd.hgrid.lon_rho
-msk = dstgrd.hgrid.mask_rho
-eta, xi = lat.shape
-
 # read weights file
-wts_file_t = 'remap_weights_TPXO8_to_GlacierBay_bilinear_t_to_rho.nc' 
-wts_file_u = 'remap_weights_TPXO8_to_GlacierBay_bilinear_u_to_rho.nc' 
-wts_file_v = 'remap_weights_TPXO8_to_GlacierBay_bilinear_v_to_rho.nc' 
+wts_file_t = 'remap_weights_' + src_grd.name + '_to_' + dst_grd.name + '_bilinear_t_to_rho.nc' 
+wts_file_u = 'remap_weights_' + src_grd.name + '_to_' + dst_grd.name + '_bilinear_u_to_rho.nc' 
+wts_file_v = 'remap_weights_' + src_grd.name + '_to_' + dst_grd.name + '_bilinear_v_to_rho.nc' 
 
-wts_file_t_lr = 'remap_weights_TPXO8atlas6_to_GlacierBay_bilinear_t_to_rho.nc' 
-wts_file_u_lr = 'remap_weights_TPXO8atlas6_to_GlacierBay_bilinear_u_to_rho.nc' 
-wts_file_v_lr = 'remap_weights_TPXO8atlas6_to_GlacierBay_bilinear_v_to_rho.nc' 
-
-# read TPXO8 files
-pth_tpxo = "/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/"
-srcgrd = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8atlas_30_v1.nc")
-srcgrd_lr = CGrid_TPXO8.get_nc_CGrid_TPXO8(pth_tpxo+"grid_tpxo8_atlas6.nc", name='TPXO8atlas6', xrange=(870, 910), yrange=(1320, 1380))
-
-missing_value = srcgrd.missing_value
+wts_file_t_lr = 'remap_weights_' + src_grd.name + '_to_' + dst_grd.name + '_bilinear_t_to_rho.nc' 
+wts_file_u_lr = 'remap_weights_' + src_grd.name + '_to_' + dst_grd.name + '_bilinear_u_to_rho.nc' 
+wts_file_v_lr = 'remap_weights_' + src_grd.name + '_to_' + dst_grd.name + '_bilinear_v_to_rho.nc' 
 
 # grid sub-sample
-xrange = srcgrd.xrange
-yrange = srcgrd.yrange
+xrange = src_grd.xrange
+yrange = src_grd.yrange
 
-xrange_lr = srcgrd_lr.xrange
-yrange_lr = srcgrd_lr.yrange
+xrange_lr = src_grd_lr.xrange
+yrange_lr = src_grd_lr.yrange
 
 # set output file
-out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
-out_file = dstgrd.name + '_tides_otps.nc'
+out_file = dst_grd.name + '_tides_otps.nc'
 
 # -------------------------------------------------------------------------
 # preparation for nodal correction
@@ -169,11 +175,11 @@ for cst in consts:
 
     # convert vertical transport (uRe, vRe) to velocity
     if cst in consts1:
-        zu = srcgrd.z_u
-        zv = srcgrd.z_v
+        zu = src_grd.z_u
+        zv = src_grd.z_v
     elif cst in consts2:
-        zu = srcgrd_lr.z_u
-        zv = srcgrd_lr.z_v
+        zu = src_grd_lr.z_u
+        zv = src_grd_lr.z_v
 
     uRe = uRe/zu  # ms-1
     uIm = uIm/zu  # ms-1
@@ -182,12 +188,12 @@ for cst in consts:
 
     if cst in consts1:
         # mask invalid data
-        hRe = np.ma.masked_where(~srcgrd.mask_t, hRe)
-        hIm = np.ma.masked_where(~srcgrd.mask_t, hIm)
-        uRe = np.ma.masked_where(~srcgrd.mask_u, uRe)
-        uIm = np.ma.masked_where(~srcgrd.mask_u, uIm)
-        vRe = np.ma.masked_where(~srcgrd.mask_v, vRe)
-        vIm = np.ma.masked_where(~srcgrd.mask_v, vIm)
+        hRe = np.ma.masked_where(~src_grd.mask_t, hRe)
+        hIm = np.ma.masked_where(~src_grd.mask_t, hIm)
+        uRe = np.ma.masked_where(~src_grd.mask_u, uRe)
+        uIm = np.ma.masked_where(~src_grd.mask_u, uIm)
+        vRe = np.ma.masked_where(~src_grd.mask_v, vRe)
+        vIm = np.ma.masked_where(~src_grd.mask_v, vIm)
 
         # remap h, u, v
         hRe = pyroms.remapping.remap(hRe, wts_file_t, spval=missing_value)
@@ -199,12 +205,12 @@ for cst in consts:
 
     elif cst in consts2:
         # mask invalid data
-        hRe = np.ma.masked_where(~srcgrd_lr.mask_t, hRe)
-        hIm = np.ma.masked_where(~srcgrd_lr.mask_t, hIm)
-        uRe = np.ma.masked_where(~srcgrd_lr.mask_u, uRe)
-        uIm = np.ma.masked_where(~srcgrd_lr.mask_u, uIm)
-        vRe = np.ma.masked_where(~srcgrd_lr.mask_v, vRe)
-        vIm = np.ma.masked_where(~srcgrd_lr.mask_v, vIm)
+        hRe = np.ma.masked_where(~src_grd_lr.mask_t, hRe)
+        hIm = np.ma.masked_where(~src_grd_lr.mask_t, hIm)
+        uRe = np.ma.masked_where(~src_grd_lr.mask_u, uRe)
+        uIm = np.ma.masked_where(~src_grd_lr.mask_u, uIm)
+        vRe = np.ma.masked_where(~src_grd_lr.mask_v, vRe)
+        vIm = np.ma.masked_where(~src_grd_lr.mask_v, vIm)
 
         # remap h, u, v
         hRe = pyroms.remapping.remap(hRe, wts_file_t_lr, spval=missing_value)
@@ -238,12 +244,12 @@ for cst in consts:
 
 # -------------------------------------------------------------------------
 # mask land grid points
-hamp[:, dstgrd.hgrid.mask_rho==0] = missing_value
-hpha[:, dstgrd.hgrid.mask_rho==0] = missing_value
-cmax[:, dstgrd.hgrid.mask_rho==0] = missing_value
-cmin[:, dstgrd.hgrid.mask_rho==0] = missing_value
-cang[:, dstgrd.hgrid.mask_rho==0] = missing_value
-cpha[:, dstgrd.hgrid.mask_rho==0] = missing_value
+hamp[:, dst_grd.hgrid.mask_rho==0] = missing_value
+hpha[:, dst_grd.hgrid.mask_rho==0] = missing_value
+cmax[:, dst_grd.hgrid.mask_rho==0] = missing_value
+cmin[:, dst_grd.hgrid.mask_rho==0] = missing_value
+cang[:, dst_grd.hgrid.mask_rho==0] = missing_value
+cpha[:, dst_grd.hgrid.mask_rho==0] = missing_value
 
 # -------------------------------------------------------------------------
 savedata = 1
@@ -257,15 +263,13 @@ if savedata == 1:
     fh.createDimension('eta_rho', eta)
     fh.createDimension('xi_rho', xi)
 
-
     fh.history = 'Tides from TPXO8'
     import time
     fh.creation_date = time.strftime('%c')
     fh.Type = 'ROMS Tidal Forcing File'
-    fh.Title = 'Forcing for' + dstgrd.name + 'domain'
-    fh.grid_file = dstgrd.name
+    fh.Title = 'Forcing for' + dst_grd.name + 'domain'
+    fh.grid_file = dst_grd.name
     fh.Source = 'OTPS'
-
 
     name_nc = fh.createVariable('tide_name', 'c', ('tide_period', 'namelen'))
 
@@ -335,4 +339,3 @@ if savedata == 1:
     Cphase_nc[:, :, :] = cpha
 
     fh.close()
-

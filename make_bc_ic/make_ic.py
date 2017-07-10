@@ -7,9 +7,10 @@ import pyroms_toolbox
 from remap import remap
 from remap_uv import remap_uv
 
-#date to remap
-data_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/'
-dst_dir='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+import read_host_info
+sv = read_host_info.read_host_info()
+dst_dir = sv['out_dir']
+data_dir = sv['soda_dir']
 
 my_grd = 'GB3'
 my_year = '2000/'

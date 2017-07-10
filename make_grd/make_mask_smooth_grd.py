@@ -4,12 +4,16 @@ import pyroms
 import pyroms_toolbox
 import bathy_smoother
 
-grd1 = 'GB3'
-grd_name = 'GlacierBay_Kate'
-tag = 'smooth'
-out_file = '/glade/p/work/chuning/gb_roms/grd/' + grd_name + '_grd_' + tag + '.nc'
+import read_host_info
+sv = read_host_info.read_host_info()
+out_dir = sv['out_dir']
 
+grd1 = 'GB3'
 grd = pyroms.grid.get_ROMS_grid(grd1)
+grd_name = grd.name
+tag = '_smooth'
+out_file = out_dir + 'grd/' + grd_name + '_grd' + tag + '.nc'
+
 h0 = grd.vgrid.h
 msk0 = grd.hgrid.mask_rho
 

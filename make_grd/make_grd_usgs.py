@@ -11,8 +11,12 @@ from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 from matplotlib import path
 
-grd1 = 'GB3'
-out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+import read_host_info
+sv = read_host_info.read_host_info()
+bathy_dir = sv['in_dir']
+out_dir = sv['out_dir']
+
+grd1 = 'GB4'
 grd_name = 'GlacierBay_usgs'
 hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
 vgrd = pyroms.grid.get_ROMS_vgrid(grd1)
@@ -22,8 +26,6 @@ h = pyroms.grid.get_ROMS_vgrid(grd1).h
 water = hgrd.mask_rho
 
 # fix bathymetry with USGS and NOAA data
-bathy_dir = '/Volumes/R1/scratch/chuning/data/bathy/'
-
 fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
 lon1 = fh.variables['lon'][:]
 lat1 = fh.variables['lat'][:]

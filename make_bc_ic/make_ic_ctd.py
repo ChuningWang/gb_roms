@@ -94,10 +94,16 @@ def nan_gaussian_filter(U, sigma):
 # ----------------------------------------------------------------
 # preparation
 # output dir
-dst_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+dst_dir = sv['out_dir']
+soda_dir = sv['soda_dir']
+
+grd1 = GB_USGS
 
 # Load target grid and land mask
-dst_grd = pyroms.grid.get_ROMS_grid('GB')
+dst_grd = pyroms.grid.get_ROMS_grid(grd1)
 msk = dst_grd.hgrid.mask
 h = dst_grd.vgrid.h.squeeze()
 lat_grd = dst_grd.hgrid.lat_rho
@@ -110,7 +116,7 @@ xi = msk.shape[1]
 
 # ----------------------------------------------------------------
 # Load CTD climatology
-ctd_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/ctd/ctd.nc'
+ctd_dir = in_dir + 'ctd.nc'
 ctd = gb_ctd.rd_ctd(ctd_dir)
 ctd_clim = gb_ctd.cal_ctd_climatology(ctd)
 
@@ -132,9 +138,8 @@ zlev = hctd.shape[0]
 
 # ----------------------------------------------------------------
 # Load SODA data
-soda_dir = '/Volumes/P1/Data/SODA/SODA_3.3.1/monthly/'
 tag = '2000_01'
-soda_filein = soda_dir+'soda3.3.1_monthly_ocean_reg_'+tag+'.nc'
+soda_filein = soda_dir + 'monthly/soda3.3.1_monthly_ocean_reg_' + tag + '.nc'
 
 xt = 446
 yt = 265
