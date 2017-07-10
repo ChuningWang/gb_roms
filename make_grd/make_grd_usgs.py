@@ -16,7 +16,7 @@ sv = read_host_info.read_host_info()
 bathy_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB4'
+grd1 = 'GB_USGS'
 grd_name = 'GlacierBay_usgs'
 hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
 vgrd = pyroms.grid.get_ROMS_vgrid(grd1)
@@ -62,19 +62,38 @@ pc = p.contains_points(np.array([hgrd.lon_rho.flatten(), hgrd.lat_rho.flatten()]
 hc = h.copy()
 hc[(water==1) & pc] = griddata((lon.flatten(), lat.flatten()), z.flatten(),
                                (hgrd.lon_rho[(water==1) & pc], hgrd.lat_rho[(water==1) & pc]), method='linear')
-# hgrd.h = hc
-# 
-# # mask out small channels
-# msk0 = grd.hgrid.mask_rho
-# msk0[:230, :75] = 0
-# msk0[:150, :150] = 0
-# grd.hgrid.mask_rho = msk0
-# 
-# # shapiro filter
-# h0 = pyroms_toolbox.shapiro_filter.shapiro2(h0, 32)
-# 
-# # ----------------------------------------------------------------------------------------------------------
-# grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
-# # write grid file
-# pyroms.grid.write_ROMS_grid(grd, filename=out_dir + grd_name + '_grd.nc')
-# 
+# mask out small channels
+msk0 = hgrd.mask_rho
+msk0[:230, :75] = 0
+msk0[:150, :150] = 0
+hgrd.mask_rho = msk0
+
+# shapiro filter
+hc = pyroms_toolbox.shapiro_filter.shapiro2(hc, 32)
+vgrd.h = hc
+
+# ------------------------------------------------
+# first blow-up point
+x0 = 339
+y0 = 112
+dy = 28
+dx = 28
+
+h = hc[x0-dx:x0+dx, y0-dy:y0+dy]
+msk1 = msk0[x0-dx:x0+dx, y0-dy:y0+dy]
+
+# smooth bathymetry
+rx0_max = 0.3
+RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, msk1)
+print 'Max Roughness value is: ', RoughMat.max()
+hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h, rx0_max)
+RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hs, msk1)
+print 'Max Roughness value is: ', RoughMat.max()
+
+vgrd.h[x0-dx:x0+dx, y0-dy:y0+dy] = hs
+
+# ----------------------------------------------------------------------------------------------------------
+grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
+# write grid file
+pyroms.grid.write_ROMS_grid(grd, filename=out_dir + grd_name + '_grd.nc')
+

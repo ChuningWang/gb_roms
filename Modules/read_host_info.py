@@ -3,8 +3,9 @@ import socket
 
 def read_host_info():
     hostname = socket.gethostname()[:5]
+    print('hostname: ' +hostname)
 
-    if hostname=='yslog':
+    if hostname=='yslog' or hostname=='yello' or hostname=='geyse' or hostname=='calde':
         file_in = '/glade/u/home/chuning/git/gb_roms/Modules/yellowstone.info'
     elif hostname=='alnil':
         file_in = '/Users/chuning/git/gb_roms/Modules/alnilam.info'
