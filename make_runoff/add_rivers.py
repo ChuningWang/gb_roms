@@ -37,17 +37,22 @@ def add_to_lists(pairs, i, j, sign, dir):
 	x1 = x2
 	y1 = y2
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+home_dir = sv['home_dir']
+
 my_year = 2000
 tag = 'Hill'
+grd1 = 'GB_USGS'
 
 # load GB grid object
-grd = pyroms.grid.get_ROMS_grid('GB3')
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
-# out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
-out_dir = '/glade/p/work/chuning/gb_roms/frc/'
-out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
+out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
-msk_dir = '/glade/u/home/chuning/git/gb_roms/make_runoff/maskedge.out'
+msk_dir = home_dir + 'git/gb_roms/make_runoff/maskedge.out'
 
 # We need to parse the output of the maskedge program for two
 # different purposes:

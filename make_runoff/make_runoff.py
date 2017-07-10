@@ -39,18 +39,22 @@ def get_discharge_avgbox(t, lat, lon, discharge, coast, box):
 
     return d
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+home_dir = sv['home_dir']
+
+script_dir = home_dir + 'git/gb_roms/make_runoff/'
+dis_file = in_dir + 'gb_discharge.nc'
+grd1 = 'GB_USGS'
+
 my_year = 2000
 
 # Select time range (days since 1900)
 t_base = datetime(1900, 01, 01)
 t_ini = datetime(my_year, 01, 01)
 t_end = datetime(my_year+1, 01, 01)
-# t_end = datetime(2002, 01, 01)
-
-script_dir = '/glade/u/home/chuning/git/gb_roms/make_runoff/'
-in_dir = '/glade/p/work/chuning/data/'
-dis_file = in_dir + 'gb_discharge.nc'
-grd1 = 'GB3'
 
 # load 2-dimentional interannual discharge data 
 print 'Load interannual discharge data'

@@ -6,19 +6,22 @@ from datetime import datetime, timedelta
 import pyroms
 from gb_toolbox import gb_ctd
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+home_dir = sv['home_dir']
+
 my_year = 2000
-grd1 = 'GB3'
+grd1 = 'GB_USGS'
 tag = 'Hill'
 
 # load GB grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
-# out_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
-out_dir = '/glade/p/work/chuning/gb_roms/frc/'
-out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
+out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
-# temp_file = '/Volumes/R1/scratch/chuning/gb_roms/data/ctd/ctd.nc'
-temp_file = '/glade/p/work/chuning/data/ctd.nc'
+temp_file = in_dir + 'ctd.nc'
 
 out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 river_time = out.variables['river_time'][:]

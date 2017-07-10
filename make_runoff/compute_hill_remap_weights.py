@@ -5,8 +5,14 @@ import netCDF4 as netCDF
 import pyroms
 import pyroms_toolbox
 
-grd1 = '/glade/p/work/chuning/data/gb_discharge.nc'
-grd2 = 'GB3'
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+home_dir = sv['home_dir']
+
+grd1 = in_dir + 'gb_discharge.nc'
+grd2 = 'GB_USGS'
 
 ##  load 2-dimentional interannual discharge data 
 print 'Load lat_lon'

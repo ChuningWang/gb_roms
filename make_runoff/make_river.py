@@ -5,18 +5,24 @@ from datetime import datetime
 import pyroms
 import pyroms_toolbox
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+home_dir = sv['home_dir']
+
+grd1 = 'GB_USGS'
+
 my_year = 2000
 
 # load GB grid object
-grd = pyroms.grid.get_ROMS_grid('GB3')
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
 # load 2-dimentional discharge data 
 print 'Load discharge data'
 tag = 'Hill'
-in_dir = '/glade/p/work/chuning/data/'
 in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag + '.nc'
-out_dir = '/glade/p/work/chuning/gb_roms/frc/'
-out_file = out_dir + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
+out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 nc_data = netCDF.Dataset(in_file, 'r')
 nc_rivers = netCDF.Dataset(out_file, 'a')

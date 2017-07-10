@@ -7,17 +7,23 @@ import pyroms_toolbox
 
 import netCDF4 as nc
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+dst_dir = sv['out_dir']
+
+grd1 = 'GB_USGS'
+
 my_year = 2000
 tag = 'JRA55v1.1'
 vlist = ['Qair', 'rain', 'snow', 'lwrad_down', 'swrad', 'Pair', 'Tair', 'Uwind', 'Vwind']
 vlist2 = ['huss_10m', 'prrn', 'prsn', 'rlds', 'rsds', 'psl', 'tas_10m', 'uas_10m', 'vas_10m']
 vlist3 = ['qair', 'rain', 'snow', 'lrf', 'srf', 'pair', 'tair', 'wind', 'wind']
 
-dst_grd = pyroms.grid.get_ROMS_grid('GB')
+dst_grd = pyroms.grid.get_ROMS_grid(grd1)
 
-data_dir = '/Volumes/R1/scratch/chuning/gb_roms/data/jra55do/'
+data_dir =  in_dir + 'jra55do/'
 data_dir_year = data_dir + str(my_year) + '/'
-dst_dir='/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/'
 
 filelst = subprocess.check_output(['ls', data_dir_year]).replace('/n',' ').split()
 
