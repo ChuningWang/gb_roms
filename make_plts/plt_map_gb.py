@@ -26,30 +26,30 @@ lat = grd.hgrid.lat_rho
 z = grd.vgrid.h
 msk = grd.hgrid.mask_rho
 
-# plt.close()
-# fig = plt.figure()
-# 
-# lat_min = 57.75
-# lat_max = 59.25
-# lat_0 = 0.5 * (lat_min + lat_max)
-# 
-# lon_min = -137.5
-# lon_max = -134.5
-# lon_0 = 0.5 * (lon_min + lon_max)
-# 
-# m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
-#             urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-#             resolution='f')
-# 
-# # m.drawcoastlines(linewidth=0.01)
-# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
-# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
-# # setlabelrot(mr,-90)
-# 
-# x, y = m(lon, lat)
-# m.pcolor(x, y, z)
-# m.contour(x, y, msk, np.array([0.5, 0.5]), lw=0.1, colors='k')
-# 
-# plt.savefig(out_dir + 'figs/map_grd.tiff', format='tiff', dpi=900)
-# plt.close()
+plt.close()
+fig = plt.figure()
+
+lat_min = 57.75
+lat_max = 59.25
+lat_0 = 0.5 * (lat_min + lat_max)
+
+lon_min = -137.5
+lon_max = -134.5
+lon_0 = 0.5 * (lon_min + lon_max)
+
+m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
+            urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
+            resolution='f')
+
+# m.drawcoastlines(linewidth=0.01)
+mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
+pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
+# setlabelrot(mr,-90)
+
+x, y = m(lon, lat)
+m.pcolor(x, y, z)
+m.contour(x, y, msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
+
+plt.savefig(out_dir + 'figs/map_grd.tiff', format='tiff', dpi=600)
+plt.close()
 
