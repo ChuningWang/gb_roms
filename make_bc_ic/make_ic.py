@@ -9,8 +9,10 @@ from remap_uv import remap_uv
 
 import read_host_info
 sv = read_host_info.read_host_info()
-dst_dir = sv['out_dir']
+out_dir = sv['out_dir']
 data_dir = sv['soda_dir']
+
+dst_dir = dst_dir + 'bc_ic/'
 
 my_grd = 'GB_USGS'
 my_year = '2000/'
@@ -41,7 +43,7 @@ remap('salt',filein, src_grd, dst_grd, salt_dst_file, dst_dir=dst_dir)
 remap_uv(filein, src_grd, dst_grd, u_dst_file, v_dst_file, dst_dir=dst_dir)
 
 # merge file
-ic_file = dst_dir + 'bc_ic/' + dst_grd.name + '_ic_' + tag + '_' + src_grd.name + '.nc'
+ic_file = dst_dir + dst_grd.name + '_ic_' + tag + '_' + src_grd.name + '.nc'
 
 command1 = 'mv '      + zeta_dst_file + ' '    + ic_file
 command2 = 'ncks -A ' + temp_dst_file + ' -o ' + ic_file
