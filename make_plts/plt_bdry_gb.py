@@ -16,7 +16,7 @@ sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 
 # Read grid
-fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_usgs_bdry_2000_SODA3.3.1.nc', mode='r')
+fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_usgs_bdry_spinup_SODA3.3.1.nc', mode='r')
 lon_psi = fh.variables['lon_psi'][:]
 lat_psi = fh.variables['lat_psi'][:]
 lon_rho = fh.variables['lon_rho'][:]
@@ -80,22 +80,35 @@ h_v_e = 0.5*(h_st_e[:-1]+h_st_e[1:])
 h_v_w = 0.5*(h_st_w[:-1]+h_st_w[1:])
 
 # ------------------------------------------------------------------------------------------------------
-plt.close()
-fig = plt.figure()
-
-plt.contourf(lat_st_e, h_st_e, s_e)
+plt.pcolormesh(lat_st_e, h_st_e, s_e)
 plt.colorbar()
 plt.title('Salinity [PSU] at East Boundary')
 plt.xlabel('Latitude')
 plt.ylabel('Depth [m]')
-plt.savefig(out_dir + 'figs/bdry_e_s.eps',format='eps')
+plt.savefig(out_dir + 'figs/bdry_e_s.tiff',format='tiff')
 plt.close()
 
-plt.contourf(lat_st_w, h_st_w, s_w)
+plt.pcolormesh(lat_st_w, h_st_w, s_w)
 plt.colorbar()
 plt.title('Salinity [PSU] at West Boundary')
 plt.xlabel('Latitude')
 plt.ylabel('Depth [m]')
-plt.savefig(out_dir + 'figs/bdry_w_s.eps',format='eps')
+plt.savefig(out_dir + 'figs/bdry_w_s.tiff',format='tiff')
+
+plt.close()
+plt.pcolormesh(lat_st_e, h_st_e, t_e)
+plt.colorbar()
+plt.title('Temperature [degC] at East Boundary')
+plt.xlabel('Latitude')
+plt.ylabel('Depth [m]')
+plt.savefig(out_dir + 'figs/bdry_e_t.tiff',format='tiff')
+plt.close()
+
+plt.pcolormesh(lat_st_w, h_st_w, t_w)
+plt.colorbar()
+plt.title('Temperature [degC] at West Boundary')
+plt.xlabel('Latitude')
+plt.ylabel('Depth [m]')
+plt.savefig(out_dir + 'figs/bdry_w_t.tiff',format='tiff')
 plt.close()
 

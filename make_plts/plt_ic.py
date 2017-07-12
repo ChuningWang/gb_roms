@@ -1,59 +1,41 @@
-# Plot Initial Condition
-from mpl_toolkits.basemap import Basemap
-import matplotlib.pyplot as plt
-from gb_toolbox.gb_ctd import rd_ctd
-from matplotlib.mlab import griddata
 import numpy as np
-import netCDF4 as nc
+import glob
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+import pyroms
+import pyroms_toolbox as prt
 
-# ------------------------------------------------------------------------------------------------------
-def setlabelrot(x, rot):
-    for m in x:
-        for t in x[m][1]:
-            t.set_rotation(rot)
+import read_host_info
+sv = read_host_info.read_host_info()
+out_dir = sv['out_dir']
+grd1 = 'GB_USGS'
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
-# ------------------------------------------------------------------------------------------------------
-# Read grid
-fh = nc.Dataset('../data/GlacierBay_ic_1980_01_08_SODA3.3.1.nc', mode='r')
-lon = fh.variables['lon_rho'][:]
-# lon = lon-360
-lat = fh.variables['lat_rho'][:]
-h = fh.variables['h'][:]
-s = fh.variables['salt'][:]
-msk = fh.variables['mask_rho'][:]
-fh.close()
+in_file = out_dir + 'bc_ic/' + grd.name + '_ic_2000_01_03_SODA3.3.1.nc'
+
+depth = 5
+tindex = 0
+var = 'salt'
+# var = 'zeta'
+uvar = 'u'
+vvar = 'v'
+clim = [28, 32]
+# clim = [0, 0.15]
+
+print 'processing ' + in_file + ' ...'
+if var == 'zeta':
+    prj = prt.twoDview(var, tindex, grd,
+                       filename=in_file, title='IC_' + var, cmin=clim[0], cmax=clim[1],
+                       outfile = out_dir + 'figs/' + grd.name + '_' + var + '.png'
+                      )
+
+else:
+    prj = prt.zview(var, tindex, depth, grd,
+                    filename=in_file, title='IC_' + var, cmin=clim[0], cmax=clim[1]
+                   )
+    prt.quiver(uvar, vvar, tindex, depth, grd,
+               filename = in_file, proj=prj, d=10, uscale=10,
+               outfile = out_dir + 'figs/' + grd.name + '_' + var + '.png'
+              )
 
 plt.close()
-fig = plt.figure()
-
-lat_min = 57.75
-lat_max = 59.25
-lat_0 = 0.5 * (lat_min + lat_max)
-
-lon_min = -137.5
-lon_max = -134.5
-lon_0 = 0.5 * (lon_min + lon_max)
-
-m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
-            urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-            resolution='f')
-
-# xstn, ystn = m(ctd['lon_stn'],ctd['lat_stn'])
-# m.plot(xstn,ystn,'ok',ms=2)
-
-# for i in stn:
-#     plt.text(xstn[i]+1000, ystn[i], "%02d"%i, fontsize=5, va='center')
-
-m.drawcoastlines(linewidth=.2)
-m.fillcontinents(color='lightgrey')
-mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
-pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
-# setlabelrot(mr,-90)
-
-xh, yh = m(lon, lat)
-m.contourf(xh, yh, s[:, 0, :, :].squeeze())
-m.colorbar()
-
-plt.savefig('../figs/map_ic_s.eps',format='eps')
-plt.close()
-
