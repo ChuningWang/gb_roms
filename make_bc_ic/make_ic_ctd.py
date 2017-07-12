@@ -272,7 +272,7 @@ s_ini2 = np.ma.masked_where(s_ini2==spval, s_ini2)
 # ----------------------------------------------------------------
 # write into nc file
 src_grd_name = '2000_01_03_SODA3.3.1'
-ic_file = dst_dir + dst_grd.name + '_ic_' + src_grd_name + '.nc'
+ic_file = dst_dir + 'bc_ic/' + dst_grd.name + '_ic_' + src_grd_name + '.nc'
 fh = nc.Dataset(ic_file, 'r+') 
 fh.variables['temp'][:, :, :, :] = t_ini2
 fh.variables['salt'][:, :, :, :] = s_ini2

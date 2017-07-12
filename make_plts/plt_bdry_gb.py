@@ -34,7 +34,7 @@ fh.close()
 # stn = np.arange(24)
 
 # Read grid
-fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_bdry_2000_SODA3.3.1.nc', mode='r')
+fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/roms_prep/GlacierBay_usgs_bdry_2000_SODA3.3.1.nc', mode='r')
 lon_psi = fh.variables['lon_psi'][:]
 lat_psi = fh.variables['lat_psi'][:]
 lon_rho = fh.variables['lon_rho'][:]

@@ -41,7 +41,7 @@ remap('salt',filein, src_grd, dst_grd, salt_dst_file, dst_dir=dst_dir)
 remap_uv(filein, src_grd, dst_grd, u_dst_file, v_dst_file, dst_dir=dst_dir)
 
 # merge file
-ic_file = dst_dir + dst_grd.name + '_ic_' + tag + '_' + src_grd.name + '.nc'
+ic_file = dst_dir + 'bc_ic/' + dst_grd.name + '_ic_' + tag + '_' + src_grd.name + '.nc'
 
 command1 = 'mv '      + zeta_dst_file + ' '    + ic_file
 command2 = 'ncks -A ' + temp_dst_file + ' -o ' + ic_file

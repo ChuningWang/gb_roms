@@ -75,4 +75,6 @@ salt.time = 'river_time'
 out.variables['river_temp'][:] = river_temp
 out.variables['river_salt'][:] = river_salt
 
+print('add temp, salt done')
+
 out.close()
