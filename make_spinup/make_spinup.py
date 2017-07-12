@@ -11,14 +11,18 @@ import pyroms_toolbox
 from remap_bdry import remap_bdry
 from remap_bdry_uv import remap_bdry_uv
 
-data_dir = '/glade/p/work/chuning/data/'
-bc_ic_dir = '/glade/p/work/chuning/gb_roms/bc_ic/'
-frc_dir = '/glade/p/work/chuning/gb_roms/frc/'
+import read_host_info
+sv = read_host_info.read_host_info()
+data_dir = sv['in_dir']
+out_dir = sv['out_dir']
+
+bc_ic_dir = out_dir + 'bc_ic/'
+frc_dir = out_dir + 'frc/'
 tag = 'SODA3.3.1'
 tag1 = 'JRA55v1.1'
 tag2 = '2000_01_03'
 tag3 = 'Hill'
-grd1 = 'GB3'
+grd1 = 'GB_USGS'
 my_year = 2000
 
 t0 = (datetime(2000, 1, 3, 0, 0, 0)-datetime(1900, 1, 1, 0, 0, 0)).days
@@ -26,8 +30,8 @@ grd = pyroms.grid.get_ROMS_grid(grd1)
 
 fix_ic = 0
 fix_bc = 0
-fix_frc = 0
-fix_river = 1
+fix_frc = 1
+fix_river = 0
 
 
 if fix_ic == 1:

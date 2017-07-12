@@ -9,8 +9,10 @@ from remap_uv import remap_uv
 
 import read_host_info
 sv = read_host_info.read_host_info()
-dst_dir = sv['out_dir']
+out_dir = sv['out_dir']
 data_dir = sv['soda_dir']
+
+dst_dir = dst_dir + 'bc_ic/'
 
 my_grd = 'GB_USGS'
 my_year = '2000/'
