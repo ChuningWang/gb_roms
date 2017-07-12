@@ -100,7 +100,7 @@ in_dir = sv['in_dir']
 dst_dir = sv['out_dir']
 soda_dir = sv['soda_dir']
 
-grd1 = GB_USGS
+grd1 = 'GB_USGS'
 
 # Load target grid and land mask
 dst_grd = pyroms.grid.get_ROMS_grid(grd1)
