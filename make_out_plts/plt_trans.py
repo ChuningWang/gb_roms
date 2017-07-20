@@ -8,12 +8,22 @@ from gb_toolbox import gb_ctd
 from matplotlib.mlab import griddata
 from geopy.distance import vincenty
 
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+model_dir = sv['model_dir']
+
+grd1 = 'GB_USGS'
+model = 'tmpdir_GB-SPINUP/outputs/2000/'
+clim = [25, 35]
+
 # load data
-outputs_dir = '/Volumes/R1/scratch/chuning/gb_spinup_roms/outputs/spinup/'
-fig_dir = '/Volumes/R1/scratch/chuning/gb_spinup_roms/figs/trans/spinup/'
+outputs_dir = model_dir + model
+fig_dir = out_dir + 'figs/trans/2000/'
 
 flist = glob.glob(outputs_dir+'*.nc')
-flist = flist[-1:]
+flist = flist[-15:]
 
 depth = 200
 dd = 10
@@ -25,7 +35,7 @@ vvar = 'v'
 clim = [28, 32]
 
 # load geological coordinates
-ctd = gb_ctd.rd_ctd('/Volumes/R1/scratch/chuning/gb_roms/data/ctd/ctd.nc')
+ctd = gb_ctd.rd_ctd(in_dir + 'ctd.nc')
 lat_ctd = ctd['lat_stn']
 lon_ctd = ctd['lon_stn']
 
@@ -41,7 +51,7 @@ for i in range(len(station)-1):
     lat_t[i*dd:(i+1)*dd] = np.linspace(lat_ctd[i], lat_ctd[i+1], dd+1)[:-1]
     lon_t[i*dd:(i+1)*dd] = np.linspace(lon_ctd[i], lon_ctd[i+1], dd+1)[:-1]
 
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid(grd1)
 lat = grd.hgrid.lat_rho
 lon = grd.hgrid.lon_rho
 
@@ -78,4 +88,8 @@ for fn in flist:
     for i in range(40):
         s_tr[i, :] = griddata(lon.flatten(), lat.flatten(), s[i, :, :].squeeze().flatten(), lon_t, lat_t, interp='linear').diagonal()
 
-plt.pcolor(dis, z_tr, s_tr)
+    plt.pcolormesh(dis, z_tr, s_tr)
+    plt.clim(clim[0], clim[1])
+    plt.colorbar()
+    plt.savefig(fig_dir + var + '_' + tag + '.png')
+    plt.close()

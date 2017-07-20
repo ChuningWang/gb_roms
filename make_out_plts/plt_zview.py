@@ -5,8 +5,17 @@ import matplotlib.pyplot as plt
 import pyroms
 import pyroms_toolbox as prt
 
-outputs_dir = '/Volumes/R1/scratch/chuning/gb_spinup_roms/outputs/spinup/'
-fig_dir = '/Volumes/R1/scratch/chuning/gb_spinup_roms/figs/zview/spinup/'
+import read_host_info
+sv = read_host_info.read_host_info()
+out_dir = sv['out_dir']
+model_dir = sv['model_dir']
+
+grd1 = 'GB_USGS'
+model = 'tmpdir_GB-TIDE/outputs/2000/'
+# model = 'tmpdir_GB-TIDE/'
+
+outputs_dir = model_dir + model
+fig_dir = out_dir + 'figs/zview/2000/'
 depth = 5
 tindex = 0
 var = 'salt'
@@ -16,10 +25,10 @@ vvar = 'v'
 clim = [28, 32]
 # clim = [0, 0.15]
 
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
-flist = glob.glob(outputs_dir+'*.nc')
-# flist = flist[-2:]
+flist = glob.glob(outputs_dir+'*his*.nc')
+# flist = flist[-24:]
 
 for fn in flist:
     tag = fn.split('/')[-1].split('.')[0]
@@ -35,7 +44,7 @@ for fn in flist:
                         filename=fn, cmin=clim[0], cmax=clim[1], title=tag
                        )
         prt.quiver(uvar, vvar, tindex, depth, grd,
-                   filename = fn, proj=prj, d=10, uscale=10,
+                   filename = fn, proj=prj, d=10, uscale=20,
                    outfile = fig_dir + var + '_' + str(int(depth)) + 'm_' + tag + '.png'
                   )
 

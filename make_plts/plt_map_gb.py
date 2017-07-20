@@ -15,9 +15,14 @@ def setlabelrot(x, rot):
 
 import read_host_info
 sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
 grd1 = 'GB_USGS'
+
+ctd = rd_ctd(in_dir + 'ctd.nc')
+lat_ctd = ctd['lat_stn']
+lon_ctd = ctd['lon_stn']
 
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -29,12 +34,12 @@ msk = grd.hgrid.mask_rho
 plt.close()
 fig = plt.figure()
 
-lat_min = 57.75
+lat_min = 58.00
 lat_max = 59.25
 lat_0 = 0.5 * (lat_min + lat_max)
 
 lon_min = -137.5
-lon_max = -134.5
+lon_max = -135.0
 lon_0 = 0.5 * (lon_min + lon_max)
 
 m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
@@ -47,8 +52,11 @@ pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize
 # setlabelrot(mr,-90)
 
 x, y = m(lon, lat)
-m.pcolor(x, y, z)
+x2, y2 = m(lon_ctd, lat_ctd)
+m.pcolor(x, y, z, cmap='Greens')
+plt.clim(0, 400)
 m.contour(x, y, msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
+m.plot(x2, y2, '.k', ms=2)
 
 plt.savefig(out_dir + 'figs/map_grd.tiff', format='tiff', dpi=600)
 plt.close()
