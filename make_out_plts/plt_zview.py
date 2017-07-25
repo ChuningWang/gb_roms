@@ -16,7 +16,7 @@ model = 'tmpdir_GB-TIDE/outputs/2000/'
 
 outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/zview/2000/'
-depth = 5
+depth = 150
 tindex = 0
 var = 'salt'
 # var = 'zeta'
@@ -28,7 +28,7 @@ clim = [28, 32]
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
 flist = glob.glob(outputs_dir+'*his*.nc')
-# flist = flist[-24:]
+flist = flist[-48:]
 
 for fn in flist:
     tag = fn.split('/')[-1].split('.')[0]

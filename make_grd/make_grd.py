@@ -144,7 +144,7 @@ elif GUImsk == 2:
 print 'mask done...'
 
 # generate the bathy
-fh = netCDF4.Dataset(bathydir, mode='r')
+fh = netCDF4.Dataset(bathy_dir, mode='r')
 topo = fh.variables['z'][:]
 lons = fh.variables['lon'][:] 
 lons[lons>180] = lons[lons>180]-360  # lons from -180 to 180
@@ -162,7 +162,7 @@ topo = topo[msk2,:][:,msk1]
 topo = -topo
 
 # fix minimum depth
-hmin = 10  # allow dry_wet
+hmin = 1  # allow dry_wet
 topo = pyroms_toolbox.change(topo, '<', hmin, hmin)
 
 # interpolate new bathymetry
@@ -182,7 +182,7 @@ h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(hgrd.mask_rho, h, rx0_
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, hgrd.mask_rho)
 print 'Max Roughness value is: ', RoughMat.max()
 
-# insure that depth is always deeper than hmin
+# ensure that depth is always deeper than hmin
 h = pyroms_toolbox.change(h, '<', hmin, hmin)
 
 # set depth to hmin where masked

@@ -16,36 +16,78 @@ sv = read_host_info.read_host_info()
 bathy_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
+# ------------------------------------------------------------------------
 grd1 = 'GB_USGS'
+grd2 = 'GB'
 grd_name = 'GlacierBay_usgs'
-hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
-vgrd = pyroms.grid.get_ROMS_vgrid(grd1)
 
-# generate the bathymetry
-h = vgrd.h
-water = hgrd.mask_rho
+hgrd = pyroms.grid.get_ROMS_hgrid(grd2)
+# laod from mask_change.txt
+msk_c = np.loadtxt('mask_change.txt')
+for i in range(len(msk_c)):
+    hgrd.mask_rho[msk_c[i, 1], msk_c[i, 0]] = msk_c[i, 2]
+print 'mask done...'
 
+# ------------------------------------------------------------------------
+# defind the boundary of mapping domain
+lat_min = 57.
+lat_max = 60.
+lat_0 = 0.5 * (lat_min + lat_max)
+
+lon_min = -138.
+lon_max = -134.
+lon_0 = 0.5 * (lon_min + lon_max)
+
+# ------------------------------------------------------------------------
+# generate the base bathymetry
+fh = nc.Dataset(bathy_dir + 'ARDEMv2.0.nc', mode='r')
+h0 = fh.variables['z'][:]
+lon0 = fh.variables['lon'][:] 
+lon0[lon0>180] = lon0[lon0>180]-360  # lons from -180 to 180
+lat0 = fh.variables['lat'][:] 
+fh.close()
+
+msk1 = (lon0>lon_min) & (lon0<lon_max)
+msk2 = (lat0>lat_min) & (lat0<lat_max)
+
+lon0 = lon0[msk1]
+lat0 = lat0[msk2]
+h0 = h0[msk2,:][:,msk1]
+
+# depth positive
+h0 = -h0
+
+# fix minimum depth
+hmin = 1  # allow dry_wet
+h0 = pyroms_toolbox.change(h0, '<', hmin, hmin)
+
+# interpolate new bathymetry
+lon0, lat0 = np.meshgrid(lon0, lat0)
+h = griddata((lon0.flatten(), lat0.flatten()), h0.flatten(), (hgrd.lon_rho, hgrd.lat_rho), method='linear')
+print 'griddata from ARDEM done...'
+
+# ------------------------------------------------------------------------
 # fix bathymetry with USGS and NOAA data
 fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
 lon1 = fh.variables['lon'][:]
 lat1 = fh.variables['lat'][:]
-z1 = fh.variables['z'][:]
+h1 = fh.variables['z'][:]
 fh.close()
 
 fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
 lon2 = fh.variables['lon'][:][1::3, 1::3]
 lat2 = fh.variables['lat'][:][1::3, 1::3]
-z2 = fh.variables['z'][:][1::3, 1::3]
+h2 = fh.variables['z'][:][1::3, 1::3]
 fh.close()
 
-msk = ~z2.mask
+msk = ~h2.mask
 lon2 = lon2[msk]
 lat2 = lat2[msk]
-z2 = z2[msk]
+h2 = h2[msk]
 
-lon = np.concatenate((lon1, lon2))
-lat = np.concatenate((lat1, lat2))
-z = np.concatenate((z1, z2))
+lon0 = np.concatenate((lon1, lon2))
+lat0 = np.concatenate((lat1, lat2))
+h0 = np.concatenate((h1, h2))
 
 # load grid boundary
 fh = nc.Dataset('bdry.nc')
@@ -58,76 +100,382 @@ p0 = [(x[i], y[i]) for i in range(len(x))]
 p = path.Path(p0)
 pc = p.contains_points(np.array([hgrd.lon_rho.flatten(), hgrd.lat_rho.flatten()]).T).reshape(h.shape)
  
-# copy variables
-hc = h.copy()
-mskc = hgrd.mask_rho.copy()
+water = hgrd.mask_rho
 
 # interpolate new bathymetry
-hc[(water==1) & pc] = griddata((lon.flatten(), lat.flatten()), z.flatten(),
+h[(water==1) & pc] = griddata((lon0.flatten(), lat0.flatten()), h0.flatten(),
                                (hgrd.lon_rho[(water==1) & pc], hgrd.lat_rho[(water==1) & pc]), method='linear')
 
-# ------------------------------------------------
-# mask out small channels
-mskc[:230, :75] = 0
-mskc[:150, :150] = 0
+# copy raw bathymetry
+hraw = h.copy()
 
-# ------------------------------------------------
+# ------------------------------------------------------------------------
+# mask out small channels
+water[:230, :75] = 0
+water[:150, :150] = 0
+water[229:235, 17:40] = 0
+
+# ------------------------------------------------------------------------
+# locally constrain hmin at some location
+hmin = 5  # m
+
+h1 = h[:, :290]
+h1[h1<hmin] = hmin
+h[:, :290] = h1
+
+h1 = h[:365, :]
+h1[h1<hmin] = hmin
+h[:365, :] = h1
+
+h1 = h[364:376, 300:315]
+h1[h1<hmin] = hmin
+h[364:376, 300:315] = h1
+
+h1 = h[655:, 325:400]
+h1[h1<hmin] = hmin
+h[655:, 325:400] = h1
+
+h1 = h[500:, :380]
+h1[h1<hmin] = hmin
+h[500:, :380] = h1
+
+h1 = h[470:500, 345:360]
+h1[h1<hmin] = hmin
+h[470:500, 345:360] = h1
+
+h1 = h[450:470, 352:380]
+h1[h1<hmin] = hmin
+h[450:470, 352:380] = h1
+
+h1 = h[645:660, 395:405]
+h1[h1<hmin] = hmin
+h[645:660, 395:405] = h1
+
+h1 = h[648:660, 400:410]
+h1[h1<hmin] = hmin
+h[648:660, 400:410] = h1
+
+hmin = 20  # m
+
+h1 = h[645:655, 382:385]
+h1[h1<hmin] = hmin
+h[645:655, 382:385] = h1
+
+hmax = 5  # m
+
+h1 = h[640:660, 389:405]
+h1[h1>hmax] = hmax
+h[640:660, 389:405] = h1
+
+# ------------------------------------------------------------------------
 # use a 2D filter to smooth locally
 from scipy.ndimage import uniform_filter
-h1 = hc[:500, :220]
-hc[:500, :220] = uniform_filter(h1, size=5)
-h1 = hc[260:360, 440:470]
-hc[260:360, 440:470] = uniform_filter(h1, size=5)
-h1 = hc[0:140, 220:380]
-hc[0:140, 220:380] = uniform_filter(h1, size=5)
-h1 = hc[790:820, 0:25]
-hc[790:820, 0:25] = uniform_filter(h1, size=5)
-h1 = hc[575:585, 225:235]
-hc[575:585, 225:235] = uniform_filter(h1, size=3)
-h1 = hc[910:930, 85:95]
-hc[910:930, 85:95] = uniform_filter(h1, size=5)
+h1 = h[:500, :220]
+h[:500, :220] = uniform_filter(h1, size=3)
+h1 = h[260:360, 440:470]
+h[260:360, 440:470] = uniform_filter(h1, size=5)
+h1 = h[0:140, 220:380]
+h[0:140, 220:380] = uniform_filter(h1, size=5)
+h1 = h[790:820, 0:25]
+h[790:820, 0:25] = uniform_filter(h1, size=5)
+h1 = h[575:585, 225:235]
+h[575:585, 225:235] = uniform_filter(h1, size=3)
+h1 = h[910:930, 85:95]
+h[910:930, 85:95] = uniform_filter(h1, size=5)
 
-# ------------------------------------------------
-# # locally smooth first blow-up point
-# x0 = 339
-# y0 = 112
-# dy = 28
-# dx = 28
-# 
-# h = hc[x0-dx:x0+dx, y0-dy:y0+dy]
-# msk1 = mskc[x0-dx:x0+dx, y0-dy:y0+dy]
-# 
-# # smooth bathymetry
-# rx0_max = 0.3
-# RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, msk1)
-# print 'Max Roughness value is: ', RoughMat.max()
-# hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h, rx0_max)
-# RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hs, msk1)
-# print 'Max Roughness value is: ', RoughMat.max()
-# 
-# hc[x0-dx:x0+dx, y0-dy:y0+dy] = hs
+# ------------------------------------------------------------------------
+# deal with shallow water regions
+def local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.3):
 
-# ------------------------------------------------
+    h1 = h[xmin:xmax, ymin:ymax]
+    msk1 = water[xmin:xmax, ymin:ymax]
+
+    # smooth bathymetry
+    # rx0_max = 0.3
+    RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h1, msk1)
+    print 'Max Roughness value is: ', RoughMat.max()
+    hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h1, rx0_max)
+    RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hs, msk1)
+    print 'Max Roughness value is: ', RoughMat.max()
+
+    h[xmin:xmax, ymin:ymax] = hs
+
+
+xmin = 630
+xmax = 685
+ymin = 380
+ymax = 500
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+
+xmin = 370
+xmax = 420
+ymin = 285
+ymax = 355
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+
+xmin = 420
+xmax = 490
+ymin = 310
+ymax = 380
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+
+# ------------------------------------------------------------------------
+# shapiro filter
+h = pyroms_toolbox.shapiro_filter.shapiro2(h, 32)
+
 # final smooth
 # smooth bathymetry
 rx0_max = 0.35
-RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hc, mskc)
+RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, water)
 print 'Max Roughness value is: ', RoughMat.max()
-hc = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(mskc, hc, rx0_max)
-RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hc, mskc)
+h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(water, h, rx0_max)
+RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, water)
 print 'Max Roughness value is: ', RoughMat.max()
-
-# shapiro filter
-hc = pyroms_toolbox.shapiro_filter.shapiro2(hc, 32)
 
 # insure that depth is always deeper than hmin
-hc = pyroms_toolbox.change(hc, '<', vgrd.hmin, vgrd.hmin)
+h = pyroms_toolbox.change(h, '<', hmin, hmin)
+# fix depth of land points
+h[water==0] = hmin
 
-vgrd.h = hc
-hgrd.mask_rho = mskc
+# ------------------------------------------------------------------------
+# redesign the vertical coordinate
+theta_b = 0.1
+theta_s = 8.0
+Tcline = 10
+N = 30
+vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)
 
-# ----------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
 # write grid file
 pyroms.grid.write_ROMS_grid(grd, filename = out_dir + 'grd/' + grd_name + '_grd.nc')
+
+
+# hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
+# vgrd = pyroms.grid.get_ROMS_vgrid(grd2)
+# 
+# # generate the bathymetry
+# h = vgrd.h
+# water = hgrd.mask_rho
+# 
+# # fix bathymetry with USGS and NOAA data
+# fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
+# lon1 = fh.variables['lon'][:]
+# lat1 = fh.variables['lat'][:]
+# z1 = fh.variables['z'][:]
+# fh.close()
+# 
+# fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
+# lon2 = fh.variables['lon'][:][1::3, 1::3]
+# lat2 = fh.variables['lat'][:][1::3, 1::3]
+# z2 = fh.variables['z'][:][1::3, 1::3]
+# fh.close()
+# 
+# msk = ~z2.mask
+# lon2 = lon2[msk]
+# lat2 = lat2[msk]
+# z2 = z2[msk]
+# 
+# lon = np.concatenate((lon1, lon2))
+# lat = np.concatenate((lat1, lat2))
+# z = np.concatenate((z1, z2))
+# 
+# # load grid boundary
+# fh = nc.Dataset('bdry.nc')
+# x = fh.variables['lon'][:]
+# y = fh.variables['lat'][:]
+# fh.close()
+# 
+# p0 = [(x[i], y[i]) for i in range(len(x))]
+# 
+# p = path.Path(p0)
+# pc = p.contains_points(np.array([hgrd.lon_rho.flatten(), hgrd.lat_rho.flatten()]).T).reshape(h.shape)
+#  
+# # copy variables
+# hc = h.copy()
+# mskc = hgrd.mask_rho.copy()
+# 
+# # interpolate new bathymetry
+# hc[(water==1) & pc] = griddata((lon.flatten(), lat.flatten()), z.flatten(),
+#                                (hgrd.lon_rho[(water==1) & pc], hgrd.lat_rho[(water==1) & pc]), method='linear')
+# 
+# # ------------------------------------------------
+# # mask out small channels
+# mskc[:230, :75] = 0
+# mskc[:150, :150] = 0
+# mskc[229:235, 17:40] = 0
+# 
+# # ------------------------------------------------
+# # locally constrain hmin at some location
+# hmin = 5  # m
+# 
+# h1 = hc[:, :290]
+# h1[h1<hmin] = hmin
+# hc[:, :290] = h1
+# 
+# h1 = hc[:365, :]
+# h1[h1<hmin] = hmin
+# hc[:365, :] = h1
+# 
+# h1 = hc[364:376, 300:315]
+# h1[h1<hmin] = hmin
+# hc[364:376, 300:315] = h1
+# 
+# h1 = hc[655:, 325:400]
+# h1[h1<hmin] = hmin
+# hc[655:, 325:400] = h1
+# 
+# h1 = hc[500:, :380]
+# h1[h1<hmin] = hmin
+# hc[500:, :380] = h1
+# 
+# h1 = hc[470:500, 345:360]
+# h1[h1<hmin] = hmin
+# hc[470:500, 345:360] = h1
+# 
+# h1 = hc[450:470, 352:380]
+# h1[h1<hmin] = hmin
+# hc[450:470, 352:380] = h1
+# 
+# h1 = hc[645:660, 395:405]
+# h1[h1<hmin] = hmin
+# hc[645:660, 395:405] = h1
+# 
+# h1 = hc[648:660, 400:410]
+# h1[h1<hmin] = hmin
+# hc[648:660, 400:410] = h1
+# 
+# hmin = 20  # m
+# 
+# h1 = hc[645:655, 382:385]
+# h1[h1<hmin] = hmin
+# hc[645:655, 382:385] = h1
+# 
+# hmax = 5  # m
+# 
+# h1 = hc[640:660, 389:405]
+# h1[h1>hmax] = hmax
+# hc[640:660, 389:405] = h1
+# 
+# # ------------------------------------------------
+# # use a 2D filter to smooth locally
+# from scipy.ndimage import uniform_filter
+# h1 = hc[:500, :220]
+# hc[:500, :220] = uniform_filter(h1, size=3)
+# h1 = hc[260:360, 440:470]
+# hc[260:360, 440:470] = uniform_filter(h1, size=5)
+# h1 = hc[0:140, 220:380]
+# hc[0:140, 220:380] = uniform_filter(h1, size=5)
+# h1 = hc[790:820, 0:25]
+# hc[790:820, 0:25] = uniform_filter(h1, size=5)
+# h1 = hc[575:585, 225:235]
+# hc[575:585, 225:235] = uniform_filter(h1, size=3)
+# h1 = hc[910:930, 85:95]
+# hc[910:930, 85:95] = uniform_filter(h1, size=5)
+# 
+# # ------------------------------------------------
+# # deal with shallow water regions
+# def local_smooth(hc, mskc, xmin, xmax, ymin, ymax, rx0_max=0.3):
+# 
+#     h1 = hc[xmin:xmax, ymin:ymax]
+#     msk1 = mskc[xmin:xmax, ymin:ymax]
+# 
+#     # smooth bathymetry
+#     # rx0_max = 0.3
+#     RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h1, msk1)
+#     print 'Max Roughness value is: ', RoughMat.max()
+#     hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h1, rx0_max)
+#     RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hs, msk1)
+#     print 'Max Roughness value is: ', RoughMat.max()
+# 
+#     hc[xmin:xmax, ymin:ymax] = hs
+# 
+# 
+# xmin = 630
+# xmax = 685
+# ymin = 380
+# ymax = 500
+# local_smooth(hc, mskc, xmin, xmax, ymin, ymax, rx0_max=0.2)
+# 
+# xmin = 370
+# xmax = 420
+# ymin = 285
+# ymax = 355
+# local_smooth(hc, mskc, xmin, xmax, ymin, ymax, rx0_max=0.2)
+# 
+# xmin = 420
+# xmax = 490
+# ymin = 310
+# ymax = 380
+# local_smooth(hc, mskc, xmin, xmax, ymin, ymax, rx0_max=0.2)
+# 
+# # ------------------------------------------------
+# # # locally smooth first blow-up point
+# # x0 = 115
+# # y0 = 500
+# # dy = 20
+# # dx = 20
+# # 
+# # xmin = np.max((x0-dx, 0))
+# # xmax = np.min((x0+dx, hc.shape[0]))
+# # ymin = np.max((y0-dy, 0))
+# # ymax = np.min((y0+dy, hc.shape[1]))
+# # 
+# # h = hc[xmin:xmax, ymin:ymax]
+# # msk1 = mskc[xmin:xmax, ymin:ymax]
+# # 
+# # # smooth bathymetry
+# # rx0_max = 0.3
+# # RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, msk1)
+# # print 'Max Roughness value is: ', RoughMat.max()
+# # hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h, rx0_max)
+# # RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hs, msk1)
+# # print 'Max Roughness value is: ', RoughMat.max()
+# # 
+# # hc[x0-dx:x0+dx, y0-dy:y0+dy] = hs
+# # 
+# # h1 = hc[xmin:xmax, ymin:ymax]
+# # msk1 = mskc[xmin:xmax, ymin:ymax]
+# # 
+# # # smooth bathymetry
+# # rx0_max = 0.3
+# # RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h1, msk1)
+# # print 'Max Roughness value is: ', RoughMat.max()
+# # hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h1, rx0_max)
+# # RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hs, msk1)
+# # print 'Max Roughness value is: ', RoughMat.max()
+# # 
+# # hc[xmin:xmax, ymin:ymax] = hs
+# 
+# # ------------------------------------------------
+# # shapiro filter
+# hc = pyroms_toolbox.shapiro_filter.shapiro2(hc, 32)
+# 
+# # final smooth
+# # smooth bathymetry
+# rx0_max = 0.35
+# RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hc, mskc)
+# print 'Max Roughness value is: ', RoughMat.max()
+# hc = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(mskc, hc, rx0_max)
+# RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(hc, mskc)
+# print 'Max Roughness value is: ', RoughMat.max()
+# 
+# # insure that depth is always deeper than hmin
+# hc = pyroms_toolbox.change(hc, '<', vgrd.hmin, vgrd.hmin)
+# # fix depth of land points
+# hc[mskc==0] = vgrd.hmin
+# hgrd.mask_rho = mskc
+# 
+# # ----------------------------------------------------------------------------------------------------------
+# # redesign the vertical coordinate
+# theta_b = 0.1
+# theta_s = 8.0
+# Tcline = 10
+# N = 30
+# vgrd = pyroms.vgrid.s_coordinate_4(hc, theta_b, theta_s, Tcline, N, hraw=vgrd.hraw)
+# 
+# # ----------------------------------------------------------------------------------------------------------
+# grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
+# # write grid file
+# pyroms.grid.write_ROMS_grid(grd, filename = out_dir + 'grd/' + grd_name + '_grd.nc')
 

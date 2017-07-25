@@ -1,47 +1,51 @@
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
+from gb_toolbox.gb_ctd import rd_ctd
+from matplotlib.mlab import griddata
 import netCDF4 as nc
 import pyroms
-import glob
-from gb_toolbox import gb_ctd
-from matplotlib.mlab import griddata
-from geopy.distance import vincenty
 
 import read_host_info
 sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
-model_dir = sv['model_dir']
 
 grd1 = 'GB_USGS'
-model = 'tmpdir_GB-TIDE/outputs/2000/'
-clim = [25, 35]
 
-# load data
-outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/trans/2000/'
-
-flist = glob.glob(outputs_dir+'*.nc')
-# flist = flist[-48:]
-
-depth = 200
-dd = 3
-zlev = 40
-tindex = 0
-var = 'salt'
-uvar = 'u'
-vvar = 'v'
-clim = [28, 32]
-
-# load geological coordinates
-ctd = gb_ctd.rd_ctd(in_dir + 'ctd.nc')
+ctd = rd_ctd(in_dir + 'ctd.nc')
 lat_ctd = ctd['lat_stn']
 lon_ctd = ctd['lon_stn']
 
-station = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 21]
-lat_ctd = lat_ctd[station]
-lon_ctd = lon_ctd[station]
+# Read grid
+grd = pyroms.grid.get_ROMS_grid(grd1)
+lon = grd.hgrid.lon_rho
+lat = grd.hgrid.lat_rho
+z = grd.vgrid.h
+msk = grd.hgrid.mask_rho
+
+def onclick(event):
+    global ix, iy
+    ix, iy = event.xdata, event.ydata
+    print 'x = %d, y = %d'%(
+        ix, iy)
+
+    global coords
+    coords.append((ix, iy))
+
+    if len(coords) == 100:
+        fig.canvas.mpl_disconnect(cid)
+
+    return coords
+
+fig = plt.figure()
+plt.pcolor(lon, lat, z, cmap='Greens')
+plt.clim(0, 400)
+plt.contour(lon, lat, msk, np.array([0.5, 0.5]), colors='k')
+# plt.plot(lon_ctd, lat_ctd, '.k', ms=2)
+# coords = []
+# cid = fig.canvas.mpl_connect('button_press_event', onclick)
+plt.plot(c0[:, 0], c0[:, 1], '.k', ms=2)
+# plt.show()
 
 c0 = np.array([[-137.04719708,   59.05076767],
                [-137.02431432,   59.03650282],
@@ -120,69 +124,4 @@ c0 = np.array([[-137.04719708,   59.05076767],
                [-135.08995853,   58.12069925],
                [-135.05792266,   58.10358142]])
 
-lon_ctd = c0[:, 0]
-lat_ctd = c0[:, 1]
 
-
-ct_tr = (len(lon_ctd)-1)*dd
-lat_t = np.zeros(ct_tr)
-lon_t = np.zeros(ct_tr)
-
-for i in range(len(lon_ctd)-1):
-    lat_t[i*dd:(i+1)*dd] = np.linspace(lat_ctd[i], lat_ctd[i+1], dd+1)[:-1]
-    lon_t[i*dd:(i+1)*dd] = np.linspace(lon_ctd[i], lon_ctd[i+1], dd+1)[:-1]
-
-grd = pyroms.grid.get_ROMS_grid(grd1)
-lat = grd.hgrid.lat_rho
-lon = grd.hgrid.lon_rho
-
-# interpolate topography
-h = grd.vgrid.h
-msk = grd.hgrid.mask_rho
-h_tr = griddata(lon.flatten(), lat.flatten(), h.flatten(), lon_t, lat_t, interp='linear').diagonal()
-
-# get rho point depth
-s_rho = grd.vgrid.s_rho
-z_tr = np.dot(np.matrix(h_tr).T, np.matrix(s_rho))
-z_tr = z_tr.T
-
-# calculate distance
-dis = np.zeros(lat_t.size)
-for i in range(1, lat_t.size):
-    dis[i] = vincenty(
-                      (lat_t[i-1], lon_t[i-1]),
-                      (lat_t[i], lon_t[i])
-                     ).meters
-dis = np.cumsum(dis)
-dis = dis/1000  # [km]
-dis = np.tile(dis, (zlev, 1))
-
-# interpolate salinity
-s_tr = np.zeros((zlev, ct_tr))
-
-plt.switch_backend('Agg')
-
-# plot transaction on map
-fig = plt.figure()
-plt.pcolor(lon, lat, h, cmap='Greens')
-plt.clim(0, 400)
-plt.contour(lon, lat, msk, np.array([0.5, 0.5]), colors='k')
-plt.plot(c0[:, 0], c0[:, 1], '--.k', ms=3)
-plt.savefig(fig_dir + 'map_transac.png')
-plt.close()
-
-for fn in flist:
-    tag = fn.split('/')[-1].split('.')[0]
-    print 'processing ' + tag + ' ...'
-    fh = nc.Dataset(fn)
-    s = fh.variables['salt'][:].squeeze()
-    fh.close()
-
-    for i in range(40):
-        s_tr[i, :] = griddata(lon.flatten(), lat.flatten(), s[i, :, :].squeeze().flatten(), lon_t, lat_t, interp='linear').diagonal()
-
-    plt.pcolormesh(dis, z_tr, s_tr)
-    plt.clim(clim[0], clim[1])
-    plt.colorbar()
-    plt.savefig(fig_dir + var + '_' + tag + '.png')
-    plt.close()

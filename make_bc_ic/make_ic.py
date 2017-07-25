@@ -12,7 +12,7 @@ sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 data_dir = sv['soda_dir']
 
-dst_dir = dst_dir + 'bc_ic/'
+dst_dir = out_dir + 'bc_ic/'
 
 my_grd = 'GB_USGS'
 my_year = '2000/'
