@@ -93,7 +93,7 @@ out.source = 'David Hill and Jordan Beamer'
 
 out.createDimension('river_time', None)
 out.createDimension('river', len(i))
-out.createDimension('s_rho', 40)
+out.createDimension('s_rho', 30)
 
 times = out.createVariable('river_time', 'f8', ('river_time'))
 times.units = 'days since 1900-01-01 00:00:00'

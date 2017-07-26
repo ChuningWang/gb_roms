@@ -28,7 +28,7 @@ my_year = 2000
 t0 = (datetime(2000, 1, 3, 0, 0, 0)-datetime(1900, 1, 1, 0, 0, 0)).days
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
-fix_ic = 1
+fix_ic = 0
 fix_bc = 1
 fix_frc = 0
 fix_river = 0
