@@ -11,19 +11,19 @@ out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
 grd1 = 'GB_USGS'
-model = 'tmpdir_GB-TIDE/outputs/2000/'
+model = 'tmpdir_GB-SPINUP/'
 # model = 'tmpdir_GB-TIDE/'
 
 outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/zview/2000/'
-depth = 150
+fig_dir = out_dir + 'figs/zview/temp/'
+depth = 300
 tindex = 0
-var = 'salt'
+var = 'temp'
 # var = 'zeta'
 uvar = 'u'
 vvar = 'v'
-clim = [28, 32]
-# clim = [0, 0.15]
+# clim = [28, 32]
+clim = [0, 10]
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
