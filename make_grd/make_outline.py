@@ -81,7 +81,7 @@ def plot_polygon(polygon):
 # --------------------------------------------------------------
 import read_host_info
 sv = read_host_info.read_host_info()
-bathy_dir = sv['out_dir']
+bathy_dir = sv['in_dir']
 
 fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
 lon1 = fh.variables['lon'][:]
