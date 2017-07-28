@@ -161,6 +161,12 @@ h1 = h[645:655, 382:385]
 h1[h1<hmin0] = hmin0
 h[645:655, 382:385] = h1
 
+hmin0 = 40  # m
+
+h1 = h[328:332, 281:285]
+h1[h1<hmin0] = hmin0
+h[328:332, 281:285] = h1
+
 hmax0 = 5  # m
 
 h1 = h[640:660, 389:405]
@@ -205,19 +211,19 @@ xmin = 630
 xmax = 685
 ymin = 380
 ymax = 500
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
 
 xmin = 370
 xmax = 420
 ymin = 285
 ymax = 355
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.15)
 
 xmin = 420
 xmax = 490
 ymin = 310
 ymax = 380
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.15)
 
 # ------------------------------------------------------------------------
 # shapiro filter
@@ -225,7 +231,7 @@ h = pyroms_toolbox.shapiro_filter.shapiro2(h, 32)
 
 # final smooth
 # smooth bathymetry
-rx0_max = 0.35
+rx0_max = 0.30
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, water)
 print 'Max Roughness value is: ', RoughMat.max()
 h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(water, h, rx0_max)
