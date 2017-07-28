@@ -19,7 +19,7 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
 grd1 = 'GB_USGS'
-plt_map = 0
+plt_map = 1
 
 ctd = rd_ctd(in_dir + 'ctd.nc')
 lat_ctd = ctd['lat_stn']

@@ -108,18 +108,18 @@ z = np.concatenate((z1, z2))
 # lat = lat1[:8485]
 # z = z1[:8485]
 
-ct = len(z)
-coords = np.array([(lon[i], lat[i]) for i in range(ct)])
-
-# --------------------------------------------------------------
-concave_hull, edge_points = alpha_shape(coords, alpha=150.)
-bdry = np.array(concave_hull.boundary.coords[:])
-
-# --------------------------------------------------------------
-fh = nc.Dataset('bdry.nc', 'w')
-fh.createDimension('pts')
-fh.createVariable('lon', 'd', ('pts'))
-fh.createVariable('lat', 'd', ('pts'))
-fh.variables['lon'][:] = bdry[:, 0]
-fh.variables['lat'][:] = bdry[:, 1]
-fh.close()
+# ct = len(z)
+# coords = np.array([(lon[i], lat[i]) for i in range(ct)])
+# 
+# # --------------------------------------------------------------
+# concave_hull, edge_points = alpha_shape(coords, alpha=150.)
+# bdry = np.array(concave_hull.boundary.coords[:])
+# 
+# # --------------------------------------------------------------
+# fh = nc.Dataset('bdry.nc', 'w')
+# fh.createDimension('pts')
+# fh.createVariable('lon', 'd', ('pts'))
+# fh.createVariable('lat', 'd', ('pts'))
+# fh.variables['lon'][:] = bdry[:, 0]
+# fh.variables['lat'][:] = bdry[:, 1]
+# fh.close()
