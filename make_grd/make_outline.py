@@ -100,27 +100,26 @@ lon2 = lon2[msk]
 lat2 = lat2[msk]
 z2 = z2[msk]
 
-# lon = np.concatenate((lon1, lon2))
-# lat = np.concatenate((lat1, lat2))
-# z = np.concatenate((z1, z2))
+lon = np.concatenate((lon1, lon2))
+lat = np.concatenate((lat1, lat2))
+z = np.concatenate((z1, z2))
 
-lon = lon1
-lat = lat1
-z = z1
+# lon = lon1[:8485]
+# lat = lat1[:8485]
+# z = z1[:8485]
 
 ct = len(z)
-# points = [Point(lon[i], lat[i]) for i in range(ct)]
 coords = np.array([(lon[i], lat[i]) for i in range(ct)])
 
 # --------------------------------------------------------------
-concave_hull, edge_points = alpha_shape(coords, alpha=1000.)
+concave_hull, edge_points = alpha_shape(coords, alpha=150.)
 bdry = np.array(concave_hull.boundary.coords[:])
 
 # --------------------------------------------------------------
-fh = nc.Dataset('bdry.nc', 'a')
-fh.createDimension('pts_noaa')
-fh.createVariable('lon_noaa', 'd', ('pts_noaa'))
-fh.createVariable('lat_noaa', 'd', ('pts_noaa'))
-fh.variables['lon_noaa'][:] = bdry[:, 0]
-fh.variables['lat_noaa'][:] = bdry[:, 1]
+fh = nc.Dataset('bdry.nc', 'w')
+fh.createDimension('pts')
+fh.createVariable('lon', 'd', ('pts'))
+fh.createVariable('lat', 'd', ('pts'))
+fh.variables['lon'][:] = bdry[:, 0]
+fh.variables['lat'][:] = bdry[:, 1]
 fh.close()

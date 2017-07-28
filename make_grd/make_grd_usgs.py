@@ -28,6 +28,14 @@ for i in range(len(msk_c)):
     hgrd.mask_rho[msk_c[i, 1], msk_c[i, 0]] = msk_c[i, 2]
 print 'mask done...'
 
+water = hgrd.mask_rho
+
+# ------------------------------------------------------------------------
+# mask out small channels
+water[:230, :75] = 0
+water[:150, :150] = 0
+water[229:235, 17:40] = 0
+
 # ------------------------------------------------------------------------
 # defind the boundary of mapping domain
 lat_min = 57.
@@ -100,20 +108,12 @@ p0 = [(x[i], y[i]) for i in range(len(x))]
 p = path.Path(p0)
 pc = p.contains_points(np.array([hgrd.lon_rho.flatten(), hgrd.lat_rho.flatten()]).T).reshape(h.shape)
  
-water = hgrd.mask_rho
-
 # interpolate new bathymetry
 h[(water==1) & pc] = griddata((lon0.flatten(), lat0.flatten()), h0.flatten(),
                                (hgrd.lon_rho[(water==1) & pc], hgrd.lat_rho[(water==1) & pc]), method='linear')
 
 # copy raw bathymetry
 hraw = h.copy()
-
-# ------------------------------------------------------------------------
-# mask out small channels
-water[:230, :75] = 0
-water[:150, :150] = 0
-water[229:235, 17:40] = 0
 
 # ------------------------------------------------------------------------
 # locally constrain hmin at some location

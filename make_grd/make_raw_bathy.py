@@ -32,6 +32,9 @@ for fn in flist:
     rd = csv.reader(f, delimiter='\t')
     next(rd, None)
     for row in rd:
+        # stn = row[0]
+        # if stn=='H10374':
+        #     print(fn)
         lon.append(float(row[1]))
         lat.append(float(row[2]))
         z.append(float(row[3]))
