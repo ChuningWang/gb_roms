@@ -176,8 +176,8 @@ h[640:660, 389:405] = h1
 # ------------------------------------------------------------------------
 # use a 2D filter to smooth locally
 from scipy.ndimage import uniform_filter
-h1 = h[:500, :220]
-h[:500, :220] = uniform_filter(h1, size=3)
+# h1 = h[:500, :220]
+# h[:500, :220] = uniform_filter(h1, size=3)
 h1 = h[260:360, 440:470]
 h[260:360, 440:470] = uniform_filter(h1, size=5)
 h1 = h[0:140, 220:380]
@@ -217,13 +217,25 @@ xmin = 370
 xmax = 420
 ymin = 285
 ymax = 355
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.15)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
 
 xmin = 420
 xmax = 490
 ymin = 310
 ymax = 380
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.15)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+
+xmin = 0
+xmax = 350
+ymin = 0
+ymax = 502
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+
+xmin = 0
+xmax = 500
+ymin = 0
+ymax = 220
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
 
 # ------------------------------------------------------------------------
 # shapiro filter
