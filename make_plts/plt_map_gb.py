@@ -67,7 +67,7 @@ if plt_map == 1:
 elif plt_map == 0:
 
     plt.pcolormesh(z, cmap='Greens')
-    plt.clim(0, 400)
+    plt.clim(400, 450)
     plt.colorbar()
     plt.contour(msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
 

@@ -67,6 +67,7 @@ h0 = -h0
 
 # fix minimum depth
 hmin = 1  # allow dry_wet
+hmax = 425
 h0 = pyroms_toolbox.change(h0, '<', hmin, hmin)
 
 # interpolate new bathymetry
@@ -252,6 +253,8 @@ print 'Max Roughness value is: ', RoughMat.max()
 
 # insure that depth is always deeper than hmin
 h = pyroms_toolbox.change(h, '<', hmin, hmin)
+# constrain maximum depth
+h = pyroms_toolbox.change(h, '>', hmax, hmax)
 # fix depth of land points
 h[water==0] = hmin
 
