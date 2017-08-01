@@ -29,7 +29,7 @@ lon_ctd = ctd['lon_stn']
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon = grd.hgrid.lon_rho
 lat = grd.hgrid.lat_rho
-z = grd.vgrid.h
+z = grd.vgrid.hraw.squeeze()
 msk = grd.hgrid.mask_rho
 
 plt.close()
@@ -67,11 +67,16 @@ if plt_map == 1:
 elif plt_map == 0:
 
     plt.pcolormesh(z, cmap='Greens')
-    plt.clim(400, 450)
+    plt.clim(-10, 10)
     plt.colorbar()
     plt.contour(msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
 
-    plt.savefig(out_dir + 'figs/map_grd_noproj.tiff', format='tiff', dpi=600)
+    plt.xticks(np.arange(0, 500, 10), rotation='vertical')
+    plt.yticks(np.arange(0, 1000, 20))
+    plt.tick_params(axis='both', which='major', labelsize=5)
+    plt.grid()
+
+    plt.savefig(out_dir + 'figs/map_grd_noproj_hraw.tiff', format='tiff', dpi=600)
 
 plt.close()
 

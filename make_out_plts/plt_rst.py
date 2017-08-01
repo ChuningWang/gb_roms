@@ -30,17 +30,19 @@ rx = rx0(h, grd.hgrid.mask)
 
 tag = 'GB-TIDE'
 
-varlist = ['u', 'v', 'temp', 'salt', 'zeta', 'wetdry_mask_rho`']
-varlist = ['zeta']
+varlist = ['u', 'v', 'temp', 'salt', 'zeta', 'wetdry_mask_rho']
+varlist = ['wetdry_mask_rho']
 for var in varlist:
     # var = 'u'
 
-    fh = nc.Dataset(model_dir + 'tmpdir_GB-TIDE/' + tag + '_his_00043.nc')
+    fh = nc.Dataset(model_dir + 'tmpdir_GB-TIDE/' + tag + '_rst.nc')
 
-    if var=='zeta' or var=='wetdry_mask_rho':
+    if var=='zeta':
+        data = fh.variables[var][:, 0, :, :].squeeze()
+    elif var=='wetdry_mask_rho':
         data = fh.variables[var][:, :, :].squeeze()
     else:
-        data = fh.variables[var][:, :, :, :].squeeze()
+        data = fh.variables[var][:, 0, :, :, :].squeeze()
 
     if var=='u':
         data = np.ma.masked_where(np.tile(msku==0, (30, 1, 1)), data)
