@@ -6,6 +6,7 @@ from shapely.ops import cascaded_union, polygonize
 from shapely.geometry import Point
 import shapely.geometry as geometry
 from scipy.spatial import Delaunay
+from matplotlib import path
 import numpy as np
 import math
 import netCDF4 as nc
@@ -83,38 +84,63 @@ import read_host_info
 sv = read_host_info.read_host_info()
 bathy_dir = sv['in_dir']
 
-fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
-lon1 = fh.variables['lon'][:]
-lat1 = fh.variables['lat'][:]
-z1 = fh.variables['z'][:]
-fh.close()
-
 fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
-lon2 = fh.variables['lon'][:][2::5, 2::5]
-lat2 = fh.variables['lat'][:][2::5, 2::5]
-z2 = fh.variables['z'][:][2::5, 2::5]
+lon1 = fh.variables['lon'][:][2::5, 2::5]
+lat1 = fh.variables['lat'][:][2::5, 2::5]
+z1 = fh.variables['z'][:][2::5, 2::5]
 fh.close()
 
-msk = ~z2.mask
-lon2 = lon2[msk]
-lat2 = lat2[msk]
-z2 = z2[msk]
+msk = ~z1.mask
+lon1 = lon1[msk]
+lat1 = lat1[msk]
+z1 = z1[msk]
+
+# # step 1, draw boundary for usgs grid, only need once
+# ct = len(z1)
+# coords = np.array([(lon1[i], lat1[i]) for i in range(ct)])
+# 
+# concave_hull, edge_points = alpha_shape(coords, alpha=150.)
+# bdry = np.array(concave_hull.boundary.coords[:])
+# 
+# # save boundary into text
+# np.savetxt('bdry_usgs.txt', bdry)
+
+bdry = np.loadtxt('bdry_usgs.txt')
+
+# step 2, load noaa data, pick points out of usgs grid.
+fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
+lon2 = fh.variables['lon'][:]
+lat2 = fh.variables['lat'][:]
+z2 = fh.variables['z'][:]
+fh.close()
+
+p0 = [(bdry[i, 0], bdry[i, 1]) for i in range(len(bdry[:, 0]))]
+
+p = path.Path(p0)
+pc = ~p.contains_points(np.array([lon2, lat2]).T) 
+
+lon2 = lon2[pc]
+lat2 = lat2[pc]
+z2 = z2[pc]
 
 lon = np.concatenate((lon1, lon2))
 lat = np.concatenate((lat1, lat2))
 z = np.concatenate((z1, z2))
 
+# --------------------------------------------------------------
 # lon = lon1[:8485]
 # lat = lat1[:8485]
 # z = z1[:8485]
 
-# ct = len(z)
-# coords = np.array([(lon[i], lat[i]) for i in range(ct)])
-# 
-# # --------------------------------------------------------------
-# concave_hull, edge_points = alpha_shape(coords, alpha=150.)
-# bdry = np.array(concave_hull.boundary.coords[:])
-# 
+ct = len(z)
+coords = np.array([(lon[i], lat[i]) for i in range(ct)])
+
+# --------------------------------------------------------------
+concave_hull, edge_points = alpha_shape(coords, alpha=125.)
+bdry = np.array(concave_hull.boundary.coords[:])
+
+np.savetxt('bdry.txt', bdry)
+
 # # --------------------------------------------------------------
 # fh = nc.Dataset('bdry.nc', 'w')
 # fh.createDimension('pts')

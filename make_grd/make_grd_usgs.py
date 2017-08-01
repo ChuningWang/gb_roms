@@ -68,7 +68,7 @@ h0 = -h0
 # fix minimum depth
 hmin = 1  # allow dry_wet
 hmax = 425
-h0 = pyroms_toolbox.change(h0, '<', hmin, hmin)
+# h0 = pyroms_toolbox.change(h0, '<', hmin, hmin)
 
 # interpolate new bathymetry
 lon0, lat0 = np.meshgrid(lon0, lat0)
@@ -82,6 +82,15 @@ lon1 = fh.variables['lon'][:]
 lat1 = fh.variables['lat'][:]
 h1 = fh.variables['z'][:]
 fh.close()
+
+bdry = np.loadtxt('bdry_usgs.txt')
+p0 = [(bdry[i, 0], bdry[i, 1]) for i in range(len(bdry[:, 0]))]
+p = path.Path(p0)
+pc = ~p.contains_points(np.array([lon1, lat1]).T) 
+
+lon1 = lon1[pc]
+lat1 = lat1[pc]
+h1 = h1[pc]
 
 fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
 lon2 = fh.variables['lon'][:][1::3, 1::3]
@@ -99,10 +108,9 @@ lat0 = np.concatenate((lat1, lat2))
 h0 = np.concatenate((h1, h2))
 
 # load grid boundary
-fh = nc.Dataset('bdry.nc')
-x = fh.variables['lon'][:]
-y = fh.variables['lat'][:]
-fh.close()
+bdry = np.loadtxt('bdry.txt')
+x = bdry[:, 0]
+y = bdry[:, 1]
 
 p0 = [(x[i], y[i]) for i in range(len(x))]
 
@@ -214,6 +222,12 @@ ymin = 380
 ymax = 500
 local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
 
+xmin = 653
+xmax = 663
+ymin = 411
+ymax = 425
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.05)
+
 xmin = 370
 xmax = 420
 ymin = 285
@@ -257,6 +271,12 @@ h = pyroms_toolbox.change(h, '<', hmin, hmin)
 h = pyroms_toolbox.change(h, '>', hmax, hmax)
 # fix depth of land points
 h[water==0] = hmin
+
+# ------------------------------------------------------------------------
+# change bathymetry by hand using h_change.txt
+msk_c = np.loadtxt('h_change.txt')
+for i in range(len(msk_c)):
+    h[msk_c[i, 1], msk_c[i, 0]] = msk_c[i, 2]
 
 # ------------------------------------------------------------------------
 # redesign the vertical coordinate
