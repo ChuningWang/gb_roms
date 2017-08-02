@@ -18,7 +18,7 @@ lon_max = -134.
 lon_0 = 0.5 * (lon_min + lon_max)
 
 # load grid
-hgrd = pyroms.grid.get_ROMS_hgrid('GB')
+hgrd = pyroms.grid.get_ROMS_hgrid('GB_USGS')
 
 # use GUI masking tool
 m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,

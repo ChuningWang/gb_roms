@@ -6,10 +6,10 @@ import bathy_smoother
 
 import matplotlib.pyplot as plt
 
-x0 = 658
-y0 = 418
-dy = 10
+x0 = 310
+y0 = 365
 dx = 10
+dy = 15
 
 grd = pyroms.grid.get_ROMS_grid('GB_USGS')
 h0 = grd.vgrid.h

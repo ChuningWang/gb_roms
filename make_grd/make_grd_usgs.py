@@ -66,7 +66,7 @@ h0 = h0[msk2,:][:,msk1]
 h0 = -h0
 
 # fix minimum depth
-hmin = 1  # allow dry_wet
+hmin = -1  # allow dry_wet
 hmax = 425
 # h0 = pyroms_toolbox.change(h0, '<', hmin, hmin)
 
@@ -148,45 +148,47 @@ h1 = h[500:, :380]
 h1[h1<hmin0] = hmin0
 h[500:, :380] = h1
 
-h1 = h[470:500, 345:360]
-h1[h1<hmin0] = hmin0
-h[470:500, 345:360] = h1
-
-h1 = h[450:470, 352:380]
-h1[h1<hmin0] = hmin0
-h[450:470, 352:380] = h1
-
-h1 = h[645:660, 395:405]
-h1[h1<hmin0] = hmin0
-h[645:660, 395:405] = h1
-
-h1 = h[648:660, 400:410]
-h1[h1<hmin0] = hmin0
-h[648:660, 400:410] = h1
-
-hmin0 = 20  # m
-
-h1 = h[645:655, 382:385]
-h1[h1<hmin0] = hmin0
-h[645:655, 382:385] = h1
-
-hmin0 = 40  # m
-
-h1 = h[328:332, 281:285]
-h1[h1<hmin0] = hmin0
-h[328:332, 281:285] = h1
-
-hmax0 = 5  # m
-
-h1 = h[640:660, 389:405]
-h1[h1>hmax0] = hmax0
-h[640:660, 389:405] = h1
+# h1 = h[470:500, 345:360]
+# h1[h1<hmin0] = hmin0
+# h[470:500, 345:360] = h1
+# 
+# h1 = h[450:470, 352:380]
+# h1[h1<hmin0] = hmin0
+# h[450:470, 352:380] = h1
+# 
+# h1 = h[645:660, 395:405]
+# h1[h1<hmin0] = hmin0
+# h[645:660, 395:405] = h1
+# 
+# h1 = h[648:660, 400:410]
+# h1[h1<hmin0] = hmin0
+# h[648:660, 400:410] = h1
+# 
+# hmin0 = 20  # m
+# 
+# h1 = h[645:655, 382:385]
+# h1[h1<hmin0] = hmin0
+# h[645:655, 382:385] = h1
+# 
+# hmin0 = 40  # m
+# 
+# h1 = h[328:332, 281:285]
+# h1[h1<hmin0] = hmin0
+# h[328:332, 281:285] = h1
+# 
+# hmax0 = 5  # m
+# 
+# h1 = h[640:660, 389:405]
+# h1[h1>hmax0] = hmax0
+# h[640:660, 389:405] = h1
 
 # ------------------------------------------------------------------------
 # use a 2D filter to smooth locally
 from scipy.ndimage import uniform_filter
-# h1 = h[:500, :220]
-# h[:500, :220] = uniform_filter(h1, size=3)
+h1 = h[:500, :220]
+h[:500, :220] = uniform_filter(h1, size=3)
+h1 = h[300:320, 300:380]
+h[300:320, 300:380] = uniform_filter(h1, size=5)
 h1 = h[260:360, 440:470]
 h[260:360, 440:470] = uniform_filter(h1, size=5)
 h1 = h[0:140, 220:380]
@@ -220,37 +222,37 @@ xmin = 630
 xmax = 685
 ymin = 380
 ymax = 500
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.15)
 
-xmin = 653
-xmax = 663
-ymin = 411
-ymax = 425
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.05)
+# xmin = 653
+# xmax = 663
+# ymin = 411
+# ymax = 425
+# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.05)
 
 xmin = 370
 xmax = 420
 ymin = 285
 ymax = 355
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
 
 xmin = 420
 xmax = 490
 ymin = 310
 ymax = 380
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
 
 xmin = 0
 xmax = 350
 ymin = 0
 ymax = 502
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
 
 xmin = 0
 xmax = 500
 ymin = 0
 ymax = 220
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.10)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
 
 # ------------------------------------------------------------------------
 # shapiro filter
@@ -272,11 +274,11 @@ h = pyroms_toolbox.change(h, '>', hmax, hmax)
 # fix depth of land points
 h[water==0] = hmin
 
-# ------------------------------------------------------------------------
-# change bathymetry by hand using h_change.txt
-msk_c = np.loadtxt('h_change.txt')
-for i in range(len(msk_c)):
-    h[msk_c[i, 1], msk_c[i, 0]] = msk_c[i, 2]
+# # ------------------------------------------------------------------------
+# # change bathymetry by hand using h_change.txt
+# msk_c = np.loadtxt('h_change.txt')
+# for i in range(len(msk_c)):
+#     h[msk_c[i, 1], msk_c[i, 0]] = msk_c[i, 2]
 
 # ------------------------------------------------------------------------
 # redesign the vertical coordinate
