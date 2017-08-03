@@ -57,9 +57,8 @@ for var in vlist:
 
     kk = kk+1
 
-# convert Tair unit from Kelvin to Celcius
-fileout = dst_dir + 'frc/' + 'Tair' + '_' + str(my_year) + '_' + tag + '.nc' 
-fh = nc.Dataset(fileout, 'a')
-fh.variables['Tair'][:] = fh.variables['Tair'][:]-273.15
-fh.close()
-
+# # convert Tair unit from Kelvin to Celcius
+# fileout = dst_dir + 'frc/' + 'Tair' + '_' + str(my_year) + '_' + tag + '.nc' 
+# fh = nc.Dataset(fileout, 'a')
+# fh.variables['Tair'][:] = fh.variables['Tair'][:]-273.15
+# fh.close()

@@ -9,7 +9,7 @@ out_dir = sv['out_dir']
 
 data_dir = out_dir + 'frc/'
 fig_dir = out_dir + 'figs/frc/'
-var = 'swrad'
+var = 'Tair'
 
 # switch backend
 plt.switch_backend('Agg') 
@@ -25,7 +25,7 @@ fh = nc.Dataset(data_dir + 'Vwind_2000_JRA55v1.1.nc')
 v10 = fh.variables['Vwind'][:]
 fh.close()
 
-fh = nc.Dataset(data_dir + 'swrad_2000_JRA55v1.1.nc')
+fh = nc.Dataset(data_dir + var + '_2000_JRA55v1.1.nc')
 v = fh.variables[var][:]
 fh.close()
 
@@ -49,7 +49,7 @@ Q = m.quiver(x, y, uproj, vproj, scale=100)
 qk = plt.quiverkey(Q, 0.35, 0.8, 10, r'10 m$\cdot$s$^{-1}$', labelpos='E',
                    coordinates='figure')
 
-for i in range(len(time[150:])):
+for i in range(len(time[:240])):
 
     uproj, vproj = m.transform_vector(u10[i, :, :], v10[i, :, :], lons, lats, len(lons), len(lats))
     pc = m.pcolormesh(x, y, v[i, :, :], cmap='Reds')
