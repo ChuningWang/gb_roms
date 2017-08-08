@@ -15,12 +15,15 @@ data_dir = sv['soda_dir']
 dst_dir = out_dir + 'bc_ic/'
 
 my_grd = 'GB_USGS'
-my_year = '2000/'
-tag='2000_01_03'
-filein=data_dir+my_year+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
+my_year = 2008
+tag='2008_07_04'
+# filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
+filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_or_'+tag+'.nc'
 
 # load grids
-src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
+# src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
+src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.25deg_grid.nc', 
+                                                      name='SODA3.3.1_0.25', xrange=(550, 600), yrange=(750, 800))
 dst_grd = pyroms.grid.get_ROMS_grid(my_grd)
 
 print '\nBuild IC file from %s' %filein

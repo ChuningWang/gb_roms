@@ -16,22 +16,27 @@ model = 'tmpdir_GB-TIDE/outputs/2000/'
 
 outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/zview/GB-TIDE/'
+
+flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
+flist = flist[-24:]
+
 depth = 5
 tindex = 0
-# var = 'temp'
-# uvar = 'u'
-# vvar = 'v'
-var = 'zeta'
-uvar = 'ubar'
-vvar = 'vbar'
-# clim = [0, 8]
+var = 'temp'
+# var = 'zeta'
+if var=='zeta':
+    uvar = 'ubar'
+    vvar = 'vbar'
+else:
+    uvar = 'u'
+    vvar = 'v'
+clim = [0, 8]
 # clim = [28, 32]
-clim = [-2, 2]
+# clim = [-3, 3]
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
-flist = glob.glob(outputs_dir+'*his*.nc')
-flist = flist[-48:]
+plt.switch_backend('Agg')
 
 for fn in flist:
     tag = fn.split('/')[-1].split('.')[0]

@@ -13,7 +13,7 @@ home_dir = sv['home_dir']
 
 grd1 = 'GB_USGS'
 
-my_year = 2000
+my_year = 2008
 
 # load GB grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)

@@ -49,7 +49,7 @@ script_dir = home_dir + 'git/gb_roms/make_rivers/'
 dis_file = in_dir + 'gb_discharge.nc'
 grd1 = 'GB_USGS'
 
-my_year = 2000
+my_year = 2008
 
 # Select time range (days since 1900)
 t_base = datetime(1900, 01, 01)

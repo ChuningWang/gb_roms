@@ -12,7 +12,7 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
-my_year = 2000
+my_year = 2008
 grd1 = 'GB_USGS'
 tag = 'Hill'
 

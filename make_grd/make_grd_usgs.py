@@ -222,7 +222,7 @@ xmin = 630
 xmax = 685
 ymin = 380
 ymax = 500
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.15)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
 
 # xmin = 653
 # xmax = 663
@@ -234,13 +234,13 @@ xmin = 370
 xmax = 420
 ymin = 285
 ymax = 355
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
 
 xmin = 420
 xmax = 490
 ymin = 310
 ymax = 380
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
+local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
 
 xmin = 0
 xmax = 350

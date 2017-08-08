@@ -13,19 +13,24 @@ sv = read_host_info.read_host_info()
 dst_dir = sv['out_dir']
 data_dir = sv['soda_dir']
 
+os.chdir(os.path.expanduser('~') + '/git/gb_roms/make_bc_ic/')
+
 grd1 = 'GB_USGS'
 
-my_year = 2000
+my_year = 2008
 
 data_dir_year = data_dir + str(my_year) + '/'
 
 filelst = subprocess.check_output(['ls', data_dir_year]).replace('/n',' ').split()
 
-src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir+'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280) )
+# src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir+'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
+src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.25deg_grid.nc', 
+                                                      name='SODA3.3.1_0.25', xrange=(550, 600), yrange=(750, 800))
 dst_grd = pyroms.grid.get_ROMS_grid(grd1)
 
 for filein in filelst:
-    tag = filein.replace('soda3.3.1_5dy_ocean_reg_','').replace('.nc','')
+    # tag = filein.replace('soda3.3.1_5dy_ocean_reg_','').replace('.nc','')
+    tag = filein.replace('soda3.3.1_5dy_ocean_or_','').replace('.nc','')
     print '\nBuild OBC file for time %s' %filein
     zeta_dst_file = dst_dir + 'temp/' + dst_grd.name + '_bdry_zeta_' + tag + '_' + src_grd.name + '.nc'
     temp_dst_file = dst_dir + 'temp/' +  dst_grd.name + '_bdry_temp_' + tag + '_' + src_grd.name + '.nc'

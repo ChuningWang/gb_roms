@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import pyroms
 import glob
-from gb_toolbox import gb_ctd
 from matplotlib.mlab import griddata
 from geopy.distance import vincenty
+from matplotlib import path
 
 import read_host_info
 sv = read_host_info.read_host_info()
@@ -14,34 +14,26 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
+pltuv = 1
 grd1 = 'GB_USGS'
 model = 'tmpdir_GB-TIDE/outputs/2000/'
-clim = [25, 35]
 
 # load data
 outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/trans/2000/'
+fig_dir = out_dir + 'figs/trans/GB-TIDE/'
 
-flist = glob.glob(outputs_dir+'*.nc')
-# flist = flist[-48:]
+flist = sorted(glob.glob(outputs_dir+'*.nc'))
+flist = flist[-24:]
 
 depth = 200
 dd = 3
-zlev = 40
+zlev = 30
 tindex = 0
 var = 'salt'
 uvar = 'u'
 vvar = 'v'
-clim = [28, 32]
-
-# load geological coordinates
-ctd = gb_ctd.rd_ctd(in_dir + 'ctd.nc')
-lat_ctd = ctd['lat_stn']
-lon_ctd = ctd['lon_stn']
-
-station = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 21]
-lat_ctd = lat_ctd[station]
-lon_ctd = lon_ctd[station]
+wvar = 'w'
+clim = [25, 35]
 
 c0 = np.array([[-137.04719708,   59.05076767],
                [-137.02431432,   59.03650282],
@@ -120,26 +112,61 @@ c0 = np.array([[-137.04719708,   59.05076767],
                [-135.08995853,   58.12069925],
                [-135.05792266,   58.10358142]])
 
-lon_ctd = c0[:, 0]
-lat_ctd = c0[:, 1]
+lon_ct = c0[:, 0]
+lat_ct = c0[:, 1]
 
-
-ct_tr = (len(lon_ctd)-1)*dd
-lat_t = np.zeros(ct_tr)
+ct_tr = (len(lon_ct)-1)*dd
 lon_t = np.zeros(ct_tr)
+lat_t = np.zeros(ct_tr)
 
-for i in range(len(lon_ctd)-1):
-    lat_t[i*dd:(i+1)*dd] = np.linspace(lat_ctd[i], lat_ctd[i+1], dd+1)[:-1]
-    lon_t[i*dd:(i+1)*dd] = np.linspace(lon_ctd[i], lon_ctd[i+1], dd+1)[:-1]
+lon_b0 = lon_ct[:1]-0.01
+lat_b0 = lat_ct[:1]+0.01
+lon_b1 = lon_ct-0.01
+lat_b1 = lat_ct-0.01
+lon_b2 = lon_ct[-1:]+0.01
+lat_b2 = lat_ct[-1:]-0.01
+lon_b3 = lon_ct[::-1]+0.01
+lat_b3 = lat_ct[::-1]+0.01
+lon_bdry = np.concatenate((lon_b0, lon_b1, lon_b2, lon_b3))
+lat_bdry = np.concatenate((lat_b0, lat_b1, lat_b2, lat_b3))
 
+for i in range(len(lon_ct)-1):
+    lon_t[i*dd:(i+1)*dd] = np.linspace(lon_ct[i], lon_ct[i+1], dd+1)[:-1]
+    lat_t[i*dd:(i+1)*dd] = np.linspace(lat_ct[i], lat_ct[i+1], dd+1)[:-1]
+
+# read grid information
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lat = grd.hgrid.lat_rho
 lon = grd.hgrid.lon_rho
 
 # interpolate topography
 h = grd.vgrid.h
+ang = grd.hgrid.angle_rho
 msk = grd.hgrid.mask_rho
-h_tr = griddata(lon.flatten(), lat.flatten(), h.flatten(), lon_t, lat_t, interp='linear').diagonal()
+
+# # plot transaction on map
+# fig = plt.figure()
+# plt.pcolor(lon, lat, h, cmap='Greens')
+# plt.clim(0, 400)
+# plt.contour(lon, lat, msk, np.array([0.5, 0.5]), colors='k')
+# plt.plot(c0[:, 0], c0[:, 1], '--.k', ms=3)
+# plt.savefig(fig_dir + 'map_transac.png')
+# plt.close()
+
+lon = lon[msk==1]
+lat = lat[msk==1]
+h = h[msk==1]
+ang = ang[msk==1]
+
+p0 = [(lon_bdry[i], lat_bdry[i]) for i in range(len(lon_bdry))]
+p = path.Path(p0)
+pc = p.contains_points(np.array([lon, lat]).T) 
+lon = lon[pc]
+lat = lat[pc]
+h = h[pc]
+ang = ang[pc]
+
+h_tr = griddata(lon, lat, h, lon_t, lat_t, interp='linear').diagonal()
 
 # get rho point depth
 s_rho = grd.vgrid.s_rho
@@ -157,32 +184,96 @@ dis = np.cumsum(dis)
 dis = dis/1000  # [km]
 dis = np.tile(dis, (zlev, 1))
 
-# interpolate salinity
-s_tr = np.zeros((zlev, ct_tr))
+# initiate vairables
+var_tr = np.zeros((zlev, ct_tr))
 
+# -------------------------------------------------------------------------------
+# if plot velocity vector, also calculate and define these variables
+if pltuv==1:
+    latu = grd.hgrid.lat_u
+    lonu = grd.hgrid.lon_u
+    latv = grd.hgrid.lat_v
+    lonv = grd.hgrid.lon_v
+    msku = grd.hgrid.mask_u
+    mskv = grd.hgrid.mask_v
+
+    lonu = lonu[msku==1]
+    latu = latu[msku==1]
+    lonv = lonv[mskv==1]
+    latv = latv[mskv==1]
+
+    pcu = p.contains_points(np.array([lonu, latu]).T) 
+    pcv = p.contains_points(np.array([lonv, latv]).T) 
+    lonu = lonu[pcu]
+    latu = latu[pcu]
+    lonv = lonv[pcv]
+    latv = latv[pcv]
+
+    lon_t2 = lon_t[::dd]
+    lat_t2 = lat_t[::dd]
+    h_tr2 = h_tr[::dd]
+    z_tr2 = z_tr[:, ::dd]
+    dis2 = dis[:, ::dd]
+
+    # calculate angle
+    ang_tr = griddata(lon, lat, ang, lon_t, lat_t, interp='linear').diagonal()
+    ang_tr2 = ang_tr[::dd]
+    ang_add = np.zeros(len(ang_tr2))
+    dx = 59
+    dy = 111
+    dvec = np.diff(lon_t2*dx + 1j*lat_t2*dy)
+    ang_add[:-1] = np.angle(dvec)
+    ang_add[-1] = ang_add[-2]
+    ang_tr2 = ang_tr2-ang_add
+
+    U_tr2 = np.zeros((zlev, len(lon_t2)))
+    w_tr2_sw = np.zeros((zlev+1, len(lon_t2)))
+
+# -------------------------------------------------------------------------------
+# make plots
 plt.switch_backend('Agg')
 
-# plot transaction on map
-fig = plt.figure()
-plt.pcolor(lon, lat, h, cmap='Greens')
-plt.clim(0, 400)
-plt.contour(lon, lat, msk, np.array([0.5, 0.5]), colors='k')
-plt.plot(c0[:, 0], c0[:, 1], '--.k', ms=3)
-plt.savefig(fig_dir + 'map_transac.png')
-plt.close()
-
 for fn in flist:
+    # read data
     tag = fn.split('/')[-1].split('.')[0]
     print 'processing ' + tag + ' ...'
     fh = nc.Dataset(fn)
-    s = fh.variables['salt'][:].squeeze()
+    data = fh.variables[var][:].squeeze()
+    if pltuv==1:
+        u = fh.variables[uvar][:].squeeze()
+        v = fh.variables[vvar][:].squeeze()
+        w = fh.variables[wvar][:].squeeze()
     fh.close()
+   
+    for i in range(zlev):
+        dslice = data[i, :, :][msk==1][pc]
+        var_tr[i, :] = griddata(lon, lat, dslice, lon_t, lat_t, interp='linear').diagonal()
 
-    for i in range(40):
-        s_tr[i, :] = griddata(lon.flatten(), lat.flatten(), s[i, :, :].squeeze().flatten(), lon_t, lat_t, interp='linear').diagonal()
+    if pltuv==1:
+        for i in range(zlev):
+            uslice = u[i, :, :][msku==1][pcu]
+            vslice = v[i, :, :][mskv==1][pcv]
+            u_tr2 = griddata(lonu, latu, uslice, lon_t2, lat_t2, interp='linear').diagonal()
+            v_tr2 = griddata(lonv, latv, vslice, lon_t2, lat_t2, interp='linear').diagonal()
 
-    plt.pcolormesh(dis, z_tr, s_tr)
+            U_tr2[i, :] = u_tr2*np.cos(ang_tr2)-v_tr2*np.sin(ang_tr2)
+
+        for i in range(zlev+1):
+            wslice = w[i, :, :][msk==1][pc]
+            w_tr2_sw[i, :] = griddata(lon, lat, wslice, lon_t2, lat_t2, interp='linear').diagonal()
+
+        w_tr2 = 0.5*(w_tr2_sw[1:, :]+w_tr2_sw[:-1, :])
+
+    # make plot
+    pcm = plt.pcolormesh(dis, z_tr, var_tr)
     plt.clim(clim[0], clim[1])
     plt.colorbar()
+
+    if pltuv==1:
+        Q = plt.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
     plt.savefig(fig_dir + var + '_' + tag + '.png')
+
+    # pcm.remove()
+    # if pltuv==1:
+    #     Q.remove()
     plt.close()

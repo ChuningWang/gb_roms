@@ -9,7 +9,7 @@ out_dir = sv['out_dir']
 
 grd1 = 'GB_USGS'
 
-my_year = 2000
+my_year = 2008
 grd = pyroms.grid.get_ROMS_grid(grd1)
 tag = 'Hill'
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
