@@ -159,7 +159,7 @@ coast_gb = np.zeros(grd.hgrid.lat_rho.shape)
 coast_gb = np.ma.masked_array(coast_gb, mask=0)
 d2 =  get_discharge_avgbox(time, grd.hgrid.lat_rho, grd.hgrid.lon_rho, runoff_raw_nc, coast_gb, box)
 
-rr = np.mean(d1/d2)
+rr = np.nanmean(d1/d2)
 
 runoff_raw_nc = runoff_raw_nc*rr
 runoff_spread_nc = runoff_spread_nc*rr
