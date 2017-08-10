@@ -6,7 +6,7 @@ sv = read_host_info.read_host_info()
 dst_dir = sv['out_dir']
 soda_dir = sv['soda_dir']
 
-fin  = nc.Dataset(soda_dir + 'soda3.3.1_5dy_ocean_or_2000_01_03.nc', 'r')
+fin  = nc.Dataset(soda_dir + '2000/soda3.3.1_5dy_ocean_or_2000_01_03.nc', 'r')
 fout = nc.Dataset(soda_dir + 'grid/SODA3_0.25deg_grid.nc', 'w')
 
 fout.createDimension('xu_ocean', len(fin.dimensions['xu_ocean']))
@@ -43,14 +43,16 @@ fout.variables['sw_ocean'][:] = fin.variables['sw_ocean'][:]
 fout.variables['st_edges_ocean'][:] = fin.variables['st_edges_ocean'][:]
 fout.variables['sw_edges_ocean'][:] = fin.variables['sw_edges_ocean'][:]
 
-# fout.Dataset['coriolis_param'][:] = fin.Dataset['coriolis_param'][:]
-# fout.Dataset['kmt'][:] = fin.Dataset['kmt'][:]
-# fout.Dataset['ht'][:] = fin.Dataset['ht'][:]
-# fout.Dataset['kmu'][:] = fin.Dataset['kmu'][:]
-# 
-# fout.Dataset['kmt']._FillValue = fin.Dataset['kmt']._FillValue
-# fout.Dataset['ht']._FillValue = fin.Dataset['ht']._FillValue
-# fout.Dataset['kmu']._FillValue = fin.Dataset['kmu']._FillValue
+fout.variables['coriolis_param'][:] = 2*(2*np.pi/24/60/60)*np.sin(latt*np.pi/180)
+
+mskt = fin.variables['anompb'][:]
+mskt[~mskt.mask] = 1
+msku = fin.variables['taux'][:]
+msku[~msku.mask] = 1
+
+fout.variables['kmt'][:] = mskt
+fout.variables['ht'][:] = mskt
+fout.variables['kmu'][:] = msku
 
 fin.close()
 fout.close()

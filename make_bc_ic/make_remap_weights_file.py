@@ -8,9 +8,9 @@ soda_dir = sv['soda_dir']
 grd1 = 'GB_USGS'
 
 # load the grid
-srcgrd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(soda_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
-# srcgrd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(soda_dir + 'grid/SODA3_0.25deg_grid.nc', 
-#                                                      name='SODA3.3.1_0.25', xrange=(550, 600), yrange=(750, 800))
+# srcgrd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(soda_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
+srcgrd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(soda_dir + 'grid/SODA3_0.25deg_grid.nc', 
+                                                     name='SODA3.3.1_0.25', xrange=(550, 600), yrange=(750, 800))
 dstgrd = pyroms.grid.get_ROMS_grid(grd1)
 
 # make remap grid file for scrip

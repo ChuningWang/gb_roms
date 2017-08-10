@@ -65,6 +65,7 @@ lon = fh.variables['lon'][:]
 coast = fh.variables['coast'][:]
 t1 = (t_ini-t_base).days
 t2 = (t_end-t_base).days
+# t2 = t1
 msk = (time>=t1) & (time<=t2)
 time = time[msk]
 data = fh.variables['discharge'][msk, :, :]
@@ -114,6 +115,7 @@ mask_idx = np.where(grd.hgrid.mask_rho == 0)
 runoff_spread_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
 runoff_raw_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
 nct=0
+
 for t in range(nt):
     print 'Remapping runoff for time %f' %time[nct]
     # conservative horizontal interpolation using scrip

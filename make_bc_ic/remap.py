@@ -45,7 +45,7 @@ def remap(src_varname, src_file, src_grd, dst_grd, dst_file, dmax=0, cdepth=0, k
         time = tmp[0]
     
     # we need to correct the time axis
-    ref_soda = dt.datetime(2000,1,1,0,0)
+    ref_soda = dt.datetime(1980,1,1,0,0)
     ref_roms = dt.datetime(1900,1,1,0,0)
     ndays = (ref_soda - ref_roms).days
     time = time + ndays 
@@ -61,7 +61,6 @@ def remap(src_varname, src_file, src_grd, dst_grd, dst_file, dmax=0, cdepth=0, k
         src_var = src_var[0,:, yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
     elif ndim == 2:
         src_var = src_var[0,yrange[0]:yrange[1]+1, xrange[0]:xrange[1]+1]
-
 
     if src_varname == 'ssh':
         Bpos = 't'
