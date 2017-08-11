@@ -114,10 +114,9 @@ mask_idx = np.where(grd.hgrid.mask_rho == 0)
 # initiate
 runoff_spread_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
 runoff_raw_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
-nct=0
 
 for t in range(nt):
-    print 'Remapping runoff for time %f' %time[nct]
+    print 'Remapping runoff for time %f' %time[t]
     # conservative horizontal interpolation using scrip
     runoff_raw = pyroms.remapping.remap(data[t,:,:], wts_file, \
                                            spval=spval)
@@ -144,14 +143,17 @@ for t in range(nt):
                            rpt / (grd.hgrid.dx[paj, pai] * grd.hgrid.dy[paj, pai])
 
 
-    # spval
+    # check spval
+    runoff_raw[mask_idx] = spval
     runoff_spread[mask_idx] = spval
 
     # write data in destination file
-    runoff_spread_nc[nct, :, :] = runoff_spread
-    runoff_raw_nc[nct, :, :] = runoff_raw
+    runoff_raw_nc[t, :, :] = runoff_raw
+    runoff_spread_nc[t, :, :] = runoff_spread
 
-    nct = nct + 1
+# mask invalid values
+runoff_raw_nc = np.ma.masked_where(runoff_raw_nc==spval, runoff_raw_nc)
+runoff_spread_nc = np.ma.masked_where(runoff_spread_nc==spval, runoff_spread_nc)
 
 # scale the total discharge to origin grid
 d1 =  get_discharge_avgbox(time, lat, lon, data, coast, box)
@@ -163,6 +165,10 @@ rr = np.nanmean(d1/d2)
 
 runoff_raw_nc = runoff_raw_nc*rr
 runoff_spread_nc = runoff_spread_nc*rr
+
+# # double check spval
+# runoff_raw_nc[mask_idx] = spval
+# runoff_spread_nc[mask_idx] = spval
 
 # create runoff file
 print 'create runoff file'

@@ -91,10 +91,14 @@ for var in varlist:
 
     plt.figure()
     plt.pcolor(y[ymin:ymax], x[xmin:xmax], data[xmin:xmax, ymin:ymax].squeeze())
-    plt.plot([xmin, xmax], [yy, yy], '--k', lw=0.01)
-    plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
+    plt.plot([ymin, ymax], [yy, yy], '--k', lw=0.01)
+    plt.plot([xx, xx], [xmin, xmax], '--k', lw=0.01)
     plt.xlim(ymin, ymax)
     plt.ylim(xmin, xmax)
+    if var=='temp':
+        plt.clim(0, 20)
+    elif var=='salt':
+        plt.clim(0, 35)
     plt.colorbar()
     plt.title(str(xx)+ ',' + str(yy) + ',' + str(zlevel))
     plt.savefig(outpath + tag + '_rst_' + var + '_' + ex + '.png', format='png', dpi=900)

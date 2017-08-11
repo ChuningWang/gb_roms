@@ -22,7 +22,7 @@ Nr = len(out.dimensions['river'])
 
 vshape = np.zeros([N, Nr])
 for k in range(N):
-    vshape[k,:] = k
+    vshape[k,:] = k**2
 
 area = sum(vshape[:,0])
 vshape = (1.0/area)*vshape

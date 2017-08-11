@@ -101,6 +101,7 @@ dst_dir = sv['out_dir']
 soda_dir = sv['soda_dir']
 
 grd1 = 'GB_USGS'
+month = 7
 
 # Load target grid and land mask
 dst_grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -123,8 +124,8 @@ ctd_clim = gb_ctd.cal_ctd_climatology(ctd)
 # Extract data
 lat = ctd_clim['lat']
 lon = ctd_clim['lon']
-t = ctd_clim['t'][0, :, :].squeeze()
-s = ctd_clim['s'][0, :, :].squeeze()
+t = ctd_clim['t'][month-1, :, :].squeeze()
+s = ctd_clim['s'][month-1, :, :].squeeze()
 
 # Clear NaN profiles in data
 si = np.where(np.isnan(t[:, 0]))[0]
@@ -246,8 +247,8 @@ for i in range(eta):
 # post-process
 # filter the results
 for i in range(zlev):
-    t_ini[:, i, :, :] = nan_gaussian_filter(t_ini[:, i, :, :], 40.0)
-    s_ini[:, i, :, :] = nan_gaussian_filter(s_ini[:, i, :, :], 40.0)
+    t_ini[:, i, :, :] = nan_gaussian_filter(t_ini[:, i, :, :], 10.0)
+    s_ini[:, i, :, :] = nan_gaussian_filter(s_ini[:, i, :, :], 10.0)
 
 # mask data below water depth
 # t_ini = np.ma.masked_invalid(t_ini)
