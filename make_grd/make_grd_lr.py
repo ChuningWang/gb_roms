@@ -37,8 +37,8 @@ lon_0 = 0.5 * (lon_min + lon_max)
 # ------------------------------------------------------------------------
 # These coords are handpicked using the Boundary Interactor.
 
-lon_bry = np.array([    -137.24,    -136.30,    -135.00,    -135.94])
-lat_bry = np.array([    59.02,      57.80,      58.05,      59.22  ])
+lon_bry = np.array([    -137.35,    -136.30,    -135.00,    -136.05])
+lat_bry = np.array([    59.05,      57.80,      58.05,      59.25  ])
 beta = np.array([ 1., 1., 1., 1.])
 
 # generate hgrid
@@ -365,7 +365,7 @@ theta_b = 2.0
 theta_s = 8.0
 Tcline = 10
 N = 40
-vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)
+vgrd = pyroms.vgrid.s_coordinate_4(hgrd.h, theta_b, theta_s, Tcline, N, hraw=hgrd.h)
 
 # ------------------------------------------------------------------------
 grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
