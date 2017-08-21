@@ -63,18 +63,19 @@ missing_value = src_grd.missing_value
 # -------------------------------------------------------------------------
 # tidal constituents
 consts1 =['Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2'] 
-consts2 = ['MF']
+# consts2 = ['MF']
+consts2 = []
 consts = consts1+consts2
 # consts =['M2'] 
 consts_num = len(consts)
 
 # define tidal constituents names and periods
 tide_name = np.array([ list('Q1  '), list('O1  '), list('P1  '), list('K1  '),
-                       list('N2  '), list('M2  '), list('S2  '), list('K2  '),
-                       list('MF  ')])
+                       list('N2  '), list('M2  '), list('S2  '), list('K2  ')])
+#                        list('MF  ')])
 tide_period = np.array([26.8683567047119, 25.8193397521973, 24.0658893585205, 23.9344692230225, 
-                        12.6583499908447, 12.420599937439, 12, 11.9672346115112,
-                        13.66079*24])
+                        12.6583499908447, 12.420599937439, 12, 11.9672346115112])
+#                         13.66079*24])
 
 nodal_corr = 1
 
@@ -257,7 +258,7 @@ if savedata == 1:
     # write tidal information to nc file
     # -------------------------------------------------------------------------
     # create nc file
-    fh = nc.Dataset(out_dir + out_file, 'w')
+    fh = nc.Dataset(out_dir + 'frc/' + out_file, 'w')
     fh.createDimension('namelen', 4)
     fh.createDimension('tide_period', consts_num)
     fh.createDimension('eta_rho', eta)

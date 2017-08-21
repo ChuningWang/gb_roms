@@ -91,7 +91,7 @@ Mp, Lp = grd.hgrid.mask_rho.shape
 spval = -1e30
 runoff_raw = np.zeros((Mp,Lp))
 runoff = np.zeros((Mp,Lp))
-rspread = 6
+rspread = 15
 
 # get littoral (here 1 cells wide, with diagonals)
 print 'get littoral points'
@@ -101,7 +101,7 @@ idy = []
 maskl = grd.hgrid.mask_rho.copy()
 
 for w in range(width):
-    lit = pyroms_toolbox.get_littoral(maskl)
+    lit = pyroms_toolbox.get_littoral2(maskl)
     idx.extend(lit[0])
     idy.extend(lit[1])
     maskl[lit] = 0
@@ -112,8 +112,51 @@ maskl[littoral_idx] = 1
 mask_idx = np.where(grd.hgrid.mask_rho == 0)
 
 # initiate
-runoff_spread_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
 runoff_raw_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
+runoff_spread_nc = np.zeros((nt, grd.hgrid.mask_rho.shape[0], grd.hgrid.mask_rho.shape[1]))
+
+# # use parallel programming here
+# from joblib import Parallel, delayed
+# 
+# def remap_runoff(time, data, wts_file, spval, mask_idx):
+#     print 'Remapping runoff for time %f' %time
+#     # conservative horizontal interpolation using scrip
+#     runoff_raw = pyroms.remapping.remap(data, wts_file, spval=spval)
+#     runoff_raw[mask_idx] = spval
+#     return runoff_raw
+# 
+# def spread_runoff(time, runoff_raw, spval, littoral_idx, maskl, grd, rspread, mask_idx):
+#     print 'Spreading runoff for time %f' %time
+#     idx = np.where(runoff_raw != 0)
+#     runoff = pyroms_toolbox.move_runoff(runoff_raw, \
+#                   np.array(idx).T + 1, np.array(littoral_idx).T + 1, maskl, \
+#                   grd.hgrid.x_rho, grd.hgrid.y_rho, grd.hgrid.dx, grd.hgrid.dy)
+# 
+#     # spread the runoff within the littoral band
+#     runoff_spread = np.zeros((runoff.shape))
+#     idx = np.where(runoff != 0)
+#     for p in range(np.size(idx,1)):
+#         j = range(max(0,idx[0][p]-rspread), min(Mp-1,idx[0][p]+rspread+1))
+#         i = range(max(0,idx[1][p]-rspread), min(Lp-1,idx[1][p]+rspread+1))
+#         ji = np.meshgrid(j,i)
+#         sidx = np.where(maskl[ji] == 1)
+#         nbpt = np.size(sidx) / 2
+#         rpt = runoff[idx[0][p],idx[1][p]] * grd.hgrid.dx[idx[0][p],idx[1][p]] * grd.hgrid.dy[idx[0][p],idx[1][p]]
+#         rpt = rpt / nbpt
+#         for pa in range(nbpt):
+#             pai = sidx[0][pa]+ji[1].min()
+#             paj = sidx[1][pa]+ji[0].min()
+#             runoff_spread[paj, pai] = runoff_spread[paj, pai]+rpt/(grd.hgrid.dx[paj, pai]*grd.hgrid.dy[paj, pai])
+#     runoff_spread[mask_idx] = spval
+#     return runoff_spread
+# 
+# runoff_raw_list = Parallel(n_jobs=8)(delayed(remap_runoff)(time[i], data[i, :, :], wts_file, spval, mask_idx) for i in range(nt))
+# for i in range(nt):
+#     runoff_raw_nc[i, :, :] = runoff_raw_list[i]
+# 
+# runoff_spread_list = Parallel(n_jobs=8)(delayed(spread_runoff)(time[i], runoff_raw_nc[i, :, :], spval, littoral_idx, maskl, grd, rspread, mask_idx) for i in range(nt))
+# for i in range(nt):
+#     runoff_spread_nc[i, :, :] = runoff_spread_list[i]
 
 for t in range(nt):
     print 'Remapping runoff for time %f' %time[t]

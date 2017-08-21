@@ -32,7 +32,7 @@ ctd = gb_ctd.rd_ctd(temp_file)
 
 # calculate climatology
 clm_ctd = gb_ctd.cal_ctd_climatology(ctd)
-clm_t = np.mean(clm_ctd['t'][:, 12, 1:4], axis=1)
+clm_t = np.mean(clm_ctd['t'][:, 12, 1:5], axis=1)
 clm_time = np.array([15, 45, 74, 105, 136, 166, 197, 227, 258, 288, 319, 349])
 
 clm_t = np.concatenate((clm_t, clm_t, clm_t))
@@ -63,7 +63,7 @@ out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 
 temp = out.createVariable('river_temp', 'f8', ('river_time'))
 temp.long_name = 'river runoff temperature'
-temp.units = 'Celsius'
+temp.units = 'Celcius'
 temp.time = 'river_time'
 
 salt = out.createVariable('river_salt', 'f8', ('river_time'))

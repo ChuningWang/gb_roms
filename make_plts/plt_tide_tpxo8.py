@@ -5,7 +5,13 @@ from mpl_toolkits.basemap import Basemap
 
 import tidal_ellipse
 
-fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/grid_tpxo8_atlas6.nc')
+import read_host_info
+sv = read_host_info.read_host_info()
+in_dir = sv['in_dir']
+out_dir = sv['out_dir']
+
+
+fh = nc.Dataset(in_dir+'tpxo8nc/grid_tpxo8_atlas6.nc')
 latz = fh.variables['lat_z'][:]
 lonz = fh.variables['lon_z'][:]
 latu = fh.variables['lat_u'][:]
@@ -17,12 +23,12 @@ hu = fh.variables['hu'][:]
 hv = fh.variables['hv'][:]
 fh.close()
 
-fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/hf.mf_tpxo8_atlas_6.nc')
+fh = nc.Dataset(in_dir+'tpxo8nc/hf.mf_tpxo8_atlas_6.nc')
 hre = fh.variables['hRe'][:]
 him = fh.variables['hIm'][:]
 fh.close()
 
-fh = nc.Dataset('/Volumes/R1/scratch/chuning/gb_roms/data/tpxo8nc/uv.mf_tpxo8_atlas_6.nc')
+fh = nc.Dataset(in_dir+'tpxo8nc/uv.mf_tpxo8_atlas_6.nc')
 ure = fh.variables['uRe'][:]
 uim = fh.variables['uIm'][:]
 vre = fh.variables['vRe'][:]
@@ -101,6 +107,6 @@ plt.clim(0,400)
 plt.clabel(CS, fontsize=9, inline=1)
 m.colorbar()
 
-plt.savefig('/Volumes/R1/scratch/chuning/gb_roms/figs/tide_mf_orig.tiff',format='tiff')
+plt.savefig(out_dir+'figs/tides/tide_mf_orig.tiff',format='tiff')
 plt.close()
 

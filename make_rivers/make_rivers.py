@@ -12,7 +12,6 @@ out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
 grd1 = 'GB_USGS'
-
 my_year = 2008
 
 # load GB grid object
@@ -46,8 +45,6 @@ filler = np.frompyfunc(lambda x: list(), 1, 1)
 rivers = np.empty((Mp, Lp), dtype=np.object)
 filler(rivers, rivers)
 
-# pdb.set_trace()
-
 for k in range(Nr):
     if (sign[k]==1):
         count[eta[k],xi[k]] += 1
@@ -73,6 +70,14 @@ for t in range(nt):
     nc_rivers.variables['river_transport'][nct] = runoff
     nc_rivers.variables['river_time'][nct] = time[nct]
     nct = nct + 1
+
+# fix discharge location when transport is negative
+# msk = (sign==-1) & (dir==0)
+# xi[msk] = xi[msk]+1
+# msk = (sign==-1) & (dir==1)
+# eta[msk] = eta[msk]+1
+# nc_rivers.variables['river_Xposition'][:] = xi
+# nc_rivers.variables['river_Eposition'][:] = eta
 
 # close netcdf file
 nc_rivers.close()

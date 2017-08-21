@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pyroms
 import pyroms_toolbox
+import netCDF4 as nc
 
 from remap import remap
 from remap_uv import remap_uv
@@ -16,7 +17,7 @@ dst_dir = out_dir + 'bc_ic/'
 
 my_grd = 'GB_USGS'
 my_year = 2008
-tag='2008_07_04'
+tag='2008_03_31'
 # filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
 filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_or_'+tag+'.nc'
 
@@ -66,4 +67,8 @@ os.remove(salt_dst_file)
 os.remove(u_dst_file)
 os.remove(v_dst_file)
 
-# flood blank grids
+# set ic file time
+icfile = out_dir + 'bc_ic/GlacierBay_usgs_ic_'+tag+'_SODA3.3.1_0.25.nc'
+fh = nc.Dataset(icfile, 'a')
+fh.variables['ocean_time'][0] = np.floor(fh.variables['ocean_time'][0])
+fh.close()

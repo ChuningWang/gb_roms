@@ -11,52 +11,61 @@ out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
 grd1 = 'GB_USGS'
-model = 'tmpdir_GB-TIDE/outputs/2000/'
-# model = 'tmpdir_GB-TIDE/'
+my_year = 2008
+model = 'tmpdir_GB-TIDE/outputs/2008/'
+
+varlist = ['temp', 'salt', 'zeta']
 
 outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/zview/GB-TIDE/'
+
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
 flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
 flist = flist[-24:]
 
 depth = 5
 tindex = 0
-var = 'temp'
+# var = 'temp'
+# var = 'salt'
 # var = 'zeta'
-if var=='zeta':
-    uvar = 'ubar'
-    vvar = 'vbar'
-else:
-    uvar = 'u'
-    vvar = 'v'
-clim = [0, 8]
-# clim = [28, 32]
-# clim = [-3, 3]
-
-grd = pyroms.grid.get_ROMS_grid(grd1)
 
 plt.switch_backend('Agg')
 
-for fn in flist:
-    tag = fn.split('/')[-1].split('.')[0]
-    print 'processing ' + tag + ' ...'
-    if var == 'zeta':
-        prj = prt.twoDview(var, tindex, grd,
-                           filename=fn, cmin=clim[0], cmax=clim[1], title=tag
-                          )
-        prt.quiver2D(uvar, vvar, tindex, grd,
-                     filename = fn, proj=prj, d=10, uscale=20,
-                     outfile = fig_dir + var + '_' + tag + '.png'
-                    )
+for var in varlist:
+    if var=='temp':
+        clim = [0, 8]
+    elif var=='salt':
+        clim = [28, 32]
+    elif var=='zeta':
+        clim = [-1, 1]
 
+    if var=='zeta':
+        uvar = 'ubar'
+        vvar = 'vbar'
     else:
-        prj = prt.zview(var, tindex, depth, grd,
-                        filename=fn, cmin=clim[0], cmax=clim[1], title=tag
-                       )
-        prt.quiver(uvar, vvar, tindex, depth, grd,
-                   filename = fn, proj=prj, d=10, uscale=20,
-                   outfile = fig_dir + var + '_' + str(int(depth)) + 'm_' + tag + '.png'
-                  )
+        uvar = 'u'
+        vvar = 'v'
 
-    plt.close()
+    for fn in flist:
+        tag = fn.split('/')[-1].split('.')[0]
+        print 'processing ' + tag + ' ...'
+        if var == 'zeta':
+            prj = prt.twoDview(var, tindex, grd,
+                               filename=fn, cmin=clim[0], cmax=clim[1], title=tag
+                              )
+            prt.quiver2D(uvar, vvar, tindex, grd,
+                         filename = fn, proj=prj, d=10, uscale=20,
+                         outfile = fig_dir + str(my_year) + '/' + var + '_' + tag + '.png'
+                        )
+
+        else:
+            prj = prt.zview(var, tindex, depth, grd,
+                            filename=fn, cmin=clim[0], cmax=clim[1], title=tag
+                           )
+            prt.quiver(uvar, vvar, tindex, depth, grd,
+                       filename = fn, proj=prj, d=10, uscale=20,
+                       outfile = fig_dir + str(my_year) + '/' + var + '_' + str(int(depth)) + 'm_' + tag + '.png'
+                      )
+
+        plt.close()
