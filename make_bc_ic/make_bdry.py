@@ -15,7 +15,7 @@ data_dir = sv['soda_dir']
 
 os.chdir(os.path.expanduser('~') + '/git/gb_roms/make_bc_ic/')
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
 my_year = 2008
 

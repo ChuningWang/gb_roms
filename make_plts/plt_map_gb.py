@@ -18,7 +18,7 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 plt_map = 0
 
 ctd = rd_ctd(in_dir + 'ctd.nc')
@@ -31,6 +31,7 @@ lon = grd.hgrid.lon_rho
 lat = grd.hgrid.lat_rho
 z = grd.vgrid.h
 msk = grd.hgrid.mask_rho
+Mp, Np = msk.shape
 
 plt.close()
 fig = plt.figure()
@@ -59,7 +60,7 @@ if plt_map == 1:
     m.pcolor(x, y, z, cmap='Greens')
     plt.clim(0, 400)
     plt.colorbar()
-    m.contour(x, y, msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
+    m.contour(x, y, msk, [0.5, 0.5], linewidths=0.05, colors='k')
     m.plot(x2, y2, '.k', ms=2)
 
     plt.savefig(out_dir + 'figs/map_grd.tiff', format='tiff', dpi=600)
@@ -67,13 +68,13 @@ if plt_map == 1:
 elif plt_map == 0:
 
     plt.pcolormesh(z, cmap='Greens')
-    plt.clim(-1, 20)
+    plt.clim(-1, 200)
     plt.colorbar()
-    plt.contour(msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
-    # plt.contour(z, np.array([0.0, 0.0]), linewidths=0.05, colors='k')
+    plt.contour(msk, [0.5, 0.5], linewidths=0.05, colors='k')
+    # plt.contour(z, [0.0, 0.0], linewidths=0.05, colors='k')
 
-    plt.xticks(np.arange(0, 500, 10), rotation='vertical')
-    plt.yticks(np.arange(0, 1000, 20))
+    plt.xticks(np.arange(0, Np, 10), rotation='vertical')
+    plt.yticks(np.arange(0, Mp, 20))
     plt.tick_params(axis='both', which='major', labelsize=5)
     plt.grid()
 

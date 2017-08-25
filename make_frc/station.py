@@ -34,12 +34,12 @@ def read_station(stn_file):
     prcp = prcp.astype(np.float)
     snow = data[:, 8]
     snow = snow.astype(np.float)
-    # tair = data[:, 9]
-    # tair = tair.astype(np.float)
+    tair = data[:, 9]
+    tair = tair.astype(np.float)
     tmax = data[:, 10]
     tmax = tmax.astype(np.float)
     tmin = data[:, 11]
     tmin = tmin.astype(np.float)
     data = {'stn': stn, 'name': name, 'lat': lat, 'lon': lon, 'lev': lev, 
-            'ctime': ctime, 'awnd': awnd, 'prcp': prcp, 'snow': snow, 'tmax': tmax, 'tmin': tmin}
+            'ctime': ctime, 'awnd': awnd, 'prcp': prcp, 'snow': snow, 'tair': tair, 'tmax': tmax, 'tmin': tmin}
     return data

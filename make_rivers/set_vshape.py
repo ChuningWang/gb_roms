@@ -7,7 +7,7 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
 my_year = 2008
 grd = pyroms.grid.get_ROMS_grid(grd1)

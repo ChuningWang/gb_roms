@@ -47,7 +47,7 @@ home_dir = sv['home_dir']
 
 my_year = 2008
 tag = 'Hill'
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
 # load GB grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -95,7 +95,7 @@ out.source = 'David Hill and Jordan Beamer'
 
 out.createDimension('river_time', None)
 out.createDimension('river', len(i))
-out.createDimension('s_rho', 30)
+out.createDimension('s_rho', grd.vgrid.N)
 
 times = out.createVariable('river_time', 'f8', ('river_time'))
 times.units = 'days since 1900-01-01 00:00:00'

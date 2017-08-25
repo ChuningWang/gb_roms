@@ -12,7 +12,7 @@ out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
 grd1 = in_dir + 'gb_discharge.nc'
-grd2 = 'GB_USGS'
+grd2 = 'GB_lr'
 
 ##  load 2-dimentional interannual discharge data 
 print 'Load lat_lon'

@@ -10,14 +10,14 @@ sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
 ex = 'abs'
 rmap = 'full'
-plth = 0
 outpath = out_dir + 'figs/rst/'
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
+msk = grd.hgrid.mask_rho
 msku = grd.hgrid.mask_u
 mskv = grd.hgrid.mask_v
 
@@ -28,14 +28,14 @@ hraw = np.ma.masked_where(grd.hgrid.mask==0, hraw)
 
 rx = rx0(h, grd.hgrid.mask)
 
-tag = 'GB-TIDE'
+tag = 'GB-CIRC'
 
 varlist = ['u', 'v', 'temp', 'salt', 'zeta', 'wetdry_mask_rho']
 # varlist = ['wetdry_mask_rho']
 for var in varlist:
     # var = 'u'
 
-    fh = nc.Dataset(model_dir + 'tmpdir_GB-TIDE/' + tag + '_rst.nc')
+    fh = nc.Dataset(model_dir + 'tmpdir_GB-CIRC/' + tag + '_rst.nc')
     ocean_time = fh.variables['ocean_time'][:]
     tindex = np.argmax(ocean_time)
 
@@ -47,9 +47,11 @@ for var in varlist:
         data = fh.variables[var][tindex, 0, :, :, :].squeeze()
 
     if var=='u':
-        data = np.ma.masked_where(np.tile(msku==0, (30, 1, 1)), data)
+        data = np.ma.masked_where(np.tile(msku==0, (grd.vgrid.N, 1, 1)), data)
     elif var=='v':
-        data = np.ma.masked_where(np.tile(mskv==0, (30, 1, 1)), data)
+        data = np.ma.masked_where(np.tile(mskv==0, (grd.vgrid.N, 1, 1)), data)
+    elif var=='wetdry_mask_rho':
+        data = np.ma.masked_where(msk==0, data)
 
     fh.close()
 
@@ -80,9 +82,9 @@ for var in varlist:
 
     if rmap=='full':
         xmin = 0
-        xmax = 1000
+        xmax = 500
         ymin = 0
-        ymax = 500
+        ymax = 250
     elif rmap=='zoom':
         xmin = xx-20
         xmax = xx+20
@@ -116,60 +118,3 @@ for var in varlist:
         plt.title(str(xx)+ ',' + str(yy) + ',' + str(zlevel))
         plt.savefig(outpath + tag + '_rst_h-' + var + '_' + ex + '.png', format='png', dpi=900)
         plt.close()
-
-
-if plth==1:
-    plt.figure()
-    plt.pcolor(y[ymin:ymax], x[xmin:xmax], h[xmin:xmax, ymin:ymax], cmap='OrRd')
-    plt.plot([xmin, xmax], [yy, yy], '--k', lw=0.01)
-    plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
-    plt.xlim(ymin, ymax)
-    plt.ylim(xmin, xmax)
-    plt.clim(0, 500)
-    # plt.clim(-5, 5)
-    plt.colorbar()
-    plt.title('h [m]')
-    plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-    plt.savefig(outpath + tag + '_h_' + '_' + ex + '.png', format='png', dpi=900)
-    plt.close()
-
-    plt.figure()
-    plt.pcolor(y[ymin:ymax], x[xmin:xmax], hraw[xmin:xmax, ymin:ymax], cmap='OrRd')
-    plt.plot([xmin, xmax], [yy, yy], '--k', lw=0.01)
-    plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
-    plt.xlim(ymin, ymax)
-    plt.ylim(xmin, xmax)
-    plt.clim(0, 500)
-    # plt.clim(-5, 5)
-    plt.colorbar()
-    plt.title('hraw [m]')
-    plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-    plt.savefig(outpath + tag + '_hraw_' + '_' + ex + '.png', format='png', dpi=900)
-    plt.close()
-
-    plt.figure()
-    plt.pcolor(y[ymin:ymax], x[xmin:xmax], h[xmin:xmax, ymin:ymax]-hraw[xmin:xmax, ymin:ymax], cmap='OrRd')
-    plt.plot([xmin, xmax], [yy, yy], '--k', lw=0.01)
-    plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
-    plt.xlim(ymin, ymax)
-    plt.ylim(xmin, xmax)
-    plt.colorbar()
-    plt.title('hdiff [m]')
-    plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-    plt.savefig(outpath + tag + '_hdiff_' + '_' + ex + '.png', format='png', dpi=900)
-    plt.close()
-
-    plt.figure()
-    plt.pcolor(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], cmap='OrRd')
-    plt.plot([xmin, xmax], [yy, yy], '--k', lw=0.01)
-    plt.plot([xx, xx], [ymin, ymax], '--k', lw=0.01)
-    plt.xlim(ymin, ymax)
-    plt.ylim(xmin, xmax)
-    # plt.clim(0, 0.3)
-    plt.clim(0, 1)
-    plt.colorbar()
-    plt.title('rx0')
-    plt.contour(y[ymin:ymax], x[xmin:xmax], rx[xmin:xmax, ymin:ymax], levels=[0.35], colors='k', linewidths=0.1)
-    plt.savefig(outpath + tag + '_rx0_' + ex + '.png', format='png', dpi=900)
-    plt.close()
-

@@ -13,7 +13,7 @@ out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
 my_year = 2008
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 tag = 'Hill'
 
 # load GB grid object

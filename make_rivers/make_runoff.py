@@ -47,7 +47,7 @@ home_dir = sv['home_dir']
 
 script_dir = home_dir + 'git/gb_roms/make_rivers/'
 dis_file = in_dir + 'gb_discharge.nc'
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
 my_year = 2008
 

@@ -22,7 +22,7 @@ fig_dir = out_dir + 'figs/zview/GB-TIDE/'
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
 flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
-flist = flist[-24:]
+flist = flist[-30:]
 
 depth = 5
 tindex = 0

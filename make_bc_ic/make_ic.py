@@ -15,7 +15,7 @@ data_dir = sv['soda_dir']
 
 dst_dir = out_dir + 'bc_ic/'
 
-my_grd = 'GB_USGS'
+my_grd = 'GB_lr'
 my_year = 2008
 tag='2008_03_31'
 # filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'

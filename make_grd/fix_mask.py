@@ -18,7 +18,7 @@ lon_max = -134.
 lon_0 = 0.5 * (lon_min + lon_max)
 
 # load grid
-hgrd = pyroms.grid.get_ROMS_hgrid('GB_USGS')
+hgrd = pyroms.grid.get_ROMS_hgrid('GB_lr')
 
 # use GUI masking tool
 m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,
@@ -31,5 +31,6 @@ m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,
 # pyroms.grid.edit_mask_mesh(hgrd, proj=m)
 # or (this is faster 'I guess')
 coast = pyroms.utility.get_coast_from_map(m)
-# pyroms.grid.edit_mask_mesh_ij(hgrd, coast=coast); plt.show()
+# pyroms.grid.edit_mask_mesh_ij(hgrd, coast=coast)
+# plt.show()
 
