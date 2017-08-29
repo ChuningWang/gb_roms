@@ -10,19 +10,19 @@ sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 my_year = 2008
-model = 'tmpdir_GB-TIDE/outputs/2008/'
+model = 'tmpdir_GB-CIRC/outputs/2008/'
 
 varlist = ['temp', 'salt', 'zeta']
 
 outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/zview/GB-TIDE/'
+fig_dir = out_dir + 'figs/zview/GB-CIRC/'
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
 flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
-flist = flist[-30:]
+flist = flist[-24:]
 
 depth = 5
 tindex = 0
@@ -34,11 +34,11 @@ plt.switch_backend('Agg')
 
 for var in varlist:
     if var=='temp':
-        clim = [0, 8]
+        clim = [0, 15]
     elif var=='salt':
         clim = [28, 32]
     elif var=='zeta':
-        clim = [-1, 1]
+        clim = [-3, 3]
 
     if var=='zeta':
         uvar = 'ubar'

@@ -31,6 +31,7 @@ CGrid_TPXO8/tidal_ellipse.py for more details.
 import netCDF4 as nc
 import numpy as np
 from scipy.interpolate import griddata
+import sys
 
 import pyroms
 import pyroms_toolbox
@@ -45,7 +46,10 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_lr'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
 
 # read ROMS grid
 dst_grd = pyroms.grid.get_ROMS_grid(grd1)

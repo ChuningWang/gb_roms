@@ -1,6 +1,7 @@
 import numpy as np
 import netCDF4 as nc
 from datetime import datetime
+import sys
 
 import pyroms
 import pyroms_toolbox
@@ -47,7 +48,11 @@ home_dir = sv['home_dir']
 
 script_dir = home_dir + 'git/gb_roms/make_rivers/'
 dis_file = in_dir + 'gb_discharge.nc'
-grd1 = 'GB_lr'
+
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
 
 my_year = 2008
 

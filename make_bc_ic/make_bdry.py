@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 import numpy as np
 
 import pyroms
@@ -15,7 +16,10 @@ data_dir = sv['soda_dir']
 
 os.chdir(os.path.expanduser('~') + '/git/gb_roms/make_bc_ic/')
 
-grd1 = 'GB_lr'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
 
 my_year = 2008
 

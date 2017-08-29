@@ -15,25 +15,28 @@ out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
 pltuv = 1
-grd1 = 'GB_USGS'
-model = 'tmpdir_GB-TIDE/outputs/2000/'
+grd1 = 'GB_lr'
+model = 'tmpdir_GB-CIRC/outputs/2008/'
+grd = pyroms.grid.get_ROMS_grid(grd1)
 
 # load data
 outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/trans/GB-TIDE/'
+fig_dir = out_dir + 'figs/trans/GB-CIRC/2008/'
 
 flist = sorted(glob.glob(outputs_dir+'*.nc'))
 flist = flist[-24:]
 
-depth = 200
 dd = 3
-zlev = 30
+zlev = grd.vgrid.N
 tindex = 0
-var = 'salt'
+var = 'temp'
 uvar = 'u'
 vvar = 'v'
 wvar = 'w'
-clim = [25, 35]
+if var=='salt':
+    clim = [25, 35]
+elif var=='temp':
+    clim = [0, 15]
 
 c0 = np.array([[-137.04719708,   59.05076767],
                [-137.02431432,   59.03650282],
@@ -135,7 +138,6 @@ for i in range(len(lon_ct)-1):
     lat_t[i*dd:(i+1)*dd] = np.linspace(lat_ct[i], lat_ct[i+1], dd+1)[:-1]
 
 # read grid information
-grd = pyroms.grid.get_ROMS_grid(grd1)
 lat = grd.hgrid.lat_rho
 lon = grd.hgrid.lon_rho
 

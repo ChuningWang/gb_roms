@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal
 import netCDF4
 from datetime import datetime, timedelta
+import sys
 
 import pyroms
 from gb_toolbox import gb_ctd
@@ -12,8 +13,12 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
+
 my_year = 2008
-grd1 = 'GB_lr'
 tag = 'Hill'
 
 # load GB grid object

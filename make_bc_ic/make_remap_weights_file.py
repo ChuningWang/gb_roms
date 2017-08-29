@@ -1,11 +1,16 @@
 import pyroms
 import pyroms_toolbox
+import sys
 
 import read_host_info
 sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 soda_dir = sv['soda_dir']
-grd1 = 'GB_lr'
+
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
 
 # load the grid
 # srcgrd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(soda_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))

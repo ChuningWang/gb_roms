@@ -11,7 +11,11 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
-grd1 = 'GB_lr'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
+
 my_year = 2008
 
 # load GB grid object

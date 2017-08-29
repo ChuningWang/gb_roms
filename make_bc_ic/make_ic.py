@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 import numpy as np
 import pyroms
 import pyroms_toolbox
@@ -15,9 +16,14 @@ data_dir = sv['soda_dir']
 
 dst_dir = out_dir + 'bc_ic/'
 
-my_grd = 'GB_lr'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
+
 my_year = 2008
 tag='2008_03_31'
+
 # filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
 filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_or_'+tag+'.nc'
 

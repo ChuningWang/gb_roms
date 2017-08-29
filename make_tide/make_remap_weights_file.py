@@ -1,13 +1,18 @@
 import pyroms
 import pyroms_toolbox
 import CGrid_TPXO8
+import sys
 
 import read_host_info
 sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_lr'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
+
 pth_tpxo = in_dir + 'tpxo8nc/'
 
 # step 1, TPXO8atlas30

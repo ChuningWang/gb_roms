@@ -92,7 +92,7 @@ water[:15, 115:135] = 0
 water[330:360, 210:] = 0
 
 # # ------------------------------------------------------------------------
-msk_c = np.loadtxt('mask_change.txt')
+msk_c = np.loadtxt('mask_change_GB_lr.txt')
 for i in range(len(msk_c)):
     hgrd.mask_rho[int(msk_c[i, 1]), int(msk_c[i, 0])] = msk_c[i, 2]
 print 'mask done...'

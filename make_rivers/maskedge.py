@@ -49,13 +49,13 @@ def flood_fill_water(imask, i, j, ii):
         (j,i) = llist.pop()
         imask[j,i] = ii
         if ( imask[j,i-1] == jj and i > 1 ):
-	    llist.append((j, i-1))
+            llist.append((j, i-1))
         if ( imask[j-1,i] == jj and j > 1 ):
-	    llist.append((j-1, i))
+            llist.append((j-1, i))
         if ( imask[j,i+1] == jj and i < Lm ):
-	    llist.append((j, i+1))
+            llist.append((j, i+1))
         if ( imask[j+1,i] == jj and j < Mm ):
-	    llist.append((j+1, i))
+            llist.append((j+1, i))
 
 def flood_fill_land(imask, i, j, ii):
     """
@@ -74,29 +74,29 @@ def flood_fill_land(imask, i, j, ii):
         (j,i) = llist.pop()
         imask[j,i] = ii
         if ( imask[j,i-1] == jj and i > 1 ):
-	    llist.append((j, i-1))
+            llist.append((j, i-1))
         if ( imask[j-1,i] == jj and j > 1 ):
-	    llist.append((j-1, i))
+            llist.append((j-1, i))
         if ( imask[j,i+1] == jj and i < Lm ):
-	    llist.append((j, i+1))
+            llist.append((j, i+1))
         if ( imask[j+1,i] == jj and j < Mm ):
-	    llist.append((j+1, i))
+            llist.append((j+1, i))
 # now do the diagonals
         if ( imask[j-1,i-1] == jj and i > 1 ):
-	    llist.append((j-1, i-1))
+            llist.append((j-1, i-1))
         if ( imask[j-1,i+1] == jj and j > 1 ):
-	    llist.append((j-1, i+1))
+            llist.append((j-1, i+1))
         if ( imask[j+1,i+1] == jj and i < Lm ):
-	    llist.append((j+1, i+1))
+            llist.append((j+1, i+1))
         if ( imask[j+1,i-1] == jj and j < Mm ):
-	    llist.append((j+1, i-1))
+            llist.append((j+1, i-1))
 
 def set_values(imask, k, val):
     """ Set all k values to val"""
     Mp, Lp = imask.shape
     for j in range(1,Mp-1):
         for i in range(1,Lp-1):
-	    if (imask[j,i] == k): imask[j,i] = val
+            if (imask[j,i] == k): imask[j,i] = val
 
 def warning(*objs):
     print("STDERR: ", *objs, file=sys.stderr)
@@ -109,8 +109,8 @@ def color_water(imask):
     Mp, Lp = imask.shape
     for j in range(1,Mp-1):
         for i in range(1,Lp-1):
-	    if (imask[j,i] == 1):
-		flood_fill_water(imask, i, j, count)
+            if (imask[j,i] == 1):
+                flood_fill_water(imask, i, j, count)
                 warning("New body!", i, j)
                 count += 1
 
@@ -131,13 +131,13 @@ def peninsula(imask, plist, i, j, dir, iwat, iland):
     plist.append(p)
 
     if (dir == 'east'):
-	seed = (i,j)
+        seed = (i,j)
     elif (dir == 'west'):
-	seed = (i-1,j-1)
+        seed = (i-1,j-1)
     elif (dir == 'south'):
-	seed = (i,j-1)
+        seed = (i,j-1)
     elif (dir == 'north'):
-	seed = (i-1,j)
+        seed = (i-1,j)
 #    warning("Peninsula at", seed, dir)
 
     # Trace the edge of the peninsula, keeping track of the psi
@@ -146,61 +146,61 @@ def peninsula(imask, plist, i, j, dir, iwat, iland):
     # value.
     while True:
         if (dir == 'east'):
-	    i += 1
+            i += 1
             p = (i,j)
-	    if ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
-	        dir = 'south'
-	    elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
-	        dir = 'east'
-	    elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
-	        dir = 'north'
-	    elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
-	        break
-	    else:
-	        warning("Problem in peninsula at ", i, j)
-	        exit(1)
+            if ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
+                dir = 'south'
+            elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
+                dir = 'east'
+            elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
+                dir = 'north'
+            elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
+                break
+            else:
+                warning("Problem in peninsula at ", i, j)
+                exit(1)
         elif (dir == 'north'):
-  	    j += 1
+            j += 1
             p = (i,j)
-	    if ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
-	        dir = 'east'
-	    elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
-	        dir = 'north'
-	    elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
-	        dir = 'west'
-	    elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
-	        break
-	    else:
-	        warning("Problem in peninsula at ", i, j)
-	        exit(1)
+            if ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
+                dir = 'east'
+            elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
+                dir = 'north'
+            elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
+                dir = 'west'
+            elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
+                break
+            else:
+                warning("Problem in peninsula at ", i, j)
+                exit(1)
         elif (dir == 'west'):
-  	    i -= 1
+            i -= 1
             p = (i,j)
-	    if ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
-	        dir = 'north'
-	    elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
-	        dir = 'west'
-	    elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
-	        dir = 'south'
-	    elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
-	        break
-	    else:
-	        warning("Problem in peninsula at ", i, j)
-	        exit(1)
+            if ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
+                dir = 'north'
+            elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
+                dir = 'west'
+            elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
+                dir = 'south'
+            elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
+                break
+            else:
+                warning("Problem in peninsula at ", i, j)
+                exit(1)
         elif (dir == 'south'):
-	    j -= 1
+            j -= 1
             p = (i,j)
-	    if ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
-	        dir = 'west'
-	    elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
-	        dir = 'south'
-	    elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
-	        dir = 'east'
-	    elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
-	        break
-	    else:
-	        warning("Problem in peninsula at ", i, j)
-	        exit(1)
+            if ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
+                dir = 'west'
+            elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
+                dir = 'south'
+            elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
+                dir = 'east'
+            elif (i==1 or j==1 or i==Lp-1 or j==Mp-1):
+                break
+            else:
+                warning("Problem in peninsula at ", i, j)
+                exit(1)
 
         plist.append(p)
     plist.append(p)
@@ -226,13 +226,13 @@ def island(imask, ilist, i, j, dir, iwat, iland):
     p = (0,0)
 
     if (dir == 'east'):
-	seed = (i,j)
+        seed = (i,j)
     elif (dir == 'west'):
-	seed = (i-1,j-1)
+        seed = (i-1,j-1)
     elif (dir == 'south'):
-	seed = (i,j-1)
+        seed = (i,j-1)
     elif (dir == 'north'):
-	seed = (i-1,j)
+        seed = (i-1,j)
 #    warning("Island at", seed, dir)
 
     # Trace the edge of the island, keeping track of the psi
@@ -240,56 +240,56 @@ def island(imask, ilist, i, j, dir, iwat, iland):
     # edge segments so that we can later change the peninsula mask
     # points to water.
     while True:
-	if (p == pstart):
-	    break
+        if (p == pstart):
+            break
         if (dir == 'east'):
-  	    i += 1
+            i += 1
             p = (i,j)
-	    if ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
-	        dir = 'south'
-	    elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
-	        dir = 'east'
-	    elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
-	        dir = 'north'
-	    else:
-	        warning("Problem in island at ", i, j)
-	        exit(1)
+            if ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
+                dir = 'south'
+            elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
+                dir = 'east'
+            elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
+                dir = 'north'
+            else:
+                warning("Problem in island at ", i, j)
+                exit(1)
         elif (dir == 'north'):
-	    j += 1
+            j += 1
             p = (i,j)
-	    if ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
-	        dir = 'east'
-	    elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
-	        dir = 'north'
-	    elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
-	        dir = 'west'
-	    else:
-	        warning("Problem in island at ", i, j)
-	        exit(1)
+            if ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
+                dir = 'east'
+            elif ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
+                dir = 'north'
+            elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
+                dir = 'west'
+            else:
+                warning("Problem in island at ", i, j)
+                exit(1)
         elif (dir == 'west'):
-	    i -= 1
+            i -= 1
             p = (i,j)
-	    if ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
-	        dir = 'north'
-	    elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
-	        dir = 'west'
-	    elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
-	        dir = 'south'
-	    else:
-	        warning("Problem in island at ", i, j)
-	        exit(1)
+            if ((imask[j,i-1] == iland) and (imask[j,i] == iwat)):
+                dir = 'north'
+            elif ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
+                dir = 'west'
+            elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
+                dir = 'south'
+            else:
+                warning("Problem in island at ", i, j)
+                exit(1)
         elif (dir == 'south'):
-	    j -= 1
+            j -= 1
             p = (i,j)
-	    if ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
-	        dir = 'west'
-	    elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
-	        dir = 'south'
-	    elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
-	        dir = 'east'
-	    else:
-	        warning("Problem in island at ", i, j)
-	        exit(1)
+            if ((imask[j-1,i-1] == iland) and (imask[j,i-1] == iwat)):
+                dir = 'west'
+            elif ((imask[j-1,i] == iland) and (imask[j-1,i-1] == iwat)):
+                dir = 'south'
+            elif ((imask[j,i] == iland) and (imask[j-1,i] == iwat)):
+                dir = 'east'
+            else:
+                warning("Problem in island at ", i, j)
+                exit(1)
 
         ilist.append(p)
 
@@ -324,10 +324,22 @@ def interior(imask, ilist, iwat, iland):
     for i in range(2,Lp-2):
         for j in range(2,Mp-2):
             if ((imask[j,i] == iwat) and (imask[j+1,i] == iland)):
-	        island(imask, ilist, i, j+1, 'east', iwat, iland)
+                island(imask, ilist, i, j+1, 'east', iwat, iland)
 
 def main():
-    ncfile = sys.argv[1]
+
+    import read_host_info
+    sv = read_host_info.read_host_info()
+    data_dir = sv['out_dir']
+    if len(sys.argv)>0:
+        grd1 = sys.argv[1]
+    else:
+        grd1 = 'GB_lr'
+
+    import pyroms
+    grd = pyroms.grid.get_ROMS_grid(grd1)
+
+    ncfile = data_dir+'grd/'+grd.name+'_grd.nc'
     imask = readmask(ncfile)
     lpoints = []
     ipoints = []
@@ -338,15 +350,15 @@ def main():
     for iwat in range(2, count+2):
         edges(imask, lpoints, iwat, iland)
         interior(imask, ipoints, iwat, iland)
-	set_values(imask, iland, iwat)
-	iland = iwat
+    set_values(imask, iland, iwat)
+    iland = iwat
 
     # Islands first, then peninsulas
     for point in ipoints:
-	i,j = point
+        i,j = point
         print(i, j)
     for point in lpoints:
-	i,j = point
+        i,j = point
         print(i, j)
     print(-10, -10)
 

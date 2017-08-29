@@ -6,6 +6,7 @@ from matplotlib.mlab import griddata
 import numpy as np
 import netCDF4 as nc
 import pyroms
+import sys
 
 # ------------------------------------------------------------------------------------------------------
 def setlabelrot(x, rot):
@@ -18,8 +19,12 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_lr'
-plt_map = 0
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
+else:
+    grd1 = 'GB_lr'
+
+plt_proj = 0
 
 ctd = rd_ctd(in_dir + 'ctd.nc')
 lat_ctd = ctd['lat_stn']
@@ -44,7 +49,7 @@ lon_min = -137.5
 lon_max = -135.0
 lon_0 = 0.5 * (lon_min + lon_max)
 
-if plt_map == 1:
+if plt_proj == 1:
 
     m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
                 urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
@@ -63,22 +68,22 @@ if plt_map == 1:
     m.contour(x, y, msk, [0.5, 0.5], linewidths=0.05, colors='k')
     m.plot(x2, y2, '.k', ms=2)
 
-    plt.savefig(out_dir + 'figs/map_grd.tiff', format='tiff', dpi=600)
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd.pdf', format='pdf')
 
-elif plt_map == 0:
+elif plt_proj == 0:
 
     plt.pcolormesh(z, cmap='Greens')
     plt.clim(-1, 200)
     plt.colorbar()
-    plt.contour(msk, [0.5, 0.5], linewidths=0.05, colors='k')
-    # plt.contour(z, [0.0, 0.0], linewidths=0.05, colors='k')
+    plt.contour(msk, [0.5], linewidths=0.05, colors='k')
+    # plt.contour(z, [0.0], linewidths=0.05, colors='k')
 
     plt.xticks(np.arange(0, Np, 10), rotation='vertical')
     plt.yticks(np.arange(0, Mp, 20))
     plt.tick_params(axis='both', which='major', labelsize=5)
     plt.grid()
 
-    plt.savefig(out_dir + 'figs/map_grd_noproj.tiff', format='tiff', dpi=600)
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.pdf', format='pdf')
 
 plt.close()
 

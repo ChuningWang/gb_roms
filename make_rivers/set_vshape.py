@@ -1,15 +1,20 @@
 import numpy as np
 import netCDF4
 import pyroms
+import sys
 
 import read_host_info
 sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_lr'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
 
 my_year = 2008
+
 grd = pyroms.grid.get_ROMS_grid(grd1)
 tag = 'Hill'
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'

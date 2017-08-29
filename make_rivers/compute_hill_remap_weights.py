@@ -1,6 +1,7 @@
 import numpy as np
 from datetime import datetime
 import netCDF4 as netCDF
+import sys
 
 import pyroms
 import pyroms_toolbox
@@ -12,7 +13,10 @@ out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
 grd1 = in_dir + 'gb_discharge.nc'
-grd2 = 'GB_lr'
+if len(sys.argv)>0:
+    grd2 = sys.argv[1]
+else:
+    grd2 = 'GB_lr'
 
 ##  load 2-dimentional interannual discharge data 
 print 'Load lat_lon'

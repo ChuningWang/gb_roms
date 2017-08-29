@@ -23,7 +23,7 @@ grd_name = 'GlacierBay_usgs'
 
 hgrd = pyroms.grid.get_ROMS_hgrid(grd2)
 # laod from mask_change.txt
-msk_c = np.loadtxt('mask_change.txt')
+msk_c = np.loadtxt('mask_change_GB_usgs.txt')
 for i in range(len(msk_c)):
     hgrd.mask_rho[int(msk_c[i, 1]), int(msk_c[i, 0])] = msk_c[i, 2]
 print 'mask done...'

@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 import numpy as np
 import pyroms
 
@@ -100,7 +101,11 @@ in_dir = sv['in_dir']
 dst_dir = sv['out_dir']
 soda_dir = sv['soda_dir']
 
-grd1 = 'GB_USGS'
+if len(sys.argv)>0:
+    grd1 = sys.argv[1]
+else:
+    grd1 = 'GB_lr'
+
 month = 7
 
 # Load target grid and land mask
