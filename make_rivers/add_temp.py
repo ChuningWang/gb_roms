@@ -13,8 +13,8 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
-if len(sys.argv)>0:
-    grd1 = sys.argv[1]
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
 else:
     grd1 = 'GB_lr'
 

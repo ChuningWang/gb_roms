@@ -81,7 +81,7 @@ def flood_fill_land(imask, i, j, ii):
             llist.append((j, i+1))
         if ( imask[j+1,i] == jj and j < Mm ):
             llist.append((j+1, i))
-# now do the diagonals
+        # now do the diagonals
         if ( imask[j-1,i-1] == jj and i > 1 ):
             llist.append((j-1, i-1))
         if ( imask[j-1,i+1] == jj and j > 1 ):
@@ -331,8 +331,8 @@ def main():
     import read_host_info
     sv = read_host_info.read_host_info()
     data_dir = sv['out_dir']
-    if len(sys.argv)>0:
-        grd1 = sys.argv[1]
+    if len(sys.argv)>1:
+        grd1 = sys.argv[-1]
     else:
         grd1 = 'GB_lr'
 
@@ -350,8 +350,8 @@ def main():
     for iwat in range(2, count+2):
         edges(imask, lpoints, iwat, iland)
         interior(imask, ipoints, iwat, iland)
-    set_values(imask, iland, iwat)
-    iland = iwat
+        set_values(imask, iland, iwat)
+        iland = iwat
 
     # Islands first, then peninsulas
     for point in ipoints:

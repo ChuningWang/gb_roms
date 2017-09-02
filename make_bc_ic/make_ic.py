@@ -16,8 +16,8 @@ data_dir = sv['soda_dir']
 
 dst_dir = out_dir + 'bc_ic/'
 
-if len(sys.argv)>0:
-    grd1 = sys.argv[1]
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
 else:
     grd1 = 'GB_lr'
 
@@ -31,7 +31,7 @@ filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_or_'+tag+'.nc'
 # src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.5deg_grid.nc', name='SODA3.3.1', xrange=(400, 500), yrange=(180, 280))
 src_grd = pyroms_toolbox.BGrid_GFDL.get_nc_BGrid_GFDL(data_dir + 'grid/SODA3_0.25deg_grid.nc', 
                                                       name='SODA3.3.1_0.25', xrange=(550, 600), yrange=(750, 800))
-dst_grd = pyroms.grid.get_ROMS_grid(my_grd)
+dst_grd = pyroms.grid.get_ROMS_grid(grd1)
 
 print '\nBuild IC file from %s' %filein
 
@@ -45,7 +45,7 @@ v_dst_file    = dst_dir + dst_grd.name + '_ic_v_'    + tag + '_' + src_grd.name 
 zeta = remap('ssh', filein, src_grd, dst_grd, zeta_dst_file, dst_dir=dst_dir)
 
 # reload grid with zeta (more accurate)
-dst_grd = pyroms.grid.get_ROMS_grid(my_grd, zeta=zeta)
+dst_grd = pyroms.grid.get_ROMS_grid(grd1, zeta=zeta)
 
 # regrid temp, salt and velocities
 remap('temp',filein, src_grd, dst_grd, temp_dst_file, dst_dir=dst_dir)

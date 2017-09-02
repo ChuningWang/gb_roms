@@ -10,34 +10,34 @@ def add_to_lists(pairs, i, j, sign, dir):
     for it in range(1,len(pairs)):
         x2, y2 = pairs[it]
 
-    if x2 > x1:
-        # negative v-velocity
-        # j.append(y1+1)
-        i.append(x1)
-        j.append(y1)
-        sign.append(-1)
-        dir.append(1)
-    elif x1 > x2:
-        # positive v-velocity
-        i.append(x2)
-        j.append(y1)
-        sign.append(1)
-        dir.append(1)
-    elif y2 > y1:
-        # positive u-velocity
-        i.append(x1)
-        j.append(y1)
-        sign.append(1)
-        dir.append(0)
-    elif y1 > y2:
-        # negative u-velocity
-        # i.append(x1+1)
-        i.append(x1)
-        j.append(y2)
-        sign.append(-1)
-        dir.append(0)
-    x1 = x2
-    y1 = y2
+        if x2 > x1:
+            # negative v-velocity
+            # j.append(y1+1)
+            i.append(x1)
+            j.append(y1)
+            sign.append(-1)
+            dir.append(1)
+        elif x1 > x2:
+            # positive v-velocity
+            i.append(x2)
+            j.append(y1)
+            sign.append(1)
+            dir.append(1)
+        elif y2 > y1:
+            # positive u-velocity
+            i.append(x1)
+            j.append(y1)
+            sign.append(1)
+            dir.append(0)
+        elif y1 > y2:
+            # negative u-velocity
+            # i.append(x1+1)
+            i.append(x1)
+            j.append(y2)
+            sign.append(-1)
+            dir.append(0)
+        x1 = x2
+        y1 = y2
 
 import read_host_info
 sv = read_host_info.read_host_info()
@@ -45,8 +45,8 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
-if len(sys.argv)>0:
-    grd1 = sys.argv[1]
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
 else:
     grd1 = 'GB_lr'
 
@@ -69,7 +69,9 @@ msk_dir = home_dir + 'git/gb_roms/make_rivers/maskedge.out'
 # Read the landmask boundaries
 f = open(msk_dir, 'r')
 pairs = []
-# Eat first line so we don't trigger the add_to_lists routine
+# Eat first 3 lines so we don't trigger the add_to_lists routine
+f.readline()
+f.readline()
 f.readline()
 
 # These are for the ROMS sources file
@@ -82,11 +84,11 @@ for line in f:
     a, b, c = re.split('\s+', line)
     if a=='-10':
         # wrap up object
-    add_to_lists(pairs, i, j, sign, dir)
-elif (a=='-1' or a=='-3'):
-    # wrap up object
-    add_to_lists(pairs, i, j, sign, dir)
-    # start new object
+        add_to_lists(pairs, i, j, sign, dir)
+    elif (a=='-1' or a=='-3'):
+        # wrap up object
+        add_to_lists(pairs, i, j, sign, dir)
+        # start new object
         pairs = []
     else:
         pairs.append([int(a),int(b)]) 

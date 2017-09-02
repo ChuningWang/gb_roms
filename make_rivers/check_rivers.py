@@ -21,14 +21,14 @@ epos = fh.variables['river_Eposition'][:]
 rtrans = fh.variables['river_transport'][:]
 fh.close()
 
-# find rho index
-xrho = xpos.copy()
-erho = epos.copy()
-for i in range(len(rsign)):
-    if rsign[i]==-1:
-        if rdir[i]==0:
-            xrho[i] = xrho[i]-1
-        if rdir[i]==1:
-            erho[i] = erho[i]-1
-            
-rho_msk = np.array([msk[erho[i], xrho[i]] for i in range(len(rsign))])
+# # find rho index
+# xrho = xpos.copy()
+# erho = epos.copy()
+# for i in range(len(rsign)):
+#     if rsign[i]==-1:
+#         if rdir[i]==0:
+#             xrho[i] = xrho[i]-1
+#         if rdir[i]==1:
+#             erho[i] = erho[i]-1
+# 
+# rho_msk = np.array([msk[erho[i], xrho[i]] for i in range(len(rsign))])

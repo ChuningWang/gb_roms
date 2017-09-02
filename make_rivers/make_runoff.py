@@ -49,8 +49,8 @@ home_dir = sv['home_dir']
 script_dir = home_dir + 'git/gb_roms/make_rivers/'
 dis_file = in_dir + 'gb_discharge.nc'
 
-if len(sys.argv)>0:
-    grd1 = sys.argv[1]
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
 else:
     grd1 = 'GB_lr'
 
@@ -75,12 +75,19 @@ msk = (time>=t1) & (time<=t2)
 time = time[msk]
 data = fh.variables['discharge'][msk, :, :]
 fh.close()
- 
+
+# the coordinate of Hill's grid is slightly off - correct it here
+lon = lon-0.010
+lat = lat-0.005
+
 # load Glacier Bay grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
 box = np.array([[-137.40, 59.10],
-                [-136.30, 57.80],
+                [-137.00, 58.50],
+                [-136.55, 58.30],
+                [-136.40, 58.15],
+                [-136.00, 57.95],
                 [-135.00, 58.05],
                 [-136.10, 59.35]])
 
@@ -213,10 +220,6 @@ rr = np.nanmean(d1/d2)
 
 runoff_raw_nc = runoff_raw_nc*rr
 runoff_spread_nc = runoff_spread_nc*rr
-
-# # double check spval
-# runoff_raw_nc[mask_idx] = spval
-# runoff_spread_nc[mask_idx] = spval
 
 # create runoff file
 print 'create runoff file'

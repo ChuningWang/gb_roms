@@ -1,3 +1,5 @@
+# Use gridgen to generate a coarse, unfixed grid. Since this step is particularly slow, I split it into a
+# separate script for efficiency purpose.
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, shiftgrid
@@ -15,8 +17,8 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB'
-grd_name = 'GlacierBay'
+grd1 = 'GB_150m_orig'
+grd_name = 'GlacierBay_150m_orig'
 tag = ''
 bathy_dir = in_dir + 'ARDEMv2.0.nc'
 out_file = out_dir + 'grd/' + grd_name + '_grd' + tag + '.nc'
@@ -42,8 +44,8 @@ lon_0 = 0.5 * (lon_min + lon_max)
 # ----------------------------------------------------------------------------------------------------------
 # These coords are handpicked using the Boundary Interactor.
 
-lon_bry = np.array([    -137.40,    -136.30,    -135.00,    -136.10])
-lat_bry = np.array([    59.10,      57.80,      58.05,      59.35])
+lon_bry = np.array([    -137.35,    -136.30,    -135.00,    -136.05])
+lat_bry = np.array([    59.05,      57.80,      58.05,      59.25  ])
 beta = np.array([ 1., 1., 1., 1.])
 
 # # other test cases
@@ -83,7 +85,7 @@ beta = np.array([ 1., 1., 1., 1.])
 
 # ----------------------------------------------------------------------------------------------------------
 # generate hgrid
-bdryInteractor = -1
+bdryInteractor = 2
 if bdryInteractor == 1:
     # use boundary interactor
     m = Basemap(projection='lcc', width = 12000000, height = 9000000,
@@ -121,28 +123,6 @@ if (bdryInteractor == 1) | (bdryInteractor == 2):
 
         hgrd.mask_polygon(verts)
 
-# using masking GUI to change land mask
-GUImsk = 2
-if GUImsk == 1:
-    m = Basemap(projection='lcc', llcrnrlon=lon_min, llcrnrlat=lat_min,
-                urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-                resolution='f')
-    plt.ion()
-    plt.figure()
-    m.drawcoastlines()
-    plt.show()
-    pyroms.grid.edit_mask_mesh(hgrd, proj=m)
-    # or (this is faster 'I guess')
-    # coast = pyroms.utility.get_coast_from_map(m)
-    # pyroms.grid.edit_mask_mesh(hgrd, coast=coast)
-elif GUImsk == 2:
-    # laod from mask_change.txt
-    msk_c = np.loadtxt('mask_change.txt')
-    for i in range(len(msk_c)):
-        hgrd.mask_rho[msk_c[i, 1], msk_c[i, 0]] = msk_c[i, 2]
-
-print 'mask done...'
-
 # generate the bathy
 fh = netCDF4.Dataset(bathy_dir, mode='r')
 topo = fh.variables['z'][:]
@@ -162,7 +142,7 @@ topo = topo[msk2,:][:,msk1]
 topo = -topo
 
 # fix minimum depth
-hmin = 1  # allow dry_wet
+hmin = 10  # allow dry_wet
 topo = pyroms_toolbox.change(topo, '<', hmin, hmin)
 
 # interpolate new bathymetry
@@ -201,13 +181,6 @@ N = 40
 vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)
 
 grd = pyroms.grid.ROMS_Grid(grd_name, hgrd, vgrd)
-
-# # longitude between 0 and 360
-# grd.hgrid.lon_vert = grd.hgrid.lon_vert + 360
-# grd.hgrid.lon_rho = grd.hgrid.lon_rho + 360
-# grd.hgrid.lon_u = grd.hgrid.lon_u + 360
-# grd.hgrid.lon_v = grd.hgrid.lon_v + 360
-# grd.hgrid.lon_psi = grd.hgrid.lon_psi + 360
 
 # write grid file
 pyroms.grid.write_ROMS_grid(grd, filename=out_file)

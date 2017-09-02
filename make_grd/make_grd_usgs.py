@@ -35,9 +35,10 @@ water = hgrd.mask_rho
 water[:230, :75] = 0
 water[:150, :150] = 0
 water[229:235, 17:40] = 0
+water[585:623, 170:200] = 0
 
 # mask out adams inlet
-water[620:680, 397:] = 0
+# water[620:690, 397:] = 0
 
 # ------------------------------------------------------------------------
 # defind the boundary of mapping domain
@@ -142,13 +143,19 @@ h1 = h[364:376, 300:315]
 h1[h1<hmin0] = hmin0
 h[364:376, 300:315] = h1
 
-h1 = h[655:, 325:400]
-h1[h1<hmin0] = hmin0
-h[655:, 325:400] = h1
-
 h1 = h[500:, :380]
 h1[h1<hmin0] = hmin0
 h[500:, :380] = h1
+
+# adams inlet
+hmin0 = 10  # m
+h1 = h[620:690, 397:]
+h1[h1<hmin0] = hmin0
+h[620:690, 397:] = h1
+
+h1 = h[445:450, 347:357]
+h1[h1<hmin0] = hmin0
+h[445:450, 347:357] = h1
 
 # h1 = h[470:500, 345:360]
 # h1[h1<hmin0] = hmin0
@@ -187,38 +194,38 @@ h[500:, :380] = h1
 # h1 = h[640:660, 389:405]
 # h1[h1>hmax0] = hmax0
 # h[640:660, 389:405] = h1
-
-# constrain hmin at river discharge points
-hmin0 = 20
-h1 = h[780:805, 230:255]
-h1[h1<hmin0] = hmin0
-h[780:805, 230:255] = h1
-
-h1 = h[920:940, 90:110]
-h1[h1<hmin0] = hmin0
-h[920:940, 90:110] = h1
-
-h1 = h[920:940, 90:110]
-h1[h1<hmin0] = hmin0
-h[920:940, 90:110] = h1
+#
+# # constrain hmin at river discharge points
+# hmin0 = 20
+# h1 = h[780:805, 230:255]
+# h1[h1<hmin0] = hmin0
+# h[780:805, 230:255] = h1
+# 
+# h1 = h[920:940, 90:110]
+# h1[h1<hmin0] = hmin0
+# h[920:940, 90:110] = h1
+# 
+# h1 = h[920:940, 90:110]
+# h1[h1<hmin0] = hmin0
+# h[920:940, 90:110] = h1
 
 # ------------------------------------------------------------------------
 # use a 2D filter to smooth locally
-from scipy.ndimage import uniform_filter
-h1 = h[:500, :220]
-h[:500, :220] = uniform_filter(h1, size=3)
-h1 = h[300:320, 300:380]
-h[300:320, 300:380] = uniform_filter(h1, size=5)
-h1 = h[260:360, 440:470]
-h[260:360, 440:470] = uniform_filter(h1, size=5)
-h1 = h[0:140, 220:380]
-h[0:140, 220:380] = uniform_filter(h1, size=5)
-h1 = h[790:820, 0:25]
-h[790:820, 0:25] = uniform_filter(h1, size=5)
-h1 = h[575:585, 225:235]
-h[575:585, 225:235] = uniform_filter(h1, size=3)
-h1 = h[910:930, 85:95]
-h[910:930, 85:95] = uniform_filter(h1, size=5)
+# from scipy.ndimage import uniform_filter
+# h1 = h[:500, :220]
+# h[:500, :220] = uniform_filter(h1, size=3)
+# h1 = h[300:320, 300:380]
+# h[300:320, 300:380] = uniform_filter(h1, size=5)
+# h1 = h[260:360, 440:470]
+# h[260:360, 440:470] = uniform_filter(h1, size=5)
+# h1 = h[0:140, 220:380]
+# h[0:140, 220:380] = uniform_filter(h1, size=5)
+# h1 = h[790:820, 0:25]
+# h[790:820, 0:25] = uniform_filter(h1, size=5)
+# h1 = h[575:585, 225:235]
+# h[575:585, 225:235] = uniform_filter(h1, size=3)
+# h1 = h[910:930, 85:95]
+# h[910:930, 85:95] = uniform_filter(h1, size=5)
 
 # ------------------------------------------------------------------------
 # deal with shallow water regions
@@ -228,7 +235,6 @@ def local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.3):
     msk1 = water[xmin:xmax, ymin:ymax]
 
     # smooth bathymetry
-    # rx0_max = 0.3
     RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h1, msk1)
     print 'Max Roughness value is: ', RoughMat.max()
     hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk1, h1, rx0_max)
@@ -237,42 +243,41 @@ def local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.3):
 
     h[xmin:xmax, ymin:ymax] = hs
 
-
-xmin = 630
-xmax = 685
-ymin = 380
-ymax = 500
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
-
-# xmin = 653
-# xmax = 663
-# ymin = 411
-# ymax = 425
-# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.05)
-
-xmin = 370
-xmax = 420
-ymin = 285
-ymax = 355
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
-
-xmin = 420
-xmax = 490
-ymin = 310
-ymax = 380
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
-
-xmin = 0
-xmax = 350
-ymin = 0
-ymax = 502
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
-
-xmin = 0
-xmax = 500
-ymin = 0
-ymax = 220
-local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
+# xmin = 630
+# xmax = 685
+# ymin = 380
+# ymax = 500
+# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
+# 
+# # xmin = 653
+# # xmax = 663
+# # ymin = 411
+# # ymax = 425
+# # local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.05)
+# 
+# xmin = 370
+# xmax = 420
+# ymin = 285
+# ymax = 355
+# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
+# 
+# xmin = 420
+# xmax = 490
+# ymin = 310
+# ymax = 380
+# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
+# 
+# xmin = 0
+# xmax = 350
+# ymin = 0
+# ymax = 502
+# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
+# 
+# xmin = 0
+# xmax = 500
+# ymin = 0
+# ymax = 220
+# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
 
 # ------------------------------------------------------------------------
 # shapiro filter
@@ -280,7 +285,7 @@ h = pyroms_toolbox.shapiro_filter.shapiro2(h, 32)
 
 # final smooth
 # smooth bathymetry
-rx0_max = 0.30
+rx0_max = 0.35
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, water)
 print 'Max Roughness value is: ', RoughMat.max()
 h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(water, h, rx0_max)
@@ -302,10 +307,10 @@ h[water==0] = hmin
 
 # ------------------------------------------------------------------------
 # redesign the vertical coordinate
-theta_b = 0.1
+theta_b = 2.0
 theta_s = 8.0
 Tcline = 10
-N = 30
+N = 40
 vgrd = pyroms.vgrid.s_coordinate_4(h, theta_b, theta_s, Tcline, N, hraw=hraw)
 
 # ------------------------------------------------------------------------

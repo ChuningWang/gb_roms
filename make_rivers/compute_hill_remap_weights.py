@@ -2,6 +2,7 @@ import numpy as np
 from datetime import datetime
 import netCDF4 as netCDF
 import sys
+from matplotlib import path
 
 import pyroms
 import pyroms_toolbox
@@ -13,18 +14,35 @@ out_dir = sv['out_dir']
 home_dir = sv['home_dir']
 
 grd1 = in_dir + 'gb_discharge.nc'
-if len(sys.argv)>0:
-    grd2 = sys.argv[1]
+if len(sys.argv)>1:
+    grd2 = sys.argv[-1]
 else:
     grd2 = 'GB_lr'
 
-##  load 2-dimentional interannual discharge data 
+# load 2-dimentional interannual discharge data 
 print 'Load lat_lon'
 nc_data = netCDF.Dataset(grd1, 'r')
 lon = nc_data.variables['lon'][:]
 lat = nc_data.variables['lat'][:]
+# the coordinate of Hill's grid is slightly off - correct it here
+lon = lon-0.010
+lat = lat-0.005
 mask = nc_data.variables['coast'][:]
+# here use polygon to mask data out of Glacier Bay
+box = np.array([[-137.40, 59.10],
+                [-137.00, 58.50],
+                [-136.55, 58.30],
+                [-136.40, 58.15],
+                [-136.00, 57.95],
+                [-135.00, 58.05],
+                [-136.10, 59.35]])
+p0 = path.Path(box)
+coords = np.array([lon.flatten(), lat.flatten()]).T
+msk2 = p0.contains_points(coords)
+msk2 = np.reshape(msk2, mask.shape)
+mask = np.ma.masked_where(~msk2, mask)
 mask = np.where(mask < 0, 0, mask)
+
 Mp, Lp = lon.shape
 
 lon_corner = np.zeros([Mp+1,Lp+1])

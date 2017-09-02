@@ -16,8 +16,8 @@ data_dir = sv['soda_dir']
 
 os.chdir(os.path.expanduser('~') + '/git/gb_roms/make_bc_ic/')
 
-if len(sys.argv)>0:
-    grd1 = sys.argv[1]
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
 else:
     grd1 = 'GB_lr'
 

@@ -19,7 +19,7 @@ Too coarse for detailed mapping of T and S inside the bay.
 The whole script takes about 1 hour to run.
 '''
 
-def floodFill(c, r, mask): 
+def floodFill(c, r, mask):
     """
     produce a mask array that identifies the flood of ctd stations.
     """
@@ -101,8 +101,8 @@ in_dir = sv['in_dir']
 dst_dir = sv['out_dir']
 soda_dir = sv['soda_dir']
 
-if len(sys.argv)>0:
-    grd1 = sys.argv[1]
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
 else:
     grd1 = 'GB_lr'
 
