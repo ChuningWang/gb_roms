@@ -24,8 +24,8 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-plt_proj = 1
-plt_hill_coast = 1
+plt_proj = 0
+plt_hill_coast = 0
 
 ctd = rd_ctd(in_dir + 'ctd.nc')
 lat_ctd = ctd['lat_stn']
