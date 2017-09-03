@@ -99,7 +99,7 @@ if bdryInteractor == 1:
     hgrd =bry.grd
 elif bdryInteractor == 2:
     # use gridgen directly
-    m = Basemap(projection='lcc', width = 12000000, height = 9000000,
+    m = Basemap(projection='lcc', width = 8000000, height = 6000000,
                 lat_1 = 30, lat_2 = 70, lat_0=lat_0, lon_0=lon_0,
                 resolution='f')
     xp, yp = m(lon_bry, lat_bry)
@@ -122,6 +122,8 @@ if (bdryInteractor == 1) | (bdryInteractor == 2):
             verts.append(verts[0])
 
         hgrd.mask_polygon(verts)
+
+print 'mask done'
 
 # generate the bathy
 fh = netCDF4.Dataset(bathy_dir, mode='r')
