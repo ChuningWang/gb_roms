@@ -27,9 +27,9 @@ else:
 plt_proj = 0
 plt_hill_coast = 0
 
-ctd = rd_ctd(in_dir + 'ctd.nc')
-lat_ctd = ctd['lat_stn']
-lon_ctd = ctd['lon_stn']
+# ctd = rd_ctd(in_dir + 'ctd.nc')
+# lat_ctd = ctd['lat_stn']
+# lon_ctd = ctd['lon_stn']
 
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -62,12 +62,12 @@ if plt_proj == 1:
     # setlabelrot(mr,-90)
 
     x, y = m(lon, lat)
-    x2, y2 = m(lon_ctd, lat_ctd)
     m.pcolor(x, y, z, cmap='Greens')
     plt.clim(0, 400)
     plt.colorbar()
     m.contour(x, y, msk, [0.5, 0.5], linewidths=0.05, colors='k')
-    m.plot(x2, y2, '.k', ms=2)
+    # x2, y2 = m(lon_ctd, lat_ctd)
+    # m.plot(x2, y2, '.k', ms=2)
 
     if plt_hill_coast==1:
         # Overlay Hill discharge point on the map
