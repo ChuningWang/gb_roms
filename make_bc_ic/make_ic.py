@@ -74,7 +74,7 @@ os.remove(u_dst_file)
 os.remove(v_dst_file)
 
 # set ic file time
-icfile = out_dir + 'bc_ic/GlacierBay_usgs_ic_'+tag+'_SODA3.3.1_0.25.nc'
+icfile = out_dir + 'bc_ic/' + dst_grd.name + '_ic_'+tag+'_SODA3.3.1_0.25.nc'
 fh = nc.Dataset(icfile, 'a')
 fh.variables['ocean_time'][0] = np.floor(fh.variables['ocean_time'][0])
 fh.close()

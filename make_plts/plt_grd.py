@@ -88,7 +88,7 @@ if plt_proj == 1:
 elif plt_proj == 0:
 
     plt.pcolormesh(z, cmap='Greens')
-    plt.clim(-1, 200)
+    plt.clim(-1, 10)
     plt.colorbar()
     plt.contour(msk, [0.5], linewidths=0.05, colors='k')
 
@@ -97,7 +97,7 @@ elif plt_proj == 0:
     plt.tick_params(axis='both', which='major', labelsize=5)
     plt.grid()
 
-    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.pdf', format='pdf')
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.tiff', format='tiff',dpi=600)
 
 plt.close()
 
