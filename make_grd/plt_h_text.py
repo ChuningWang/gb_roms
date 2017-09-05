@@ -6,12 +6,12 @@ import bathy_smoother
 
 import matplotlib.pyplot as plt
 
-x0 = 397
+x0 = 330
 y0 = 340
 dx = 7
 dy = 7
 
-grd = pyroms.grid.get_ROMS_grid('GB_USGS')
+grd = pyroms.grid.get_ROMS_grid('GB_hr')
 h0 = grd.vgrid.h
 msk0 = grd.hgrid.mask_rho
 
@@ -31,7 +31,7 @@ h = np.ma.masked_where(msk==0, h)
 # hs = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(msk, h, rx0_max)
 # ------------------------------------------------
 plt.pcolormesh(h, cmap='Greens')
-plt.clim(-1, 5)
+plt.clim(-1, 10)
 plt.colorbar
 for i in range(2*dx):
     for j in range(2*dy):

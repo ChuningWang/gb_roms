@@ -99,19 +99,19 @@ print 'griddata from ARDEM done...'
 # ------------------------------------------------------------------------
 # fix bathymetry with USGS and NOAA data
 fh = nc.Dataset(bathy_dir + 'bathy_noaa.nc', 'r')
-lon1 = fh.variables['lon'][:]
-lat1 = fh.variables['lat'][:]
-h1 = fh.variables['z'][:]
+lon3 = fh.variables['lon'][:]
+lat3 = fh.variables['lat'][:]
+h3 = fh.variables['z'][:]
 fh.close()
 
 bdry = np.loadtxt('bdry_usgs.txt')
 p0 = [(bdry[i, 0], bdry[i, 1]) for i in range(len(bdry[:, 0]))]
 p = path.Path(p0)
-pc = ~p.contains_points(np.array([lon1, lat1]).T) 
+pc = ~p.contains_points(np.array([lon3, lat3]).T) 
 
-lon1 = lon1[pc]
-lat1 = lat1[pc]
-h1 = h1[pc]
+lon3 = lon3[pc]
+lat3 = lat3[pc]
+h3 = h3[pc]
 
 fh = nc.Dataset(bathy_dir + 'bathy_usgs.nc', 'r')
 lon2 = fh.variables['lon'][:][1::3, 1::3]
@@ -124,9 +124,9 @@ lon2 = lon2[msk]
 lat2 = lat2[msk]
 h2 = h2[msk]
 
-lon0 = np.concatenate((lon1, lon2))
-lat0 = np.concatenate((lat1, lat2))
-h0 = np.concatenate((h1, h2))
+lon0 = np.concatenate((lon3, lon2))
+lat0 = np.concatenate((lat3, lat2))
+h0 = np.concatenate((h3, h2))
 
 # load grid boundary
 bdry = np.loadtxt('bdry.txt')
@@ -147,7 +147,7 @@ hraw = h.copy()
 
 # ------------------------------------------------------------------------
 # locally constrain hmin at some location
-hmin0 = 10  # m
+hmin0 = 5  # m
 h1 = h[:, :300]
 h1[h1<hmin0] = hmin0
 h[:, :300] = h1
@@ -160,6 +160,63 @@ h1 = h[630:, :]
 h1[h1<hmin0] = hmin0
 h[630:, :] = h1
 
+hmax0 = 5  # m
+h1 = h[340:350, 290:310]
+h1[h1<hmax0] = hmax0
+h[340:350, 290:310] = h1
+
+h1 = h[340:350, 330:340]
+h1[h1<hmax0] = hmax0
+h[340:350, 330:340] = h1
+
+c0 = [(-135.81307137660747, 58.385557938193749),
+      (-135.8021646671254, 58.38488902601744),
+      (-135.79529747967371, 58.385557938193749),
+      (-135.78964214883118, 58.387007247909068),
+      (-135.78600657900381, 58.38578090891918),
+      (-135.77348406070959, 58.38767616008537),
+      (-135.75974968580624, 58.390574779516015),
+      (-135.75571016377583, 58.3904632941533),
+      (-135.7452074064968, 58.392358545319489),
+      (-135.73874417124819, 58.392247059956773),
+      (-135.73308884040563, 58.391578147780471),
+      (-135.72662560515698, 58.391132206329601),
+      (-135.71450703906581, 58.391466662417756),
+      (-135.70763985161412, 58.391912603868619),
+      (-135.69632918992903, 58.393361913583945),
+      (-135.69188571569558, 58.393919340397531),
+      (-135.64987468657947, 58.39860172563165),
+      (-135.65108654318857, 58.400608462160555),
+      (-135.66522487029496, 58.407409069286302),
+      (-135.68097900621351, 58.408412437550751),
+      (-135.70400428178678, 58.404287479130218),
+      (-135.76298130343056, 58.396929445190892),
+      (-135.81145556779529, 58.38767616008537),
+      (-135.81185951999834, 58.385000511380163)]
+
+p = path.Path(c0)
+pc = p.contains_points(np.array([hgrd.lon_rho.flatten(), hgrd.lat_rho.flatten()]).T).reshape(h.shape)
+pc = pc & (h>hmax0)
+h[pc] = hmax0
+
+# Secret Bay
+hmin0 = 10
+h1 = h[400:440, 300:320]
+h1[h1<hmin0] = hmin0
+h[400:440, 300:320] = h1
+
+h1 = h[400:420, 320:325]
+h1[h1<hmin0] = hmin0
+h[400:420, 320:325] = h1
+
+h1 = h[380:415, 320:340]
+h1[h1<hmin0] = hmin0
+h[380:415, 320:340] = h1
+
+h1 = h[420:460, 350:360]
+h1[h1<hmin0] = hmin0
+h[420:460, 350:360] = h1
+
 # adams inlet
 hmin0 = 10  # m
 h1 = h[660:720, 390:]
@@ -169,76 +226,6 @@ h[660:720, 390:] = h1
 h1 = h[680:700, 380:390]
 h1[h1<hmin0] = hmin0
 h[680:700, 380:390] = h1
-
-# h1 = h[470:500, 345:360]
-# h1[h1<hmin0] = hmin0
-# h[470:500, 345:360] = h1
-# 
-# h1 = h[450:470, 352:380]
-# h1[h1<hmin0] = hmin0
-# h[450:470, 352:380] = h1
-# 
-# h1 = h[645:660, 395:405]
-# h1[h1<hmin0] = hmin0
-# h[645:660, 395:405] = h1
-# 
-# h1 = h[648:660, 400:410]
-# h1[h1<hmin0] = hmin0
-# h[648:660, 400:410] = h1
-# 
-# hmin0 = 20  # m
-# 
-# h1 = h[300:340, 280:290]
-# h1[h1<hmin0] = hmin0
-# h[300:340, 280:290] = h1
-# 
-# h1 = h[645:655, 382:385]
-# h1[h1<hmin0] = hmin0
-# h[645:655, 382:385] = h1
-# 
-# hmin0 = 40  # m
-# 
-# h1 = h[328:332, 281:285]
-# h1[h1<hmin0] = hmin0
-# h[328:332, 281:285] = h1
-# 
-# hmax0 = 5  # m
-# 
-# h1 = h[640:660, 389:405]
-# h1[h1>hmax0] = hmax0
-# h[640:660, 389:405] = h1
-#
-# # constrain hmin at river discharge points
-# hmin0 = 20
-# h1 = h[780:805, 230:255]
-# h1[h1<hmin0] = hmin0
-# h[780:805, 230:255] = h1
-# 
-# h1 = h[920:940, 90:110]
-# h1[h1<hmin0] = hmin0
-# h[920:940, 90:110] = h1
-# 
-# h1 = h[920:940, 90:110]
-# h1[h1<hmin0] = hmin0
-# h[920:940, 90:110] = h1
-
-# ------------------------------------------------------------------------
-# use a 2D filter to smooth locally
-# from scipy.ndimage import uniform_filter
-# h1 = h[:500, :220]
-# h[:500, :220] = uniform_filter(h1, size=3)
-# h1 = h[300:320, 300:380]
-# h[300:320, 300:380] = uniform_filter(h1, size=5)
-# h1 = h[260:360, 440:470]
-# h[260:360, 440:470] = uniform_filter(h1, size=5)
-# h1 = h[0:140, 220:380]
-# h[0:140, 220:380] = uniform_filter(h1, size=5)
-# h1 = h[790:820, 0:25]
-# h[790:820, 0:25] = uniform_filter(h1, size=5)
-# h1 = h[575:585, 225:235]
-# h[575:585, 225:235] = uniform_filter(h1, size=3)
-# h1 = h[910:930, 85:95]
-# h[910:930, 85:95] = uniform_filter(h1, size=5)
 
 # ------------------------------------------------------------------------
 # deal with shallow water regions
@@ -255,42 +242,6 @@ def local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.3):
     print 'Max Roughness value is: ', RoughMat.max()
 
     h[xmin:xmax, ymin:ymax] = hs
-
-# xmin = 630
-# xmax = 685
-# ymin = 380
-# ymax = 500
-# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
-# 
-# # xmin = 653
-# # xmax = 663
-# # ymin = 411
-# # ymax = 425
-# # local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.05)
-# 
-# xmin = 370
-# xmax = 420
-# ymin = 285
-# ymax = 355
-# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
-# 
-# xmin = 420
-# xmax = 490
-# ymin = 310
-# ymax = 380
-# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.25)
-# 
-# xmin = 0
-# xmax = 350
-# ymin = 0
-# ymax = 502
-# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
-# 
-# xmin = 0
-# xmax = 500
-# ymin = 0
-# ymax = 220
-# local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.20)
 
 # ------------------------------------------------------------------------
 # shapiro filter

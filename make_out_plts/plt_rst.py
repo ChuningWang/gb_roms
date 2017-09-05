@@ -33,7 +33,7 @@ hraw = np.ma.masked_where(grd.hgrid.mask==0, hraw)
 
 if grd1=='GB_lr':
     tag = 'GB-CIRC'
-elif grd1=='GB_USGS':
+if grd1=='GB_hr':
     tag = 'GB-TIDE'
 
 varlist = ['u', 'v', 'temp', 'salt', 'zeta', 'wetdry_mask_rho']

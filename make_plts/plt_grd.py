@@ -63,7 +63,7 @@ if plt_proj == 1:
 
     x, y = m(lon, lat)
     m.pcolor(x, y, z, cmap='Greens')
-    plt.clim(0, 400)
+    plt.clim(0, 10)
     plt.colorbar()
     m.contour(x, y, msk, [0.5, 0.5], linewidths=0.05, colors='k')
     # x2, y2 = m(lon_ctd, lat_ctd)
@@ -83,7 +83,7 @@ if plt_proj == 1:
         xh, yh = m(lonh, lath)
         m.plot(xh, yh, '.k', ms=2)
 
-    plt.savefig(out_dir + 'figs/'+grd1+'_grd.pdf', format='pdf')
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd.tiff', format='tiff',dpi=600)
 
 elif plt_proj == 0:
 
