@@ -22,7 +22,7 @@ else:
     grd1 = 'GB_lr'
 
 my_year = 2008
-tag='2008_03_31'
+tag='2008_05_30'
 
 # filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_reg_'+tag+'.nc'
 filein=data_dir+str(my_year)+'/'+'soda3.3.1_5dy_ocean_or_'+tag+'.nc'
