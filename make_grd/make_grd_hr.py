@@ -43,6 +43,10 @@ water[:150, :150] = 0
 water[718:725, 420:430] = 0
 water[660:685, 480:490] = 0
 
+# Queen Inlet (part)
+water[830:860, 239:250] = 0
+water[845:860, 220:250] = 0
+
 # Tenakee Inlet
 water[:100, 190:225] = 0
 water[:40, 225:250] = 0
@@ -146,6 +150,21 @@ h[(water==1) & pc] = griddata((lon0.flatten(), lat0.flatten()), h0.flatten(),
 hraw = h.copy()
 
 # ------------------------------------------------------------------------
+# mask out some shallow regions around Hutchins Bay, Leland Islands, and
+# Sturgess Island
+# hs = h[520:620, 330:350]
+# ws = water[520:620, 330:350]
+# msks = hs<3.
+# ws[msks] = 0
+# water[520:620, 330:350] = ws
+# 
+# hs = h[465:475, 335:345]
+# ws = water[465:475, 335:345]
+# msks = hs<3.
+# ws[msks] = 0
+# water[465:475, 335:345] = ws
+
+# ------------------------------------------------------------------------
 # locally constrain hmin at some location
 hmin0 = 5  # m
 h1 = h[:, :300]
@@ -226,6 +245,42 @@ h[660:720, 390:] = h1
 h1 = h[680:700, 380:390]
 h1[h1<hmin0] = hmin0
 h[680:700, 380:390] = h1
+
+# Queen Inlet
+hmin0 = 20  # m
+h1 = h[820:860, 220:250]
+h1[h1<hmin0] = hmin0
+h[820:860, 220:250] = h1
+
+# other small channels/river discharge points
+hmin0 = 10  # m
+h1 = h[460:480, 345:355]
+h1[h1<hmin0] = hmin0
+h[460:480, 345:355] = h1
+
+h1 = h[560:620, 350:370]
+h1[h1<hmin0] = hmin0
+h[560:620, 350:370] = h1
+
+h1 = h[340:380, 450:470]
+h1[h1<hmin0] = hmin0
+h[340:380, 450:470] = h1
+
+h1 = h[380:420, 130:170]
+h1[h1<hmin0] = hmin0
+h[380:420, 130:170] = h1
+
+h1 = h[440:460, 60:80]
+h1[h1<hmin0] = hmin0
+h[440:460, 60:80] = h1
+
+h1 = h[400:440, 70:90]
+h1[h1<hmin0] = hmin0
+h[400:440, 70:90] = h1
+
+h1 = h[580:600, 140:160]
+h1[h1<hmin0] = hmin0
+h[580:600, 140:160] = h1
 
 # ------------------------------------------------------------------------
 # deal with shallow water regions

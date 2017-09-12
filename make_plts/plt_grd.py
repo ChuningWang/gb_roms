@@ -24,8 +24,8 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-plt_proj = 1
-plt_hill_coast = 0
+plt_proj = 0
+plt_hill_coast = 1
 
 # ctd = rd_ctd(in_dir + 'ctd.nc')
 # lat_ctd = ctd['lat_stn']
@@ -63,7 +63,7 @@ if plt_proj == 1:
 
     x, y = m(lon, lat)
     m.pcolor(x, y, z, cmap='Greens')
-    plt.clim(0, 10)
+    plt.clim(-1, 20)
     plt.colorbar()
     m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
     # x2, y2 = m(lon_ctd, lat_ctd)
@@ -88,7 +88,7 @@ if plt_proj == 1:
 elif plt_proj == 0:
 
     plt.pcolormesh(z, cmap='Greens')
-    plt.clim(-1, 10)
+    plt.clim(-1, 20)
     plt.colorbar()
     plt.contour(msk, [0.5], linewidths=0.05, colors='k')
 

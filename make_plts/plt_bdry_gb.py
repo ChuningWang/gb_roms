@@ -16,7 +16,7 @@ sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 
 # Read grid
-fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_usgs_bdry_2000_SODA3.3.1.nc', mode='r')
+fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_hr_bdry_2008_SODA3.3.1_0.25.nc', mode='r')
 lon_psi = fh.variables['lon_psi'][:]
 lat_psi = fh.variables['lat_psi'][:]
 lon_rho = fh.variables['lon_rho'][:]
@@ -51,23 +51,23 @@ v_w = fh.variables['v_west'][:].squeeze()
 
 fh.close()
 
-lat_st_e = np.tile(lat_rho[:, -1].squeeze(), (30, 1))
-lat_st_w = np.tile(lat_rho[:, 0].squeeze(), (30, 1))
+lat_st_e = np.tile(lat_rho[:, -1].squeeze(), (40, 1))
+lat_st_w = np.tile(lat_rho[:, 0].squeeze(), (40, 1))
 
-lon_st_e = np.tile(lon_rho[:, -1].squeeze(), (30, 1))
-lon_st_w = np.tile(lon_rho[:, 0].squeeze(), (30, 1))
+lon_st_e = np.tile(lon_rho[:, -1].squeeze(), (40, 1))
+lon_st_w = np.tile(lon_rho[:, 0].squeeze(), (40, 1))
 
-lat_u_e = np.tile(lat_u[:, -1].squeeze(), (30, 1))
-lat_u_w = np.tile(lat_u[:, 0].squeeze(), (30, 1))
+lat_u_e = np.tile(lat_u[:, -1].squeeze(), (40, 1))
+lat_u_w = np.tile(lat_u[:, 0].squeeze(), (40, 1))
 
-lon_u_e = np.tile(lon_u[:, -1].squeeze(), (30, 1))
-lon_u_w = np.tile(lon_u[:, 0].squeeze(), (30, 1))
+lon_u_e = np.tile(lon_u[:, -1].squeeze(), (40, 1))
+lon_u_w = np.tile(lon_u[:, 0].squeeze(), (40, 1))
 
-lat_v_e = np.tile(lat_v[:, -1].squeeze(), (30, 1))
-lat_v_w = np.tile(lat_v[:, 0].squeeze(), (30, 1))
+lat_v_e = np.tile(lat_v[:, -1].squeeze(), (40, 1))
+lat_v_w = np.tile(lat_v[:, 0].squeeze(), (40, 1))
 
-lon_v_e = np.tile(lon_v[:, -1].squeeze(), (30, 1))
-lon_v_w = np.tile(lon_v[:, 0].squeeze(), (30, 1))
+lon_v_e = np.tile(lon_v[:, -1].squeeze(), (40, 1))
+lon_v_w = np.tile(lon_v[:, 0].squeeze(), (40, 1))
 
 s_rho = np.matrix(s_rho).T
 
@@ -77,40 +77,55 @@ h_st_w = s_rho*np.matrix(h[:, 0])
 h_u_e = h_st_e
 h_u_w = h_st_w
 
-h_v_e = 0.5*(h_st_e[:-1]+h_st_e[1:])
-h_v_w = 0.5*(h_st_w[:-1]+h_st_w[1:])
+h_v_e = 0.5*(h_st_e[:, :-1]+h_st_e[:, 1:])
+h_v_w = 0.5*(h_st_w[:, :-1]+h_st_w[:, 1:])
 
 # ------------------------------------------------------------------------------------------------------
-for i in range(len(t)):
-    plt.pcolormesh(lat_st_e, h_st_e, s_e[i, :, :])
+# for i in range(len(t)):
+for i in range(1):
+    # plt.pcolormesh(lat_st_e, h_st_e, s_e[i, :, :])
+    # plt.colorbar()
+    # plt.title('Salinity [PSU] at East Boundary')
+    # plt.xlabel('Latitude')
+    # plt.ylabel('Depth [m]')
+    # plt.savefig(out_dir + 'figs/bdry_e_s_' + str(t[i]) + '.tiff',format='tiff')
+    # plt.close()
+
+    # plt.pcolormesh(lat_st_w, h_st_w, s_w[i, :, :])
+    # plt.colorbar()
+    # plt.title('Salinity [PSU] at West Boundary')
+    # plt.xlabel('Latitude')
+    # plt.ylabel('Depth [m]')
+    # plt.savefig(out_dir + 'figs/bdry_w_s_' + str(t[i]) + '.tiff',format='tiff')
+
+    # plt.close()
+    # plt.pcolormesh(lat_st_e, h_st_e, t_e[i, :, :])
+    # plt.colorbar()
+    # plt.title('Temperature [degC] at East Boundary')
+    # plt.xlabel('Latitude')
+    # plt.ylabel('Depth [m]')
+    # plt.savefig(out_dir + 'figs/bdry_e_t_' + str(t[i]) + '.tiff',format='tiff')
+    # plt.close()
+
+    # plt.pcolormesh(lat_st_w, h_st_w, t_w[i, :, :])
+    # plt.colorbar()
+    # plt.title('Temperature [degC] at West Boundary')
+    # plt.xlabel('Latitude')
+    # plt.ylabel('Depth [m]')
+    # plt.savefig(out_dir + 'figs/bdry_w_t_' + str(t[i]) + '.tiff',format='tiff')
+    # plt.close()
+
+    plt.pcolormesh(lat_u_w, h_u_w, u_w[i, :, :])
     plt.colorbar()
-    plt.title('Salinity [PSU] at East Boundary')
+    plt.title('U at West Boundary')
     plt.xlabel('Latitude')
     plt.ylabel('Depth [m]')
-    plt.savefig(out_dir + 'figs/bdry_e_s_' + str(t[i]) + '.tiff',format='tiff')
+    plt.savefig(out_dir + 'figs/bdry/bdry_w_u_' + str(t[i]) + '.tiff',format='tiff')
     plt.close()
 
-    plt.pcolormesh(lat_st_w, h_st_w, s_w[i, :, :])
+    plt.pcolormesh(lat_v_w, h_v_w, v_w[i, :, :])
     plt.colorbar()
-    plt.title('Salinity [PSU] at West Boundary')
+    plt.title('V at West Boundary')
     plt.xlabel('Latitude')
     plt.ylabel('Depth [m]')
-    plt.savefig(out_dir + 'figs/bdry_w_s_' + str(t[i]) + '.tiff',format='tiff')
-
-    plt.close()
-    plt.pcolormesh(lat_st_e, h_st_e, t_e[i, :, :])
-    plt.colorbar()
-    plt.title('Temperature [degC] at East Boundary')
-    plt.xlabel('Latitude')
-    plt.ylabel('Depth [m]')
-    plt.savefig(out_dir + 'figs/bdry_e_t_' + str(t[i]) + '.tiff',format='tiff')
-    plt.close()
-
-    plt.pcolormesh(lat_st_w, h_st_w, t_w[i, :, :])
-    plt.colorbar()
-    plt.title('Temperature [degC] at West Boundary')
-    plt.xlabel('Latitude')
-    plt.ylabel('Depth [m]')
-    plt.savefig(out_dir + 'figs/bdry_w_t_' + str(t[i]) + '.tiff',format='tiff')
-    plt.close()
-
+    plt.savefig(out_dir + 'figs/bdry/bdry_w_v_' + str(t[i]) + '.tiff',format='tiff')

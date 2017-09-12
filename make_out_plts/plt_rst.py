@@ -107,6 +107,8 @@ for var in varlist:
         plt.clim(0, 20)
     elif var=='salt':
         plt.clim(0, 35)
+    elif var=='wetdry_mask_rho':
+        plt.clim(0, 1)
     plt.colorbar()
     plt.title(str(xx)+ ',' + str(yy) + ',' + str(zlevel))
     plt.savefig(outpath + tag + '_rst_' + var + '_' + ex + '.png', format='png', dpi=900)

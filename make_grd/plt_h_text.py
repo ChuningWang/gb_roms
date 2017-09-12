@@ -6,13 +6,14 @@ import bathy_smoother
 
 import matplotlib.pyplot as plt
 
-x0 = 330
+x0 = 545
 y0 = 340
 dx = 7
 dy = 7
 
 grd = pyroms.grid.get_ROMS_grid('GB_hr')
-h0 = grd.vgrid.h
+# h0 = grd.vgrid.h
+h0 = grd.vgrid.hraw[0, :, :]
 msk0 = grd.hgrid.mask_rho
 
 # ------------------------------------------------
