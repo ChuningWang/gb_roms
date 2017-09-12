@@ -10,7 +10,7 @@ def read_host_info():
         file_in = '/glade/u/home/chuning/git/gb_roms/Modules/yellowstone.info'
     elif hostname=='aln':
         file_in = '/Users/chuning/git/gb_roms/Modules/alnilam.info'
-    elif hostname=='Cod':
+    elif hostname=='Cod' or hostname=='nwk':
         file_in = '/Users/CnWang/git/gb_roms/Modules/cod.info'
 
     f = open(file_in, 'rb')
