@@ -56,7 +56,7 @@ if plt_proj == 1:
                 urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
                 resolution='f')
 
-    # m.drawcoastlines(linewidth=0.01)
+    m.drawcoastlines(linewidth=0.01)
     mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
     pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
     # setlabelrot(mr,-90)
@@ -65,7 +65,7 @@ if plt_proj == 1:
     m.pcolor(x, y, z, cmap='Greens')
     plt.clim(-1, 20)
     plt.colorbar()
-    m.contour(x, y, msk, [0.5, 0.5], linewidths=0.05, colors='k')
+    m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
     # x2, y2 = m(lon_ctd, lat_ctd)
     # m.plot(x2, y2, '.k', ms=2)
 
@@ -100,4 +100,3 @@ elif plt_proj == 0:
     plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.tiff', format='tiff',dpi=600)
 
 plt.close()
-
