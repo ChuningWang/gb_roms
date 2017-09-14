@@ -18,68 +18,10 @@ out_dir = sv['out_dir']
 
 # ------------------------------------------------------------------------
 grd1 = 'GB_lr'
+grd2 = 'GB_300m_orig'
 grd_name = 'GlacierBay_lr'
 
-# grid dimension
-Lg = 250   # horizontal
-Mg = 500   # vertical
-
-# ------------------------------------------------------------------------
-# defind the boundary of mapping domain
-lat_min = 57.
-lat_max = 60.
-lat_0 = 0.5 * (lat_min + lat_max)
-
-lon_min = -138.
-lon_max = -134.
-lon_0 = 0.5 * (lon_min + lon_max)
-
-# ------------------------------------------------------------------------
-# These coords are handpicked using the Boundary Interactor.
-
-lon_bry = np.array([    -137.35,    -136.30,    -135.00,    -136.05])
-lat_bry = np.array([    59.05,      57.80,      58.05,      59.25  ])
-beta = np.array([ 1., 1., 1., 1.])
-
-# generate hgrid
-bdryInteractor = -1
-if bdryInteractor == 1:
-    # use boundary interactor
-    m = Basemap(projection='lcc', width = 12000000, height = 9000000,
-                lat_1 = 30, lat_2 = 70, lat_0=lat_0, lon_0=lon_0,
-                resolution='f')
-    xp, yp = m(lon_bry, lat_bry)
-    plt.figure()
-    m.drawcoastlines()
-    # plt.show()
-    bry = pyroms.hgrid.BoundaryInteractor(xp, yp, beta, shp=(Mg+3,Lg+3), proj=m)
-    hgrd =bry.grd
-elif bdryInteractor == 2:
-    # use gridgen directly
-    m = Basemap(projection='lcc', width = 12000000, height = 9000000,
-                lat_1 = 30, lat_2 = 70, lat_0=lat_0, lon_0=lon_0,
-                resolution='f')
-    xp, yp = m(lon_bry, lat_bry)
-    hgrd = pyroms.grid.Gridgen(lon_bry, lat_bry, beta, (Mg+3, Lg+3), proj=m)
-else:
-    # load grid that has been generated before
-    hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
-
-print 'hgrid generated'
-
-if (bdryInteractor == 1) | (bdryInteractor == 2):
-
-    lonv, latv = m(hgrd.x_vert, hgrd.y_vert, inverse=True)
-    hgrd = pyroms.grid.CGrid_geo(lonv, latv, m)
-
-    # generate the mask
-    for verts in m.coastsegs:
-        # hgrd.mask_polygon(verts)
-        if np.shape(verts)[0] == 2:
-            verts.append(verts[0])
-
-        hgrd.mask_polygon(verts)
-
+hgrd = pyroms.grid.get_ROMS_hgrid(grd2)
 water = hgrd.mask_rho
 
 # ------------------------------------------------------------------------
@@ -91,12 +33,22 @@ water[:45, 95:120] = 0
 water[:15, 115:135] = 0
 water[330:360, 210:] = 0
 
-# # ------------------------------------------------------------------------
-msk_c = np.loadtxt('mask_change_GB_lr.txt')
-for i in range(len(msk_c)):
-    hgrd.mask_rho[int(msk_c[i, 1]), int(msk_c[i, 0])] = msk_c[i, 2]
-print 'mask done...'
+# ------------------------------------------------------------------------
+# msk_c = np.loadtxt('mask_change_GB_lr.txt')
+# for i in range(len(msk_c)):
+#     hgrd.mask_rho[int(msk_c[i, 1]), int(msk_c[i, 0])] = msk_c[i, 2]
+# print 'mask done...'
  
+# ------------------------------------------------------------------------
+# defind the boundary of mapping domain
+lat_min = 57.
+lat_max = 60.
+lat_0 = 0.5 * (lat_min + lat_max)
+
+lon_min = -138.
+lon_max = -134.
+lon_0 = 0.5 * (lon_min + lon_max)
+
 # ------------------------------------------------------------------------
 # generate the base bathymetry
 fh = nc.Dataset(bathy_dir + 'ARDEMv2.0.nc', mode='r')

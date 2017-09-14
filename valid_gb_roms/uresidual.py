@@ -5,10 +5,15 @@ Calculate residual flow, interpolate and compare with station data.
 import numpy as np
 from scipy.io import loadmat
 from scipy.interpolate import interp2d
-import xarray as xr
 import pyroms
+import xarray as xr
 
 def find_nearest(lat, lon, lat0, lon0):
+    dis = (lat-lat0)**2+(lon-lon0)**2
+    idx = np.where(dis==dis.min())
+    xx = idx[0][0]
+    yy = idx[1][0]
+    return xx, yy
 
 in_dir = '/glade/p/work/chuning/gb_roms/tides/'
 
@@ -27,8 +32,11 @@ vt = np.zeros((lat.shape))
 i = 0
 for j in range(len(lat)):
 
+    lat0, lon0 = lat[i, 0], lon[i, 0]
+    xx, yy = find_nearest(latm, lonm, lat0, lon0)
+
     u_mod = np.real(mod['Utide'][i, :, :])
     v_mod = np.imag(mod['Utide'][i, :, :])
     v_mod[np.isnan(u_mod)] = np.nan
 
-    # f = interp2d(mod['lon'], mod['lat'], u)
+    f = interp2d(lonm, latm, u_mod)

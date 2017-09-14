@@ -6,15 +6,15 @@ import read_host_info
 sv = read_host_info.read_host_info()
 data_dir = sv['in_dir']
 
-url = 'http://amaterasu.ees.hokudai.ac.jp/~tsujino/JRA55-do-v1.1/'
+url = 'http://amaterasu.ees.hokudai.ac.jp/~tsujino/JRA55-do-v1.2/'
 
-my_year = 2008
+my_year = 2009
 tag = 'JRA55do'
 vlist = ['q_10', 'rain', 'rlds', 'rsds', 'slp', 'snow', 't_10', 'u_10', 'v_10']
 vlist2 = ['Qair', 'rain', 'lwrad_down', 'swrad', 'Pair', 'snow', 'Tair', 'Uwind', 'Vwind']
 # vlist = ['rain', 'snow']
-ttag1 = '30Jun2016'
-ttag2 = '15Dec2016'
+ttag1 = '18Aug2017'
+ttag2 = '18Aug2017'
 save_dir = data_dir + 'jra55do/' + str(my_year) + '/'
 
 if not os.path.exists(save_dir):
