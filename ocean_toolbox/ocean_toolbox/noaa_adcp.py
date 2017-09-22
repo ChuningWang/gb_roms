@@ -139,6 +139,15 @@ class get_noaa_current():
 
         return time, speed, dir
 
+    def get_dt(self, ctime):
+        '''
+        Calculate data time interval.
+        '''
+        ctime_hrs = np.round(ctime*24.*10.)/10.
+        val, idx = np.unique(np.diff(ctime_hrs), return_inverse=True)
+        dt_hrs = val[np.argmax(np.bincount(idx))]
+        return dt_hrs
+
     def get_current(self):
         for idx in range(len(self.url)):
             print 'Acquiring data from ' + self.url[idx][0] + '...'
@@ -146,29 +155,29 @@ class get_noaa_current():
                 time0, speed0, dir0 = self.wget_current(idx, tslice)
                 ctime0 = nc.date2num(time0, 'days since '+self.info['t0'])
                 if tslice == 0:
-                    time = time0.copy()
                     ctime = ctime0.copy()
                     speed = speed0.copy()
                     dir = dir0.copy()
                 else:
-                    time = np.concatenate((time, time0))
                     ctime = np.concatenate((ctime, ctime0))
                     speed = np.concatenate((speed, speed0))
                     dir = np.concatenate((dir, dir0))
 
             if idx==0:
+                # interpolate onto a new time grid
                 # remove the first and last few records to make interpolation easier
-                self.time = time[5:-5]
-                self.ctime = ctime[5:-5]
-                self.speed = speed[5:-5]
-                self.dir = dir[5:-5]
-            else:
-                # if len(ctime[5:-5])!=len(self.ctime):
-                speed = interp1d(ctime, speed)(self.ctime)
-                dir = interp1d(ctime, dir)(self.ctime)
+                self.dt_hrs = self.get_dt(ctime)
+                self.ctime = np.arange(ctime[5], ctime[-5], self.dt_hrs/24.)
 
-                # self.speed = np.vstack((self.speed, speed[5:-5]))
-                # self.dir = np.vstack((self.dir, dir[5:-5]))
+            speed = interp1d(ctime, speed)(self.ctime)
+            dir = interp1d(ctime, dir)(self.ctime)
+
+            if idx==0:
+                self.speed = speed
+                self.dir = dir
+            else:
+                self.speed = np.vstack((self.speed, speed))
+                self.dir = np.vstack((self.dir, dir))
 
         return None
 
@@ -184,10 +193,8 @@ class get_noaa_current():
         return None
 
     def filter(self):
-        dt = (self.ctime[1]-self.ctime[0])*24.  # hours
-        dt = np.floor(dt*10.)/10.
 
-        wp = int(self.info['Wp_hrs']/dt)
+        wp = int(self.info['Wp_hrs']/self.dt_hrs)
         b = np.ones(wp)/float(wp)
         a = 1
 
@@ -257,7 +264,5 @@ class get_noaa_current():
         self.speed = fh.variables['speedraw'][:]
         self.dir = fh.variables['dirraw'][:]
         fh.close()
-
-        self.time = nc.num2date(self.ctime, 'days since '+self.info['t0'])
 
         return None
