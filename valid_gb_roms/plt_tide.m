@@ -1,9 +1,10 @@
 clc; clear; close all
 
-mod = load('/glade/p/work/chuning/gb_roms/tides/Tide_model.mat');
+mod = load('/glade/p/work/chuning/gb_roms/tides/Tide_model_hr.mat');
 stn = load('/glade/p/work/chuning/gb_roms/tides/Tide_stn.mat');
+tag = 'hr'
 
-dd = 7;
+dd = 14;
 
 tlist = {'Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2', 'MF'};
 
@@ -34,11 +35,11 @@ for i=1:length(tlist)
     else
         m_ellipse(mod.lon(floor(dd/2):dd:end, floor(dd/2):dd:end),mod.lat(floor(dd/2):dd:end, floor(dd/2):dd:end),...
                   fmaj_m, fmin_m, finc_m, fpha_m,...
-                  50,'line','linewidth',0.5,'linestyle','-')
+                  50,'line','linewidth',0.1,'linestyle','-')
         m_ellipse(stn.lon,stn.lat,...
                   fmaj_s, fmin_s, finc_s, fpha_s,...
-                  50,'line','linewidth',1.0,'color','k')
+                  50,'line','linewidth',0.1,'color','k')
     end
-    saveas(gcf, ['/glade/p/work/chuning/gb_roms/figs/tides_cmp/' tname], 'epsc')
+    print(gcf, ['/glade/p/work/chuning/gb_roms/figs/tides_cmp/' tname '_' tag], '-dpng', '-r600')
     close
 end

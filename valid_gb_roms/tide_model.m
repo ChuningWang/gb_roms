@@ -2,14 +2,16 @@ clear; clc; close all
 
 % first, concatenate ubar, vbar from netCDF files
 in_dir = '/glade/scratch/chuning/tmpdir_GB-CIRC/outputs/2008/';
-out_dir = '/glade/p/work/chuning/gb_roms/tides/';
 grd_file = '/glade/p/work/chuning/gb_roms/grd/GlacierBay_lr_grd.nc';
+out_file = '/glade/p/work/chuning/gb_roms/tides/Tide_model_lr.mat';
 flist = dir([in_dir '*nc']);
+flist = flist(end-29:end);
 
-save([out_dir 'Tide_model.mat'])
+save(out_file)
 
 % stride
 dd = 1;
+ts = 24;
 
 % read all dimensions
 nci = ncinfo([in_dir flist(1).name]);
@@ -39,24 +41,27 @@ ang = ang(1:dd:end, 1:dd:end);
 tt = length(flist);
 
 % create variables
-t = zeros(tt, 1);
-Ubar = zeros(tt, xi_psi, eta_psi);
-Ubar = Ubar(:, 1:dd:end, 1:dd:end);
+t = zeros(tt*ts, 1);
+Ubar = zeros(xi_psi, eta_psi, tt*ts);
+Ubar = Ubar(1:dd:end, 1:dd:end, :);
 
-Utide = nan(tt, xi_psi, eta_psi);
-Utide = Utide(:, 1:dd:end, 1:dd:end);
+Utide = nan(xi_psi, eta_psi, tt*ts);
+Utide = Utide(1:dd:end, 1:dd:end, :);
 
-parfor i=1:tt
+for i=1:tt
 	disp(['Loading time step ' num2str(i)])
-    t(i) = ncread([in_dir flist(i).name], 'ocean_time');
+    t((i-1)*ts+1:(i-1)*ts+ts) = ncread([in_dir flist(i).name], 'ocean_time');
 	ubar = ncread([in_dir flist(i).name], 'ubar');
 	vbar = ncread([in_dir flist(i).name], 'vbar');
-	ubar = 0.5*(ubar(:, 1:end-1)+ubar(:, 2:end));
-	vbar = 0.5*(vbar(1:end-1, :)+vbar(2:end, :));
-	Ub = ubar(1:dd:end, 1:dd:end) + 1i*vbar(1:dd:end, 1:dd:end);
-	Ub = Ub.*exp(1j*ang);
-	Ubar(i, :, :) = Ub;
+	ubar = 0.5*(ubar(:, 1:end-1, :)+ubar(:, 2:end, :));
+	vbar = 0.5*(vbar(1:end-1, :, :)+vbar(2:end, :, :));
+	Ub = ubar(1:dd:end, 1:dd:end, :) + 1i*vbar(1:dd:end, 1:dd:end, :);
+	Ub = Ub.*exp(1j*repmat(ang, [1, 1, ts]));
+	Ubar(:, :, (i-1)*ts+1:(i-1)*ts+ts) = Ub;
 end
+
+Ubar = permute(Ubar, [3, 1, 2]);
+Utide = permute(Utide, [3, 1, 2]);
 
 % tidal analysis
 tlist = {'Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2', 'MF'};
@@ -85,4 +90,4 @@ for i=1:xi_s
 	end
 end
 
-save([out_dir, 'Tide_model.mat'], 'btr', 'Utide', 'lat', 'lon', 'h', 'ang', 'msk', '-append')
+save(out_file, 'btr', 'Utide', 'lat', 'lon', 'h', 'ang', 'msk', '-append')

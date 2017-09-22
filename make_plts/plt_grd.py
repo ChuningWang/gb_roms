@@ -24,7 +24,7 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-plt_proj = 0
+plt_proj = 1
 plt_hill_coast = 1
 
 # ctd = rd_ctd(in_dir + 'ctd.nc')
@@ -37,6 +37,7 @@ lon = grd.hgrid.lon_rho
 lat = grd.hgrid.lat_rho
 z = grd.vgrid.h
 msk = grd.hgrid.mask_rho
+z = np.ma.masked_where(msk==0, z)
 Mp, Np = msk.shape
 
 plt.close()
@@ -56,18 +57,21 @@ if plt_proj == 1:
                 urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
                 resolution='f')
 
-    m.drawcoastlines(linewidth=0.01)
+    # m.drawcoastlines(linewidth=0.01)
+    m.fillcontinents(color='palegreen')
     mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
     pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
     # setlabelrot(mr,-90)
 
     x, y = m(lon, lat)
-    m.pcolor(x, y, z, cmap='Greens')
-    plt.clim(-1, 20)
+    m.pcolor(x, y, z, cmap='Blues', edgecolors='k', linewidth=0.05)
+    plt.clim(0, 400)
     plt.colorbar()
     m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
     # x2, y2 = m(lon_ctd, lat_ctd)
     # m.plot(x2, y2, '.k', ms=2)
+
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd.tiff', format='tiff', dpi=600)
 
     if plt_hill_coast==1:
         # Overlay Hill discharge point on the map
@@ -82,21 +86,20 @@ if plt_proj == 1:
         lath = lath-0.005
         xh, yh = m(lonh, lath)
         m.plot(xh, yh, '.k', ms=2)
-
-    plt.savefig(out_dir + 'figs/'+grd1+'_grd.tiff', format='tiff',dpi=600)
+        plt.savefig(out_dir + 'figs/'+grd1+'_Hill_grd.tiff', format='tiff', dpi=600)
 
 elif plt_proj == 0:
 
-    plt.pcolormesh(z, cmap='Greens')
-    plt.clim(-1, 20)
+    plt.pcolormesh(z, cmap='Blues')
+    plt.clim(0, 400)
     plt.colorbar()
-    plt.contour(msk, [0.5], linewidths=0.05, colors='k')
+    # plt.contour(msk, [0.5], linewidths=0.05, colors='k')
 
     plt.xticks(np.arange(0, Np, 10), rotation='vertical')
     plt.yticks(np.arange(0, Mp, 20))
     plt.tick_params(axis='both', which='major', labelsize=5)
     plt.grid()
 
-    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.tiff', format='tiff',dpi=600)
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.tiff', format='tiff', dpi=600)
 
 plt.close()

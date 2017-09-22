@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import loadmat
 from scipy.interpolate import interp2d
 import pyroms
-import xarray as xr
+import netCDF4 as nc
 
 def find_nearest(lat, lon, lat0, lon0):
     dis = (lat-lat0)**2+(lon-lon0)**2
@@ -15,10 +15,11 @@ def find_nearest(lat, lon, lat0, lon0):
     yy = idx[1][0]
     return xx, yy
 
+data_dir = '/glade/scratch/chuning/tmpdir_GB-TIDE/outputs/2008/'
 in_dir = '/glade/p/work/chuning/gb_roms/tides/'
 
 # load velocity data after processed with tide
-mod = loadmat(in_dir + 'Tide_model.mat')
+mod = loadmat(in_dir + 'Tide_model_hr.mat')
 stn = loadmat(in_dir + 'Tide_stn.mat')
 
 lat = stn['lat']

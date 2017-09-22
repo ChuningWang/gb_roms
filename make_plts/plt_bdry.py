@@ -16,7 +16,7 @@ sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 
 # Read grid
-fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_hr_bdry_2008_SODA3.3.1_0.25.nc', mode='r')
+fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_lr_bdry_2008_SODA3.3.1_0.25.nc', mode='r')
 lon_psi = fh.variables['lon_psi'][:]
 lat_psi = fh.variables['lat_psi'][:]
 lon_rho = fh.variables['lon_rho'][:]
@@ -32,8 +32,8 @@ lon_u = lon_u-360
 lon_v = lon_v-360
 
 h = fh.variables['h'][:]
-s_rho = fh.variables['s_rho'][:]
-s_w = fh.variables['s_w'][:]
+Cs_r = fh.variables['Cs_r'][:]
+Cs_w = fh.variables['Cs_w'][:]
 msk = fh.variables['mask_psi'][:]
 t = fh.variables['ocean_time'][:]
 
@@ -69,10 +69,10 @@ lat_v_w = np.tile(lat_v[:, 0].squeeze(), (40, 1))
 lon_v_e = np.tile(lon_v[:, -1].squeeze(), (40, 1))
 lon_v_w = np.tile(lon_v[:, 0].squeeze(), (40, 1))
 
-s_rho = np.matrix(s_rho).T
+Cs_r = np.matrix(Cs_r).T
 
-h_st_e = s_rho*np.matrix(h[:, -1])
-h_st_w = s_rho*np.matrix(h[:, 0])
+h_st_e = Cs_r*np.matrix(h[:, -1])
+h_st_w = Cs_r*np.matrix(h[:, 0])
 
 h_u_e = h_st_e
 h_u_w = h_st_w
@@ -82,7 +82,7 @@ h_v_w = 0.5*(h_st_w[:, :-1]+h_st_w[:, 1:])
 
 # ------------------------------------------------------------------------------------------------------
 # for i in range(len(t)):
-for i in range(1):
+for i in range(5):
     # plt.pcolormesh(lat_st_e, h_st_e, s_e[i, :, :])
     # plt.colorbar()
     # plt.title('Salinity [PSU] at East Boundary')
@@ -129,3 +129,4 @@ for i in range(1):
     plt.xlabel('Latitude')
     plt.ylabel('Depth [m]')
     plt.savefig(out_dir + 'figs/bdry/bdry_w_v_' + str(t[i]) + '.tiff',format='tiff')
+    plt.close()

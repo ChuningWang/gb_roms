@@ -14,8 +14,8 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-if grd1=='GB_USGS':
-    tag = 'GlacierBay_usgs'
+if grd1=='GB_hr':
+    tag = 'GlacierBay_hr'
 elif grd1=='GB_lr':
     tag = 'GlacierBay_lr'
 
@@ -56,7 +56,7 @@ def plt_rivers(t, r, out_dir):
     plt.pcolormesh(lon, lat, r, cmap='Greens')
     plt.xlim(-137.5, -135)
     plt.ylim(58., 59.25)
-    plt.clim(0, 10)
+    plt.clim(0, 100)
     plt.colorbar()
     plt.contour(lon_grd, lat_grd, msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
     plt.savefig(out_dir+'figs/rivers/runoff_'+str(int(t))+'.png')

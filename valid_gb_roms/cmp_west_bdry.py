@@ -63,7 +63,7 @@ for stn in stn_list:
 
 # -----------------------------------------------------------------------
 # read bc data
-fh = nc.Dataset(out_dir+'bc_ic/GlacierBay_usgs_bdry_2008_SODA3.3.1_0.25.nc', 'r')
+fh = nc.Dataset(out_dir+'bc_ic/GlacierBay_hr_bdry_2008_SODA3.3.1_0.25.nc', 'r')
 u_west = fh.variables['u_west'][:]
 v_west = fh.variables['v_west'][:]
 zeta_west = fh.variables['zeta_west'][:]
@@ -87,7 +87,7 @@ ang = 0.5*(ang[1:]+ang[:-1])
 
 # -----------------------------------------------------------------------
 # station SEA1009
-stn = 'SEA1010'
+stn = 'SEA1009'
 z2n = -z[stn]
 u2n = u[stn]
 v2n = v[stn]
@@ -183,8 +183,16 @@ plt.close()
 f, axarr = plt.subplots(1, 2, sharex=True, sharey=True)
 axarr[0].plot(u2n.mean(axis=0), z2n, 'r', lw=3)
 axarr[0].plot(u2s.mean(axis=0), z2n, 'k', lw=3)
+axarr[0].set_xlim(-0.25, 0.25)
+axarr[0].set_xticks([-0.2, -0.1, 0.0, 0.1, 0.2])
+axarr[0].set_title('U')
+axarr[0].legend(('NOAA ADCP', 'SODA'))
 
 axarr[1].plot(v2n.mean(axis=0), z2n, 'r', lw=3)
 axarr[1].plot(v2s.mean(axis=0), z2n, 'k', lw=3)
+axarr[1].set_xlim(-0.25, 0.25)
+axarr[1].set_xticks([-0.2, -0.1, 0.0, 0.1, 0.2])
+axarr[1].set_title('V')
+
 f.savefig(out_dir+'figs/bdry/cmp_adcp/profiles_'+stn+'.tiff', format='tiff', dpi=300)
 plt.close()

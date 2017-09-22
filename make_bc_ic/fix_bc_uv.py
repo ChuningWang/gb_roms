@@ -30,7 +30,8 @@ msk_u = fh.variables['mask_u'][:]
 msk_v = fh.variables['mask_v'][:]
 u_w = fh.variables['u_west'][:]
 v_w = fh.variables['v_west'][:]
-s_rho = fh.variables['s_rho'][:]
+Cs_r = fh.variables['Cs_r'][:]
+Cs_w = fh.variables['Cs_w'][:]
 ang = fh.variables['angle'][:]
 fh.close()
 
@@ -93,23 +94,35 @@ for stn in stn_list:
     v[stn] = v[stn][:, t_idx]
 
 # process, interpolate and smooth data
+lat08 = lat['SEA1008']
+lon08 = lon['SEA1008']
+z08 = z['SEA1008']
+u08 = u['SEA1008'].mean(axis=1)
+v08 = v['SEA1008'].mean(axis=1)
+
 lat09 = lat['SEA1009']
 lon09 = lon['SEA1009']
+z09 = z['SEA1009']
+u09 = u['SEA1009'].mean(axis=1)
+v09 = v['SEA1009'].mean(axis=1)
+
 lat10 = lat['SEA1010']
 lon10 = lon['SEA1010']
-z09 = z['SEA1009']
 z10 = z['SEA1010']
-u09 = u['SEA1009'].mean(axis=1)
 u10 = u['SEA1010'].mean(axis=1)
-v09 = v['SEA1009'].mean(axis=1)
 v10 = v['SEA1010'].mean(axis=1)
 
 zz = np.arange(325)
+uu08 = np.nan*np.zeros(zz.shape)
+vv08 = np.nan*np.zeros(zz.shape)
 uu09 = np.nan*np.zeros(zz.shape)
 vv09 = np.nan*np.zeros(zz.shape)
 uu10 = np.nan*np.zeros(zz.shape)
 vv10 = np.nan*np.zeros(zz.shape)
 
+msk08 = (zz<z08[0]) & (zz>z08[-1])
+uu08[msk08] = interp1d(z08, u08)(zz[msk08])
+vv08[msk08] = interp1d(z08, v08)(zz[msk08])
 msk09 = (zz<z09[0]) & (zz>z09[-1])
 uu09[msk09] = interp1d(z09, u09)(zz[msk09])
 vv09[msk09] = interp1d(z09, v09)(zz[msk09])
@@ -117,8 +130,8 @@ msk10 = (zz<z10[0]) & (zz>z10[-1])
 uu10[msk10] = interp1d(z10, u10)(zz[msk10])
 vv10[msk10] = interp1d(z10, v10)(zz[msk10])
 
-uu = np.nanmean(np.array([uu09, uu10]), axis=0)
-vv = np.nanmean(np.array([vv09, vv10]), axis=0)
+uu = np.nanmean(np.array([uu08, uu09, uu10]), axis=0)
+vv = np.nanmean(np.array([vv08, vv09, vv10]), axis=0)
 
 uu[0] = -0.15
 uu[-1] = 0.
@@ -142,13 +155,13 @@ uy = UU.imag
 dis = np.sqrt((lon_u-lon09)**2+(lat_u-lat09)**2)
 idx = np.argmin(dis)
 hi = h_u[idx]
-zi = -hi*s_rho
+zi = -hi*Cs_r
 ux = interp1d(zz, ux)(zi)
 
 dis = np.sqrt((lon_v-lon09)**2+(lat_v-lat09)**2)
 idx = np.argmin(dis)
 hi = h_v[idx]
-zi = -hi*s_rho
+zi = -hi*Cs_r
 uy = interp1d(zz, uy)(zi)
 
 u_w_new = np.zeros(u_w.shape)

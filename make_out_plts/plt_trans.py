@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import pyroms
@@ -7,6 +6,7 @@ import glob
 from matplotlib.mlab import griddata
 from geopy.distance import vincenty
 from matplotlib import path
+import sys
 
 import read_host_info
 sv = read_host_info.read_host_info()
@@ -14,29 +14,36 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
+# my inputs
+my_year = 2008
 pltuv = 1
-grd1 = 'GB_lr'
-model = 'tmpdir_GB-CIRC/outputs/2008/'
+varlist = ['salt', 'temp', 'dye_01', 'dye_03']
+varlist = ['dye_02']
+dd = 3
+
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
+else:
+    grd1 = 'GB_lr'
+
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
-# load data
+if grd1=='GB_lr':
+    tag = 'GB-CIRC'
+if grd1=='GB_hr':
+    tag = 'GB-TIDE'
+
+model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
 outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/trans/GB-CIRC/2008/'
+fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
 
-flist = sorted(glob.glob(outputs_dir+'*.nc'))
-flist = flist[-24:]
+flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
+flist = flist[-35:]
 
-dd = 3
 zlev = grd.vgrid.N
-tindex = 0
-var = 'temp'
 uvar = 'u'
 vvar = 'v'
 wvar = 'w'
-if var=='salt':
-    clim = [25, 35]
-elif var=='temp':
-    clim = [0, 15]
 
 c0 = np.array([[-137.04719708,   59.05076767],
                [-137.02431432,   59.03650282],
@@ -162,7 +169,7 @@ ang = ang[msk==1]
 
 p0 = [(lon_bdry[i], lat_bdry[i]) for i in range(len(lon_bdry))]
 p = path.Path(p0)
-pc = p.contains_points(np.array([lon, lat]).T) 
+pc = p.contains_points(np.array([lon, lat]).T)
 lon = lon[pc]
 lat = lat[pc]
 h = h[pc]
@@ -171,8 +178,8 @@ ang = ang[pc]
 h_tr = griddata(lon, lat, h, lon_t, lat_t, interp='linear').diagonal()
 
 # get rho point depth
-s_rho = grd.vgrid.s_rho
-z_tr = np.dot(np.matrix(h_tr).T, np.matrix(s_rho))
+Cs_r = grd.vgrid.Cs_r
+z_tr = np.dot(np.matrix(h_tr).T, np.matrix(Cs_r))
 z_tr = z_tr.T
 
 # calculate distance
@@ -235,47 +242,61 @@ if pltuv==1:
 # make plots
 plt.switch_backend('Agg')
 
-for fn in flist:
-    # read data
-    tag = fn.split('/')[-1].split('.')[0]
-    print 'processing ' + tag + ' ...'
-    fh = nc.Dataset(fn)
-    data = fh.variables[var][:].squeeze()
-    if pltuv==1:
-        u = fh.variables[uvar][:].squeeze()
-        v = fh.variables[vvar][:].squeeze()
-        w = fh.variables[wvar][:].squeeze()
-    fh.close()
-   
-    for i in range(zlev):
-        dslice = data[i, :, :][msk==1][pc]
-        var_tr[i, :] = griddata(lon, lat, dslice, lon_t, lat_t, interp='linear').diagonal()
+for var in varlist:
+    if var=='salt':
+        clim = [30, 35]
+    elif var=='temp':
+        clim = [5, 10]
+    elif var=='dye_01' or var=='dye_02' or var=='dye_03':
+        clim = [0, 1]
 
-    if pltuv==1:
-        for i in range(zlev):
-            uslice = u[i, :, :][msku==1][pcu]
-            vslice = v[i, :, :][mskv==1][pcv]
-            u_tr2 = griddata(lonu, latu, uslice, lon_t2, lat_t2, interp='linear').diagonal()
-            v_tr2 = griddata(lonv, latv, vslice, lon_t2, lat_t2, interp='linear').diagonal()
+    for fn in flist:
+        # read data
+        tag = fn.split('/')[-1].split('.')[0]
+        print 'processing ' + tag + ' ...'
+        fh = nc.Dataset(fn)
+        t = fh.variables['ocean_time'][:]
+        tunit = (fh.variables['ocean_time']).units
+        data = fh.variables[var][:]
+        if pltuv==1:
+            u = fh.variables[uvar][:]
+            v = fh.variables[vvar][:]
+            w = fh.variables[wvar][:]
+        fh.close()
 
-            U_tr2[i, :] = u_tr2*np.cos(ang_tr2)-v_tr2*np.sin(ang_tr2)
+        for tt in range(len(t)):
+            ttag = nc.num2date(t[tt], tunit).strftime("%Y-%m-%d_%H:%M:%S")
+            for i in range(zlev):
+                dslice = data[tt, i, :, :][msk==1][pc]
+                var_tr[i, :] = griddata(lon, lat, dslice, lon_t, lat_t, interp='linear').diagonal()
 
-        for i in range(zlev+1):
-            wslice = w[i, :, :][msk==1][pc]
-            w_tr2_sw[i, :] = griddata(lon, lat, wslice, lon_t2, lat_t2, interp='linear').diagonal()
+            if pltuv==1:
+                for i in range(zlev):
+                    uslice = u[tt, i, :, :][msku==1][pcu]
+                    vslice = v[tt, i, :, :][mskv==1][pcv]
+                    u_tr2 = griddata(lonu, latu, uslice, lon_t2, lat_t2, interp='linear').diagonal()
+                    v_tr2 = griddata(lonv, latv, vslice, lon_t2, lat_t2, interp='linear').diagonal()
 
-        w_tr2 = 0.5*(w_tr2_sw[1:, :]+w_tr2_sw[:-1, :])
+                    U_tr2[i, :] = u_tr2*np.cos(ang_tr2)-v_tr2*np.sin(ang_tr2)
 
-    # make plot
-    pcm = plt.pcolormesh(dis, z_tr, var_tr)
-    plt.clim(clim[0], clim[1])
-    plt.colorbar()
+                for i in range(zlev+1):
+                    wslice = w[tt, i, :, :][msk==1][pc]
+                    w_tr2_sw[i, :] = griddata(lon, lat, wslice, lon_t2, lat_t2, interp='linear').diagonal()
 
-    if pltuv==1:
-        Q = plt.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
-    plt.savefig(fig_dir + var + '_' + tag + '.png')
+                w_tr2 = 0.5*(w_tr2_sw[1:, :]+w_tr2_sw[:-1, :])
 
-    # pcm.remove()
-    # if pltuv==1:
-    #     Q.remove()
-    plt.close()
+            # make plot
+            pcm = plt.pcolormesh(dis, z_tr, var_tr)
+            plt.clim(clim[0], clim[1])
+            plt.colorbar()
+
+            if pltuv==1:
+                Q = plt.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
+
+            plt.title(var + '_' + ttag)
+            plt.savefig(fig_dir + var + '_' + ttag + '.png')
+
+            # pcm.remove()
+            # if pltuv==1:
+            #     Q.remove()
+            plt.close()

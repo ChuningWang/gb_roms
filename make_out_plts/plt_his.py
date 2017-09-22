@@ -10,12 +10,12 @@ from pyroms_toolbox import rx0
 
 import glob
 
-grd = pyroms.grid.get_ROMS_grid('GB')
+grd = pyroms.grid.get_ROMS_grid('GB_lr')
 msku = grd.hgrid.mask_u
 mskv = grd.hgrid.mask_v
 
 plth = 0
-outpath = '/Volumes/R1/scratch/chuning/gb_spinup_roms/figs/'
+outpath = '/glade/p/work/chuning/gb_roms/figs/his'
 
 dd = 4  # quiver density
 
