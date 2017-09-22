@@ -1,7 +1,7 @@
+import datetime as dt
 import numpy as np
 import urllib2
 import xmltodict
-import datetime as dt
 from scipy.interpolate import interp1d
 from scipy.signal import buttord, butter, filtfilt
 import netCDF4 as nc
@@ -11,13 +11,17 @@ class get_noaa_current():
         self.info = info
         self.get_metadata()
         if 'bdate' not in self.info.keys():
-            bd = self.info['deployed'][:4] + self.info['deployed'][5:7] + self.info['deployed'][8:10]
-            self.info['bdate'] = bd
+            bdate = self.info['deployed'][:4] + \
+                    self.info['deployed'][5:7] + \
+                    self.info['deployed'][8:10]
+            self.info['bdate'] = bdate
         if 'edate' not in self.info.keys():
-            ed = self.info['retrieved'][:4] + self.info['retrieved'][5:7] + self.info['retrieved'][8:10]
-            ed = dt.datetime.strptime(ed, '%Y%m%d') + dt.timedelta(1)
-            ed = ed.strftime('%Y%m%d')
-            self.info['edate'] = ed
+            edate = self.info['retrieved'][:4] + \
+                    self.info['retrieved'][5:7] + \
+                    self.info['retrieved'][8:10]
+            edate = dt.datetime.strptime(edate, '%Y%m%d') + dt.timedelta(1)
+            edate = edate.strftime('%Y%m%d')
+            self.info['edate'] = edate
         if 'prod' not in self.info.keys():
             self.info['prod'] = 'currents'
         if 'units' not in self.info.keys():
@@ -32,23 +36,24 @@ class get_noaa_current():
             self.info['sl'] = 'l'
         if 'Wp_hrs' not in self.info.keys():
             self.info['Wp_hrs'] = -1
-        self.info['file_name'] = self.info['stn'] + '_' + self.info['bdate'] + '_' + self.info['edate'] + '.nc'
+        self.info['file_name'] = self.info['stn'] + '_' + self.info['bdate'] + \
+                                                    '_' + self.info['edate'] + '.nc'
 
     def __call__(self):
         print 'Formating download urls'
         self.time_splitter()
-        # self.make_url()
-        # if self.info['sl']=='s':
-        #     print 'Acquiring data from NOAA server'
-        #     self.get_current()
-        # if self.info['sl']=='l':
-        #     print 'Loading data locally'
-        #     self.load_data()
-        # self.compute_uv()
-        # if self.info['Wp_hrs']>0:
-        #     self.filter()
-        # if self.info['sl']=='s':
-        #     self.save_data()
+        self.make_url()
+        if self.info['sl']=='s':
+            print 'Acquiring data from NOAA server'
+            self.get_current()
+        if self.info['sl']=='l':
+            print 'Loading data locally'
+            self.load_data()
+        self.compute_uv()
+        if self.info['Wp_hrs']>0:
+            self.filter()
+        if self.info['sl']=='s':
+            self.save_data()
 
         return None
 
@@ -80,22 +85,44 @@ class get_noaa_current():
         z = np.array([float(b_info[i]['depth']) for i in range(self.info['zlevs'])])
         self.z = z
 
-    def make_url(self):
-        self.url = ['https://tidesandcurrents.noaa.gov/api/datagetter?' + \
-                    'begin_date=' + self.info['bdate'] + \
-                    '&end_date=' + self.info['edate'] + \
-                    '&station=' + self.info['stn'] + \
-                    '&product=' + self.info['prod'] + \
-                    '&bin=' + str(bin) + \
-                    '&units=' + self.info['units'] + \
-                    '&time_zone=' + self.info['tz'] + \
-                    '&application=web_services' + \
-                    '&format=' + self.info['fmt'] for bin in range(1, self.info['zlevs']+1)]
+    def time_splitter(self):
+        tseg_length = 30.
+        tb = dt.datetime.strptime(self.info['bdate'], '%Y%m%d')
+        te = dt.datetime.strptime(self.info['edate'], '%Y%m%d')
+        tdelta = te-tb
+        tslice = int(np.ceil(tdelta.days/tseg_length))
+        self.bdate_list = []
+        self.edate_list = []
+        for i in range(tslice):
+            tbi = dt.datetime.strftime(tb+i*dt.timedelta(30), '%Y%m%d')
+            if i == tslice-1:
+                tei = self.info['edate']
+            else:
+                tei = dt.datetime.strftime(tb+(i+1)*dt.timedelta(tseg_length)-dt.timedelta(1), \
+                                           '%Y%m%d')
+
+            self.bdate_list.append(tbi)
+            self.edate_list.append(tei)
 
         return None
 
-    def wget_current(self, idx):
-        page = urllib2.urlopen(self.url[idx])
+    def make_url(self):
+        self.url = [['https://tidesandcurrents.noaa.gov/api/datagetter?' + \
+                     'begin_date=' + self.bdate_list[tslice] + \
+                     '&end_date=' + self.edate_list[tslice] + \
+                     '&station=' + self.info['stn'] + \
+                     '&product=' + self.info['prod'] + \
+                     '&bin=' + str(bin) + \
+                     '&units=' + self.info['units'] + \
+                     '&time_zone=' + self.info['tz'] + \
+                     '&application=web_services' + \
+                     '&format=' + self.info['fmt'] for tslice in range(len(self.bdate_list))] \
+                                                   for bin in range(1, self.info['zlevs']+1)]
+
+        return None
+
+    def wget_current(self, idx, tslice):
+        page = urllib2.urlopen(self.url[idx][tslice])
         web = page.read().split('\n')
         web.pop(0)
         web.pop(-1)
@@ -112,27 +139,36 @@ class get_noaa_current():
 
         return time, speed, dir
 
-    # def file_splitter(self):
-    #     bdate
-
     def get_current(self):
-        for i in range(len(self.url)):
-            print 'Acquiring data from ' + self.url[i]
-            time, speed, dir = self.wget_current(i)
-            ctime = nc.date2num(time, 'days since '+self.info['t0'])
+        for idx in range(len(self.url)):
+            print 'Acquiring data from ' + self.url[idx][0] + '...'
+            for tslice in range(len(self.url[idx])):
+                time0, speed0, dir0 = self.wget_current(idx, tslice)
+                ctime0 = nc.date2num(time0, 'days since '+self.info['t0'])
+                if tslice == 0:
+                    time = time0.copy()
+                    ctime = ctime0.copy()
+                    speed = speed0.copy()
+                    dir = dir0.copy()
+                else:
+                    time = np.concatenate((time, time0))
+                    ctime = np.concatenate((ctime, ctime0))
+                    speed = np.concatenate((speed, speed0))
+                    dir = np.concatenate((dir, dir0))
 
-            if i==0:
-                self.time = time
-                self.ctime = ctime
-                self.speed = speed
-                self.dir = dir
+            if idx==0:
+                # remove the first and last few records to make interpolation easier
+                self.time = time[5:-5]
+                self.ctime = ctime[5:-5]
+                self.speed = speed[5:-5]
+                self.dir = dir[5:-5]
             else:
-                if len(ctime)!=len(self.ctime):
-                    speed = interp1d(ctime, speed)(self.ctime)
-                    dir = interp1d(ctime, dir)(self.ctime)
+                # if len(ctime[5:-5])!=len(self.ctime):
+                speed = interp1d(ctime, speed)(self.ctime)
+                dir = interp1d(ctime, dir)(self.ctime)
 
-                self.speed = np.vstack((self.speed, speed))
-                self.dir = np.vstack((self.dir, dir))
+                # self.speed = np.vstack((self.speed, speed[5:-5]))
+                # self.dir = np.vstack((self.dir, dir[5:-5]))
 
         return None
 
@@ -150,14 +186,8 @@ class get_noaa_current():
     def filter(self):
         dt = (self.ctime[1]-self.ctime[0])*24.  # hours
         dt = np.floor(dt*10.)/10.
-        # samplefreq = 24./dt  # rad per day
-        # stopfreq = 24./self.info['Wp_hrs']
-        # Wp = stopfreq*2./samplefreq
-        # Ws = 2.*Wp
-        # n, Wn = buttord(Wp, Ws, 3, 60)
-        # b, a = butter(n, Wn)
 
-        wp = int(Wp_hrs/dt)
+        wp = int(self.info['Wp_hrs']/dt)
         b = np.ones(wp)/float(wp)
         a = 1
 
