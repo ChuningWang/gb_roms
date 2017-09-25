@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import buttord, butter, filtfilt
 import netCDF4 as nc
 
-class get_noaa_current():
+class get_noaa_current(object):
     def __init__(self, info):
         self.info = info
         self.get_metadata()

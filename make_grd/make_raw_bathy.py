@@ -5,7 +5,7 @@ import csv
 import os
 import fnmatch
 
-def recursive_glob(rootdir='.', pattern='*'):
+def recursive_glob(rootdir = '.', pattern = '*'):
     """Search recursively for files matching a specified pattern."""
 
     matches = []

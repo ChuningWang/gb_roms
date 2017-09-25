@@ -1,23 +1,24 @@
+'''
+The goal of this script is to reconstruct monthly T and S at all depth as initial condition
+for Glacier Bay ROMS model. The purpose of using CTD instead of SODA data is that SODA data is
+Too coarse for detailed mapping of T and S inside the bay.
+
+The whole script takes about 1 hour to run.
+'''
+
 import subprocess
 import os
 import sys
 import numpy as np
 import pyroms
+from scipy.interpolate import interp1d
 
 import netCDF4 as nc
 
 import scipy as sp
 import scipy.ndimage
 
-from gb_toolbox import gb_ctd
-
-'''
-The goal of this script is to reconstruct January T and S at all depth as initial condition
-for Glacier Bay ROMS model. The purpose of using CTD instead of SODA data is that SODA data is
-Too coarse for detailed mapping of T and S inside the bay.
-
-The whole script takes about 1 hour to run.
-'''
+from ocean_toolbox import ctd
 
 def floodFill(c, r, mask):
     """
@@ -106,7 +107,7 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-month = 7
+month = 8
 
 # Load target grid and land mask
 dst_grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -123,8 +124,8 @@ xi = msk.shape[1]
 # ----------------------------------------------------------------
 # Load CTD climatology
 ctd_dir = in_dir + 'ctd.nc'
-ctd = gb_ctd.rd_ctd(ctd_dir)
-ctd_clim = gb_ctd.cal_ctd_climatology(ctd)
+data = ctd.rd_ctd(ctd_dir)
+ctd_clim = ctd.cal_ctd_climatology(data)
 
 # Extract data
 lat = ctd_clim['lat']
@@ -139,148 +140,106 @@ lon = np.delete(lon, si, axis=0)
 t = np.delete(t, si, axis=0)
 s = np.delete(s, si, axis=0)
 
-hctd = ctd_clim['d']
+hctd = ctd_clim['d'].data
 zlev = hctd.shape[0]
 
 # ----------------------------------------------------------------
-# Load SODA data
-tag = '2000_01'
-soda_filein = soda_dir + 'monthly/soda3.3.1_monthly_ocean_reg_' + tag + '.nc'
+# fill up NaNs
+sdeep_gb = 31.50
+tdeep_gb = 4.56
 
-xt = 446
-yt = 265
+sdeep_is = 32.90
+tdeep_is = 5.00
 
-fh = nc.Dataset(soda_filein, 'r')
-lont_soda = fh.variables['xt_ocean'][xt]
-lont_soda = lont_soda-360
-latt_soda = fh.variables['yt_ocean'][yt]
-zt_soda = fh.variables['st_ocean'][:].squeeze()
-t_soda = fh.variables['temp'][:, :, yt, xt].squeeze()
-s_soda = fh.variables['salt'][:, :, yt, xt].squeeze()
-spval = fh.variables['temp'].missing_value
-fh.close()
+s[:-1, -1] = sdeep_gb
+t[:-1, -1] = tdeep_gb
+s[-1, -1] = sdeep_is
+t[-1, -1] = tdeep_is
 
-t_soda[t_soda.mask] = np.NaN
-s_soda[s_soda.mask] = np.NaN
+stn = s.shape[0]
 
-zt_soda = np.insert(zt_soda, 0, 0)
-t_soda = np.insert(t_soda, 0, t_soda[0])
-s_soda = np.insert(s_soda, 0, s_soda[0])
+for i in range(stn):
+    msk = ~np.isnan(s[i, :])
+    s[i, :] = interp1d(hctd[msk], s[i, msk])(hctd)
+    msk = ~np.isnan(t[i, :])
+    t[i, :] = interp1d(hctd[msk], t[i, msk])(hctd)
 
-t_soda = np.interp(hctd, zt_soda, t_soda)
-s_soda = np.interp(hctd, zt_soda, s_soda)
+    # ctd_clim
 
-# add the profile as a station in Glacier Bay
-lat = np.append(lat, 58.1)
-lon = np.append(lon, -136.7)
-t = np.vstack((t, t_soda))
-s = np.vstack((s, s_soda))
-
-xt = 449
-yt = 266
-
-fh = nc.Dataset(soda_filein, 'r')
-lont_soda = fh.variables['xt_ocean'][xt]
-lont_soda = lont_soda-360
-latt_soda = fh.variables['yt_ocean'][yt]
-zt_soda = fh.variables['st_ocean'][:].squeeze()
-t_soda = fh.variables['temp'][:, :, yt, xt].squeeze()
-s_soda = fh.variables['salt'][:, :, yt, xt].squeeze()
-fh.close()
-
-t_soda[t_soda.mask] = np.NaN
-s_soda[s_soda.mask] = np.NaN
-
-zt_soda = np.insert(zt_soda, 0, 0)
-t_soda = np.insert(t_soda, 0, t_soda[0])
-s_soda = np.insert(s_soda, 0, s_soda[0])
-
-t_soda = np.interp(hctd, zt_soda, t_soda)
-s_soda = np.interp(hctd, zt_soda, s_soda)
-
-# add the profile as a station in Glacier Bay
-lat = np.append(lat, 58.12)
-lon = np.append(lon, -135.07)
-t = np.vstack((t, t_soda))
-s = np.vstack((s, s_soda))
-
-# t[t<-1000] = np.NaN
-# s[s<-1000] = np.NaN
-
-# ----------------------------------------------------------------
-# flood CTD stations to the whole grid
-seednum = lat.size
-
-c = np.zeros(seednum)
-r = np.zeros(seednum)
-
-for i in range(seednum):
-    dis = (lat_grd-lat[i])**2+(lon_grd-lon[i])**2
-    c[i], r[i] = np.where(dis==np.nanmin(dis))
-
-fl = np.zeros((msk.shape[0], msk.shape[1], zlev))
-t_ini = np.zeros((1, zlev, eta, xi))*np.NaN
-s_ini = np.zeros((1, zlev, eta, xi))*np.NaN
-
-for i in range(zlev):
-    mask = (msk==1) & (h>=i)
-    fl[:, :, i] = floodFill(c, r, mask)
-
-    t_sl = np.zeros((eta, xi))*np.NaN
-    s_sl = np.zeros((eta, xi))*np.NaN
-
-    for j in range(seednum):
-        msk_fl = fl[:, :, i]==j
-        t_sl[msk_fl] = t[j, i]
-        s_sl[msk_fl] = s[j, i]
-
-    t_ini[:, i, :, :] = t_sl
-    s_ini[:, i, :, :] = s_sl
-
-# flood deep water value
-for i in range(eta):
-    for j in range(xi):
-        if msk[i, j]==1:
-            bi = np.where(np.isnan(t_ini[:, :, i, j].squeeze()))[0][0]-1
-            tb = t_ini[:, bi, i, j]
-            sb = s_ini[:, bi, i, j]
-            if hctd[bi]<=h[i, j]:
-                t_ini[:, bi:int(h[i, j])+1, i, j] = tb
-                s_ini[:, bi:int(h[i, j])+1, i, j] = sb
-
-# ----------------------------------------------------------------
-# post-process
-# filter the results
-for i in range(zlev):
-    t_ini[:, i, :, :] = nan_gaussian_filter(t_ini[:, i, :, :], 10.0)
-    s_ini[:, i, :, :] = nan_gaussian_filter(s_ini[:, i, :, :], 10.0)
-
-# mask data below water depth
-# t_ini = np.ma.masked_invalid(t_ini)
-# s_ini = np.ma.masked_invalid(s_ini)
-
-# interpolate to S-coord 
-# let 1 m extend to surface
-hctd[0] = 1
-t_ini2 = np.ones((1, dst_grd.vgrid.N, eta, xi ))*spval
-s_ini2 = np.ones((1, dst_grd.vgrid.N, eta, xi ))*spval
-zs = dst_grd.vgrid.z_r[:]
-
-for i in range(eta):
-    for j in range(xi):
-        if msk[i, j]==1:
-            t_ini2[:, :, i, j] = np.interp(-zs[:, i, j], hctd, t_ini[:, :, i, j].squeeze())
-            s_ini2[:, :, i, j] = np.interp(-zs[:, i, j], hctd, s_ini[:, :, i, j].squeeze())
-
-t_ini2 = np.ma.masked_where(t_ini2==spval, t_ini2)
-s_ini2 = np.ma.masked_where(s_ini2==spval, s_ini2)
-
-# ----------------------------------------------------------------
-# write into nc file
-src_grd_name = '2000_01_03_SODA3.3.1'
-ic_file = dst_dir + 'bc_ic/' + dst_grd.name + '_ic_' + src_grd_name + '.nc'
-fh = nc.Dataset(ic_file, 'r+') 
-fh.variables['temp'][:, :, :, :] = t_ini2
-fh.variables['salt'][:, :, :, :] = s_ini2
-fh.close()
-
+# # ----------------------------------------------------------------
+# # flood CTD stations to the whole grid
+# seednum = lat.size
+# 
+# c = np.zeros(seednum)
+# r = np.zeros(seednum)
+# 
+# for i in range(seednum):
+#     dis = (lat_grd-lat[i])**2+(lon_grd-lon[i])**2
+#     c[i], r[i] = np.where(dis==np.nanmin(dis))
+# 
+# fl = np.zeros((msk.shape[0], msk.shape[1], zlev))
+# t_ini = np.zeros((1, zlev, eta, xi))*np.NaN
+# s_ini = np.zeros((1, zlev, eta, xi))*np.NaN
+# 
+# for i in range(zlev):
+#     mask = (msk==1) & (h>=i)
+#     fl[:, :, i] = floodFill(c, r, mask)
+# 
+#     t_sl = np.zeros((eta, xi))*np.NaN
+#     s_sl = np.zeros((eta, xi))*np.NaN
+# 
+#     for j in range(seednum):
+#         msk_fl = fl[:, :, i]==j
+#         t_sl[msk_fl] = t[j, i]
+#         s_sl[msk_fl] = s[j, i]
+# 
+#     t_ini[:, i, :, :] = t_sl
+#     s_ini[:, i, :, :] = s_sl
+# 
+# # flood deep water value
+# for i in range(eta):
+#     for j in range(xi):
+#         if msk[i, j]==1:
+#             bi = np.where(np.isnan(t_ini[:, :, i, j].squeeze()))[0][0]-1
+#             tb = t_ini[:, bi, i, j]
+#             sb = s_ini[:, bi, i, j]
+#             if hctd[bi]<=h[i, j]:
+#                 t_ini[:, bi:int(h[i, j])+1, i, j] = tb
+#                 s_ini[:, bi:int(h[i, j])+1, i, j] = sb
+# 
+# # ----------------------------------------------------------------
+# # post-process
+# # filter the results
+# for i in range(zlev):
+#     t_ini[:, i, :, :] = nan_gaussian_filter(t_ini[:, i, :, :], 10.0)
+#     s_ini[:, i, :, :] = nan_gaussian_filter(s_ini[:, i, :, :], 10.0)
+# 
+# # mask data below water depth
+# # t_ini = np.ma.masked_invalid(t_ini)
+# # s_ini = np.ma.masked_invalid(s_ini)
+# 
+# # interpolate to S-coord 
+# # let 1 m extend to surface
+# hctd[0] = 1
+# t_ini2 = np.ones((1, dst_grd.vgrid.N, eta, xi ))*spval
+# s_ini2 = np.ones((1, dst_grd.vgrid.N, eta, xi ))*spval
+# zs = dst_grd.vgrid.z_r[:]
+# 
+# for i in range(eta):
+#     for j in range(xi):
+#         if msk[i, j]==1:
+#             t_ini2[:, :, i, j] = np.interp(-zs[:, i, j], hctd, t_ini[:, :, i, j].squeeze())
+#             s_ini2[:, :, i, j] = np.interp(-zs[:, i, j], hctd, s_ini[:, :, i, j].squeeze())
+# 
+# t_ini2 = np.ma.masked_where(t_ini2==spval, t_ini2)
+# s_ini2 = np.ma.masked_where(s_ini2==spval, s_ini2)
+# 
+# # ----------------------------------------------------------------
+# # write into nc file
+# src_grd_name = '2000_01_03_SODA3.3.1'
+# ic_file = dst_dir + 'bc_ic/' + dst_grd.name + '_ic_' + src_grd_name + '.nc'
+# fh = nc.Dataset(ic_file, 'r+') 
+# fh.variables['temp'][:, :, :, :] = t_ini2
+# fh.variables['salt'][:, :, :, :] = s_ini2
+# fh.close()
+# 
