@@ -1,3 +1,7 @@
+'''
+standard SEABIRD CTD data wrapper
+'''
+
 import numpy as np
 from scipy.interpolate import interp1d
 import matplotlib.dates as mdates
@@ -17,6 +21,8 @@ import pdb
 
 # ------------------------------------------------------------
 class ctd(object):
+    ''' main class '''
+
     def __init__(self, info):
         self.info = info
         if 'zlev' not in self.info.keys():
@@ -36,6 +42,8 @@ class ctd(object):
         self.save_data()
 
     def tidy_cnv(self):
+        ''' tidy .cnv files to get rid of some formatting issues. trashed with the new data reader. '''
+
         self.flist = self.recursive_glob(pattern = '*.cnv')
         for fname in self.flist:
             f = open(fname, 'r')
@@ -52,6 +60,8 @@ class ctd(object):
         return None
 
     def read_ctd(self):
+        ''' read, interpolate and combine ctd casts. '''
+
         self.flist = self.recursive_glob(pattern = '*.cnv')
         self.data = {}
         pr_num = len(self.flist)  # number of total entry
@@ -98,7 +108,7 @@ class ctd(object):
         for i in info_list:
             self.data[i] = np.array(self.data[i])
         for var in self.info['var']:
-            self.data[var] = np.array(self.data[var])
+            self.data[var] = np.array(self.data[var]).T
 
     def read_cnv(self, fname):
         ''' read single CTD cast cnv file. '''
@@ -147,6 +157,8 @@ class ctd(object):
         return cast_info, cast_data
 
     def interp(self, pr_z, pr):
+        ''' interpolate ctd profiles to standard depth. '''
+
         z = self.data['z']
         pr_new = np.NaN*np.zeros(self.info['zlev'])
         msk = (z >= pr_z.min()) & (z <= pr_z.max())
@@ -154,7 +166,7 @@ class ctd(object):
         return pr_new
 
     def recursive_glob(self, pattern = '*'):
-        """Search recursively for files matching a specified pattern."""
+        ''' Search recursively for files matching a specified pattern. '''
 
         matches = []
         for root, dirnames, filenames in os.walk(self.info['data_dir']):
@@ -164,19 +176,25 @@ class ctd(object):
         return matches
 
     def save_data(self):
+        ''' save data to netCDF file for easy access later. '''
+
+        # open new nc file
         fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'w')
         fh.title = 'Glacier Bay data collection'
         fh.createDimension('z', self.info['zlev'])
-        fh.createDimension('t')
+        fh.createDimension('cast')
 
+        # write data
+        fh.createVariable['z', 'd', ('z')]
+        fh.variables['z'][:] = self.data['z']
         info_list = ['station', 'lat', 'lon', 'time']
         for i in info_list:
-            fh.createVariable(i, 'd', ('t'))
-            # fh.variables[i][:] = self.data[i]
+            fh.createVariable(i, 'd', ('cast'))
+            fh.variables[i][:] = self.data[i]
 
         for var in self.info['var']:
-            fh.createVariable(var, 'd', ('t', 'z'))
-            # fh.variables[var][:] = self.data[var]
+            fh.createVariable(var, 'd', ('z', 'cast'))
+            fh.variables[var][:] = self.data[var]
 
         fh.close()
 

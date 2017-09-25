@@ -1,11 +1,11 @@
 import numpy as np
 
 from ocean_toolbox import ctd
-info = {'data_dir': './'}
-info = {'data_dir': '/Users/CnWang/Downloads/ctd/',
+info = {'data_dir': '/glade/p/work/chuning/data/ctd_raw/',
+        'file_dir': '/glade/p/work/chuning/data/',
+        'file_name': 'ctd.nc',
         'var': ['salt', 'temp', 'o2', 'rho', 'pre', 'fluor', 'tur', 'par'],
-        'file_dir': './',
-        'file_name': 'ctd.nc'}
+       }
 c = ctd.ctd(info)
 c()
 
