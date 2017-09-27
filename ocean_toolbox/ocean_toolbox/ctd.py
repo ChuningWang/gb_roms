@@ -2,22 +2,24 @@
 standard SEABIRD CTD data wrapper
 '''
 
-import numpy as np
-from scipy.interpolate import interp1d
-import matplotlib.dates as mdates
-import netCDF4 as nc
-from datetime import datetime
-# import matplotlib.cm as cm
-# from matplotlib.mlab import griddata
-# from mpl_toolkits.basemap import Basemap
-# from datetime import datetime, timedelta
-
 import os
 import sys
 from glob import glob
 import fnmatch
 import re
 import pdb
+from datetime import datetime
+
+import numpy as np
+from scipy.interpolate import interp1d
+from scipy.signal import filtfilt
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import netCDF4 as nc
+# import matplotlib.cm as cm
+# from matplotlib.mlab import griddata
+# from mpl_toolkits.basemap import Basemap
+# from datetime import datetime, timedelta
 
 # ------------------------------------------------------------
 class ctd(object):
@@ -27,25 +29,54 @@ class ctd(object):
         self.info = info
         if 'zlev' not in self.info.keys():
             self.info['zlev'] = 500
+        if 'sl' not in self.info.keys():
+            self.info['sl'] = 'l'
+        if 'clim_station' not in self.info.keys():
+            self.info['clim_station'] = [0, 1, 4, 7, 9, 12, 13, 16, 18, 20]
+        if 'clim_deep_interp' not in self.info.keys():
+            self.info['clim_deep_interp'] = 'no'
+
+        if 'filter_span' not in self.info.keys():
+            self.info['filter_span'] = 9
+        if 'deep_var_value' not in self.info.keys():
+            self.info['deep_var_value'] = {'salt': 31.5, 'temp': 5.0}
+
+        self.data = {}
+        self.climatology = {}
+        self.data_info_list = ['station', 'lat', 'lon', 'time']
         self.varnames = {'salt':  ['sal00'],
                          'temp':  ['tv290C', 't090C'],
                          'pre':   ['prdM', 'prSM'],
                          'rho':   ['sigma-t00'],
                          'o2':    ['sbeox0ML/L'],
-                         'fluor': ['flECO-AFL', 'wetStar'],
+                         'fluor': ['flS', 'flECO-AFL', 'wetStar'],
                          'tur':   ['turbWETntu0', 'obs', 'upoly0'],
                          'par':   ['par']}
 
     def __call__(self):
-        # self.tidy_cnv()
-        self.read_ctd()
-        self.save_data()
+        if self.info['sl'] == 's':
+            self.read_ctd()
+            self.qc_data()
+            self.save_data()
+        elif self.info['sl'] == 'l':
+            self.load_data()
+
+        self.fill_nan()
+        self.filter()
+        self.cal_clim()
+        self.filter(type='climatology')
+        if self.info['clim_deep_interp'] == 'yes':
+            self.clim_deep_interp()
+            self.filter(type='climatology')
 
     def tidy_cnv(self):
-        ''' tidy .cnv files to get rid of some formatting issues. trashed with the new data reader. '''
+        '''
+        tidy .cnv files to get rid of some formatting issues.
+        this method is trashed with the new data reader.
+        '''
 
-        self.flist = self.recursive_glob(pattern = '*.cnv')
-        for fname in self.flist:
+        flist = self.recursive_glob(pattern='*.cnv')
+        for fname in flist:
             f = open(fname, 'r')
             text = f.read()
             f.close()
@@ -59,28 +90,36 @@ class ctd(object):
             f.close()
         return None
 
+    def recursive_glob(self, pattern='*'):
+        ''' Search recursively for files matching a specified pattern. '''
+
+        matches = []
+        for root, dirnames, filenames in os.walk(self.info['data_dir']):
+            for filename in fnmatch.filter(filenames, pattern):
+                matches.append(os.path.join(root, filename))
+
+        return matches
+
     def read_ctd(self):
         ''' read, interpolate and combine ctd casts. '''
 
-        self.flist = self.recursive_glob(pattern = '*.cnv')
-        self.data = {}
-        pr_num = len(self.flist)  # number of total entry
+        flist = self.recursive_glob(pattern='*.cnv')
+        pr_num = len(flist)  # number of total entry
         # create variables
         z = np.arange(self.info['zlev'])
         self.data['z'] = z
-        info_list = ['station', 'lat', 'lon', 'time']
-        for i in info_list:
+        for i in self.data_info_list:
             self.data[i] = []
         for var in self.info['var']:
             self.data[var] = []
 
-        for fname in self.flist:
-            print('parsing '+fname)
+        for fname in flist:
+            print('Parsing ' + fname)
             # read CTD cast
             info, data = self.read_cnv(fname)
 
             # parse header info
-            for i in info_list:
+            for i in self.data_info_list:
                 if i=='time':
                     time_str = info['date'] + ' ' + info['time']
                     ctime = nc.date2num(datetime.strptime(time_str, '%Y/%m/%d %H:%M'), 'days since 1900-01-01 00:00:00')
@@ -99,13 +138,17 @@ class ctd(object):
             # iterate to process data
             for var in self.info['var']:
                 varlist = self.varnames[var]
+                idx = -1
                 for varname in varlist:
-                    if (varname + '_index') in info.keys():
+                    if varname+'_index' in info.keys():
                         idx = info[varname + '_index']
-                pr = self.interp(pr_depth, data[:, idx])
+                if idx >= 0:
+                    pr = self.interp(pr_depth, data[:, idx])
+                else:
+                    pr = np.NaN*np.zeros(self.info['zlev'])
                 self.data[var].append(pr)
 
-        for i in info_list:
+        for i in self.data_info_list:
             self.data[i] = np.array(self.data[i])
         for var in self.info['var']:
             self.data[var] = np.array(self.data[var]).T
@@ -148,8 +191,6 @@ class ctd(object):
                     var_info = line.split(' = ')[1].split(':')
                     cast_info[var_info[0] + '_index'] = i
                     cast_info[var_info[0] + '_unit'] = var_info[1]
-                    # cast_info['var' + str(i)] = var_info[0]
-                    # cast_info['unit' + str(i)] = var_info[1]
 
         # parse data
         cast_data = [line.split() for line in cast_data]
@@ -165,19 +206,28 @@ class ctd(object):
         pr_new[msk] = interp1d(pr_z, pr)(z[msk])
         return pr_new
 
-    def recursive_glob(self, pattern = '*'):
-        ''' Search recursively for files matching a specified pattern. '''
+    def qc_data(self):
+        '''data quality control. get rid of bad data using a salinity critiria.'''
 
-        matches = []
-        for root, dirnames, filenames in os.walk(self.info['data_dir']):
-            for filename in fnmatch.filter(filenames, pattern):
-                matches.append(os.path.join(root, filename))
-
-        return matches
+        z = self.data['z']
+        salt = self.data['salt']
+        temp = self.data['temp']
+        msk = np.zeros(salt.shape)
+        # msk data by levels
+        mskz = z > 20
+        msk[mskz, :] = salt[mskz, :] < 20
+        mskz = z > 100
+        msk[mskz, :] = salt[mskz, :] < 30
+        msk[mskz, :] = temp[mskz, :] < 2
+        mskz = z > 165
+        msk[mskz, :] = salt[mskz, :] < 30.4
+        for var in self.info['var']:
+            self.data[var][msk != 0] = np.NaN
 
     def save_data(self):
         ''' save data to netCDF file for easy access later. '''
 
+        print('Saving data to netCDF...')
         # open new nc file
         fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'w')
         fh.title = 'Glacier Bay data collection'
@@ -185,10 +235,9 @@ class ctd(object):
         fh.createDimension('cast')
 
         # write data
-        fh.createVariable['z', 'd', ('z')]
+        fh.createVariable('z', 'd', ('z'))
         fh.variables['z'][:] = self.data['z']
-        info_list = ['station', 'lat', 'lon', 'time']
-        for i in info_list:
+        for i in self.data_info_list:
             fh.createVariable(i, 'd', ('cast'))
             fh.variables[i][:] = self.data[i]
 
@@ -197,6 +246,99 @@ class ctd(object):
             fh.variables[var][:] = self.data[var]
 
         fh.close()
+
+    def load_data(self):
+        ''' load data from netCDF file. '''
+
+        print('Loading data from netCDF...')
+        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'r')
+        for i in self.data_info_list:
+            self.data[i] = fh.variables[i][:]
+        for var in self.info['var']:
+            self.data[var] = fh.variables[var][:]
+        self.data['z'] = fh.variables['z'][:]
+        fh.close()
+
+    def fill_nan(self):
+        ''' deal with NaNs at surface. '''
+
+        for var in self.info['var']:
+            for tt in range(len(self.data['time'])):
+                pr = self.data[var][:, tt]
+                mskz = self.data['z'] < 5
+                if np.any(~np.isnan(pr[mskz])):
+                    msk_pr = np.isnan(pr) & mskz
+                    idx = np.where(~np.isnan(pr))[0][0]
+                    pr[msk_pr] = pr[idx] 
+
+    def filter(self, type='raw'):
+        ''' filter casts with filtfilt. '''
+
+        b = np.ones(self.info['filter_span'])/float(self.info['filter_span'])
+        a = 1
+        for var in self.info['var']:
+            if type == 'raw':
+                self.data[var] = filtfilt(b, a, self.data[var], axis=0)
+            elif type == 'climatology':
+                self.climatology[var] = filtfilt(b, a, self.climatology[var], axis=0)
+                # heavily smooth below 100 m
+                mskz = self.data['z'] >100
+                b2 = np.ones(self.info['filter_span']*5)/float(self.info['filter_span']*5)
+                self.climatology[var][mskz, :, :] = filtfilt(b2, a, self.climatology[var][mskz, :, :], axis=0)
+
+    def cal_clim(self):
+        ''' calculate climatology for each station. '''
+
+        print('Calculating climatology...')
+        for var in self.info['var']:
+            self.climatology[var] = np.NaN*np.zeros((self.info['zlev'], 12, len(self.info['clim_station'])))
+        dtime = nc.num2date(self.data['time'], 'days since 1900-01-01 00:00:00')
+        self.data['month'] = np.array([i.month for i in dtime])
+
+        mm_empty = []
+        ss_empty = []
+
+        for mm in range(12):
+            ss_cts = 0
+            for ss in self.info['clim_station']:
+                msk = (self.data['month'] == mm+1) & (self.data['station'] == ss)
+                if msk.sum() == 0:
+                    print('empty profile! mouth = ' + str(mm+1) + ', station = ' + str(ss))
+                    mm_empty.append(mm+1)
+                    ss_empty.append(ss)
+                else:
+                    for var in self.info['var']:
+                        self.climatology[var][:, mm, ss_cts] = np.nanmean(self.data[var][:, msk], axis=1)
+                ss_cts += 1
+        return None
+
+    def clim_deep_interp(self):
+        depth = np.append(self.data['z'], 1000000)
+        for var in self.info['var']:
+            # only dealing with salinity and temperature
+            if (var == 'salt') | (var == 'temp'):
+                # self.climatology[var][-1, :, :] = self.info['deep_var_value'][var]
+                for mm in range(self.climatology[var].shape[1]):
+                    for ss in range(self.climatology[var].shape[2]):
+                        pr = self.climatology[var][:, mm, ss]
+                        pr = np.append(pr, self.info['deep_var_value'][var])
+                        msk = ~np.isnan(pr)
+                        pr = interp1d(depth[msk], pr[msk])(self.data['z'])
+                        self.climatology[var][:, mm, ss] = pr.copy()
+        return None
+
+    def plt_casts(self, var='salt'):
+        ''' plot all salinity profile to pick out faulty profiles. '''
+        data = self.data[var]
+        t = self.data['time']
+        stn = self.data['station']
+        z = self.data['z']
+        for i in range(data.shape[-1]):
+            plt.plot(data[:, i], z)
+            tstr = nc.num2date(t[i], 'days since 1900-01-01 00:00:00').strftime('%Y-%m-%d %H:%M')
+            plt.title(tstr + '_' + str(stn[i]))
+            plt.savefig(self.info['file_dir'] + 'figs/ctd/' + tstr + '_' + str(stn[i]) + '.png')
+            plt.close()
 
     # def rd_ctd(ctd_dir):
     #     '''
