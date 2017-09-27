@@ -277,6 +277,10 @@ class ctd(object):
         fh.variables['time_clim'][:] = self.climatology['time']
         fh.createVariable('station_clim', 'd', ('stn_clim'))
         fh.variables['station_clim'][:] = self.climatology['station']
+        fh.createVariable('lat_clim', 'd', ('stn_clim'))
+        fh.variables['lat_clim'][:] = self.climatology['lat']
+        fh.createVariable('lon_clim', 'd', ('stn_clim'))
+        fh.variables['lon_clim'][:] = self.climatology['lon']
 
         # write data
         for var in self.info['var']:
@@ -296,6 +300,8 @@ class ctd(object):
         self.climatology['z'] = fh.variables['z'][:]
         self.climatology['time'] = fh.variables['time_clim'][:]
         self.climatology['station'] = fh.variables['station_clim'][:]
+        self.climatology['lat'] = fh.variables['lat_clim'][:]
+        self.climatology['lon'] = fh.variables['lon_clim'][:]
 
         fh.close()
 
@@ -341,6 +347,16 @@ class ctd(object):
 
         mm_empty = []
         ss_empty = []
+
+        # calculate station coordinates
+        lat = []
+        lon = []
+        for ss in self.info['clim_station']:
+            msk = self.data['station'] == ss
+            lat.append(self.data['lat'][msk].mean())
+            lon.append(self.data['lon'][msk].mean())
+        self.climatology['lat'] = np.array(lat)
+        self.climatology['lon'] = np.array(lon)
 
         for mm in range(12):
             ss_cts = 0
