@@ -57,17 +57,21 @@ class ctd(object):
         if self.info['sl'] == 's':
             self.read_ctd()
             self.qc_data()
+            self.fill_nan()
+            self.filter()
             self.save_data()
         elif self.info['sl'] == 'l':
             self.load_data()
 
-        self.fill_nan()
-        self.filter()
-        self.cal_clim()
-        self.filter(type='climatology')
-        if self.info['clim_deep_interp'] == 'yes':
-            self.clim_deep_interp()
+        if self.info['sl'] == 's':
+            self.cal_clim()
             self.filter(type='climatology')
+            if self.info['clim_deep_interp'] == 'yes':
+                self.clim_deep_interp()
+                self.filter(type='climatology')
+            self.save_clim()
+        if self.info['sl'] == 'l':
+            self.load_clim()
 
     def tidy_cnv(self):
         '''
@@ -259,6 +263,42 @@ class ctd(object):
         self.data['z'] = fh.variables['z'][:]
         fh.close()
 
+    def save_clim(self):
+        ''' save climatology to netCDF file for easy access later. '''
+
+        print('Saving climatology to netCDF...')
+        # open existing nc file
+        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'a')
+        fh.createDimension('t_clim', 12)
+        fh.createDimension('stn_clim', len(self.info['clim_station']))
+
+        # write time & station info
+        fh.createVariable('time_clim', 'd', ('t_clim'))
+        fh.variables['time_clim'][:] = self.climatology['time']
+        fh.createVariable('station_clim', 'd', ('stn_clim'))
+        fh.variables['station_clim'][:] = self.climatology['station']
+
+        # write data
+        for var in self.info['var']:
+            fh.createVariable(var + '_clim', 'd', ('z', 't_clim', 'stn_clim'))
+            fh.variables[var + '_clim'][:] = self.climatology[var]
+
+        fh.close()
+
+    def load_clim(self):
+        ''' load climatology from netCDF file. '''
+
+        print('Loading climatology from netCDF...')
+        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'r')
+        for var in self.info['var']:
+            self.climatology[var] = fh.variables[var+'_clim'][:]
+
+        self.climatology['z'] = fh.variables['z'][:]
+        self.climatology['time'] = fh.variables['time_clim'][:]
+        self.climatology['station'] = fh.variables['station_clim'][:]
+
+        fh.close()
+
     def fill_nan(self):
         ''' deal with NaNs at surface. '''
 
@@ -289,6 +329,10 @@ class ctd(object):
     def cal_clim(self):
         ''' calculate climatology for each station. '''
 
+        time = np.array([datetime(1900, i+1, 15) for i in range(12)])
+        self.climatology['time'] = nc.date2num(time, 'days since 1900-01-01 00:00:00')
+        self.climatology['z'] = self.data['z']
+        self.climatology['station'] = np.array(self.info['clim_station'])
         print('Calculating climatology...')
         for var in self.info['var']:
             self.climatology[var] = np.NaN*np.zeros((self.info['zlev'], 12, len(self.info['clim_station'])))
@@ -313,6 +357,8 @@ class ctd(object):
         return None
 
     def clim_deep_interp(self):
+        ''' extrapolate climatology to deep water. '''
+
         depth = np.append(self.data['z'], 1000000)
         for var in self.info['var']:
             # only dealing with salinity and temperature
@@ -329,6 +375,7 @@ class ctd(object):
 
     def plt_casts(self, var='salt'):
         ''' plot all salinity profile to pick out faulty profiles. '''
+
         data = self.data[var]
         t = self.data['time']
         stn = self.data['station']
