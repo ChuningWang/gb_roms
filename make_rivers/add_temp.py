@@ -1,11 +1,11 @@
 import numpy as np
 from scipy import signal
-import netCDF4
+import netCDF4 as nc
 from datetime import datetime, timedelta
 import sys
 
 import pyroms
-from gb_toolbox import gb_ctd
+from ocean_toolbox import ctd
 
 import read_host_info
 sv = read_host_info.read_host_info()
@@ -25,61 +25,50 @@ tag = 'Hill'
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
-
-temp_file = in_dir + 'ctd.nc'
-
-out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
+out = nc.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 river_time = out.variables['river_time'][:]
 out.close()
+river_datetime = nc.num2date(river_time, 'days since 1900-01-01')
+river_yearday = np.array([i.timetuple().tm_yday for i in river_datetime])
 
-# Read the river temperatures
-ctd = gb_ctd.rd_ctd(temp_file)
+# Read river temperature
+info = {'data_dir': '/glade/p/work/chuning/data/ctd_raw/',
+        'file_dir': '/glade/p/work/chuning/data/',
+        'file_name': 'ctd.nc',
+        'sl': 'l',
+        'var': ['temp'],
+        'clim_station': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20],
+        'clim_deep_interp': 'yes',
+       }
 
-# calculate climatology
-clm_ctd = gb_ctd.cal_ctd_climatology(ctd)
-clm_t = np.mean(clm_ctd['t'][:, 12, 1:5], axis=1)
-clm_time = np.array([15, 45, 74, 105, 136, 166, 197, 227, 258, 288, 319, 349])
+c = ctd.ctd(info)
+c()
 
-clm_t = np.concatenate((clm_t, clm_t, clm_t))
-clm_time = np.concatenate((clm_time-365, clm_time, clm_time+365))
+temp = c.climatology['temp'][:, :, 12]
+temp = temp[:5, :].mean(axis=0)
+time = c.climatology['time']
+temp = np.concatenate((np.array([temp[-1]]), temp, np.array([temp[0]])))
+time = np.concatenate((np.array([time[-1]-365.]), time, np.array([time[0]+365.])))
 
-river_source_time_raw = np.arange(-300, 366+300)
-river_temp_raw = np.interp(river_source_time_raw, clm_time, clm_t)
-
-b, a = signal.butter(8, 0.015)
-river_temp_raw2 = signal.filtfilt(b, a, river_temp_raw)
-
-river_source_time = np.arange(366)+1
-river_temp = np.interp(river_source_time, river_source_time_raw, river_temp_raw2)
-
-river_yearday = np.array([(datetime(1900, 1, 1)+timedelta(i)).timetuple().tm_yday for i in river_time])
-river_temp = np.interp(river_yearday, river_source_time, river_temp)
+river_temp = np.interp(river_yearday, time, temp)
 river_salt = np.zeros(river_temp.shape)
 
 # create file with all the objects
-out = netCDF4.Dataset(out_file, 'a', format='NETCDF3_64BIT')
+fh = nc.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 
-# out.createDimension('river_tracer_time', len(river_time))
-# 
-# times = out.createVariable('river_tracer_time', 'f8', ('river_tracer_time'))
-# times.units = 'day'
-# times.cycle_length = 365.25
-# times.long_name = 'river tracer time'
-
-temp = out.createVariable('river_temp', 'f8', ('river_time'))
+temp = fh.createVariable('river_temp', 'f8', ('river_time'))
 temp.long_name = 'river runoff temperature'
 temp.units = 'Celcius'
 temp.time = 'river_time'
 
-salt = out.createVariable('river_salt', 'f8', ('river_time'))
+salt = fh.createVariable('river_salt', 'f8', ('river_time'))
 salt.long_name = 'river runoff salinity'
 salt.units = 'PSU'
 salt.time = 'river_time'
 
-# out.variables['river_tracer_time'][:] = river_time
-out.variables['river_temp'][:] = river_temp
-out.variables['river_salt'][:] = river_salt
+fh.variables['river_temp'][:] = river_temp
+fh.variables['river_salt'][:] = river_salt
 
 print('add temp, salt done')
 
-out.close()
+fh.close()

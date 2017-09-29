@@ -2,7 +2,7 @@ import pyroms
 import netCDF4 as nc
 import numpy as np
 import sys
-from gb_toolbox import gb_current
+from ocean_toolbox import noaa_adcp
 from scipy.interpolate import interp1d
 from scipy.signal import filtfilt
 
@@ -52,8 +52,6 @@ ang = ang.mean()
 
 # load ADCP data near the grid boundary
 stn_list = ['SEA1008', 'SEA1009', 'SEA1010']
-bdate_list = ['20100525', '20100625', '20100725']
-edate_list = ['20100625', '20100725', '20100815']
 
 t = {}
 u = {}
@@ -63,35 +61,20 @@ lat = {}
 lon = {}
 
 for stn in stn_list:
-    for nct in range(len(bdate_list)):
-        bdate = bdate_list[nct]
-        edate = edate_list[nct]
-        info = {'stn' : stn,
-                'bdate' : bdate,
-                'edate' : edate,
-                'filename': '/glade/p/work/chuning/data/NOAA_ADCP/'+stn+'_'+bdate+'_'+edate+'.nc',
-                'sl': 'l',
-                'Wp_hrs': -1}
+    info = {'stn' : stn,
+            'file_dir': '/glade/p/work/chuning/data/NOAA_ADCP/',
+            'sl': 'l',
+            'Wp_hrs': -1}
 
-        crt = gb_current.get_noaa_current(info)
-        crt()
+    crt = noaa_adcp.get_noaa_current(info)
+    crt()
 
-        if nct==0:
-            t[stn] = crt.ctime
-            u[stn] = crt.u
-            v[stn] = crt.v
-            z[stn] = crt.z
-            lat[stn] = crt.info['lat']
-            lon[stn] = crt.info['lon']
-        else:
-            t[stn] = np.concatenate((t[stn], crt.ctime))
-            u[stn] = np.concatenate((u[stn], crt.u), axis=1)
-            v[stn] = np.concatenate((v[stn], crt.v), axis=1)
-
-    # sort the ADCP data. get rid of overlap periods.
-    t[stn], t_idx = np.unique(t[stn], return_index=True)
-    u[stn] = u[stn][:, t_idx]
-    v[stn] = v[stn][:, t_idx]
+    t[stn] = crt.ctime
+    u[stn] = crt.u
+    v[stn] = crt.v
+    z[stn] = crt.z
+    lat[stn] = crt.info['lat']
+    lon[stn] = crt.info['lon']
 
 # process, interpolate and smooth data
 lat08 = lat['SEA1008']
@@ -179,4 +162,3 @@ fh = nc.Dataset(dst_dir+'bc_ic/'+grd.name+'_bdry_'+my_year+'_'+tag+'.nc', 'a')
 fh.variables['u_west'][:] = u_w_new
 fh.variables['v_west'][:] = v_w_new
 fh.close()
-

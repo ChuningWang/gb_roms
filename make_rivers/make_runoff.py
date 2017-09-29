@@ -13,33 +13,6 @@ import pyroms_toolbox
 # variable) and the area over which the runoff is spread in order
 # homogenize and to avoid large runoff value (variable "rspread").
 
-def get_discharge_avgbox(t, lat, lon, discharge, coast, box):
-    from matplotlib import path
-
-    # ------------------------------------------------------------------------------------------------------
-    # Get points in boxes
-    hydro_box = np.ones(lon.shape)*(-1)
-    p0 = path.Path(box)
-
-    for i in range(lon.shape[0]):
-        for j in range(lon.shape[1]):
-            if p0.contains_points([(lon[i, j], lat[i, j])]):
-                hydro_box[i, j] = 0
-
-    # Find coastal cells
-    hydro_box[coast.mask] = -1
-
-    # ------------------------------------------------------------------------------------------------------
-    print 'Sum up data in box...'
-    d = np.empty(t.size)
-    d[:] = np.NaN
-    for i in range(t.size):
-        d0 = np.squeeze(discharge[i, :, :])
-        d0[d0<=0] = np.NaN
-        d[i] = np.nansum(d0[hydro_box==0])
-
-    return d
-
 import read_host_info
 sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
@@ -67,10 +40,8 @@ fh = nc.Dataset(dis_file, 'r')
 time = fh.variables['t'][:]
 lat = fh.variables['lat'][:]
 lon = fh.variables['lon'][:]
-coast = fh.variables['coast'][:]
 t1 = (t_ini-t_base).days
 t2 = (t_end-t_base).days
-# t2 = t1
 msk = (time>=t1) & (time<=t2)
 time = time[msk]
 data = fh.variables['discharge'][msk, :, :]
@@ -82,14 +53,6 @@ lat = lat-0.005
 
 # load Glacier Bay grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
-
-box = np.array([[-137.40, 59.10],
-                [-137.00, 58.50],
-                [-136.55, 58.30],
-                [-136.40, 58.15],
-                [-136.00, 57.95],
-                [-135.00, 58.05],
-                [-136.10, 59.35]])
 
 # specify output file
 out_dir = in_dir
@@ -209,17 +172,6 @@ for t in range(nt):
 # mask invalid values
 runoff_raw_nc = np.ma.masked_where(runoff_raw_nc==spval, runoff_raw_nc)
 runoff_spread_nc = np.ma.masked_where(runoff_spread_nc==spval, runoff_spread_nc)
-
-# scale the total discharge to origin grid
-d1 =  get_discharge_avgbox(time, lat, lon, data, coast, box)
-coast_gb = np.zeros(grd.hgrid.lat_rho.shape) 
-coast_gb = np.ma.masked_array(coast_gb, mask=0)
-d2 =  get_discharge_avgbox(time, grd.hgrid.lat_rho, grd.hgrid.lon_rho, runoff_raw_nc, coast_gb, box)
-
-rr = np.nanmean(d1/d2)
-
-runoff_raw_nc = runoff_raw_nc*rr
-runoff_spread_nc = runoff_spread_nc*rr
 
 # create runoff file
 print 'create runoff file'

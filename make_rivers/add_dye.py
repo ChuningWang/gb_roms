@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import sys
 
 import pyroms
-from gb_toolbox import gb_ctd
 
 import read_host_info
 sv = read_host_info.read_host_info()

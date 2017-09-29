@@ -1,7 +1,6 @@
 # Plot Glacier Bay map
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
-from gb_toolbox.gb_ctd import rd_ctd
 from matplotlib.mlab import griddata
 import numpy as np
 import netCDF4 as nc
@@ -26,10 +25,6 @@ else:
 
 plt_proj = 1
 plt_hill_coast = 1
-
-# ctd = rd_ctd(in_dir + 'ctd.nc')
-# lat_ctd = ctd['lat_stn']
-# lon_ctd = ctd['lon_stn']
 
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -58,7 +53,7 @@ if plt_proj == 1:
                 resolution='f')
 
     # m.drawcoastlines(linewidth=0.01)
-    m.fillcontinents(color='palegreen')
+    m.fillcontinents(color='palegreen', alpha=0.5)
     mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
     pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
     # setlabelrot(mr,-90)
@@ -67,7 +62,7 @@ if plt_proj == 1:
     m.pcolor(x, y, z, cmap='Blues', edgecolors='k', linewidth=0.05)
     plt.clim(0, 400)
     plt.colorbar()
-    m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
+    # m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
     # x2, y2 = m(lon_ctd, lat_ctd)
     # m.plot(x2, y2, '.k', ms=2)
 

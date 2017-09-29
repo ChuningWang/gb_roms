@@ -1,6 +1,6 @@
 from ocean_toolbox import noaa_adcp
 
-stn_list = ['SEA0845', 'SEA0846', 'SEA0847', 'SEA0848', 'SEA0849', 'SEA0850']
+stn_list = ['SEA0839']
 
 for stn in stn_list:
     info = {'stn' : stn,
