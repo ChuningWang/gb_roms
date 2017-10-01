@@ -23,7 +23,7 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-plt_proj = 1
+plt_proj = 0
 plt_hill_coast = 1
 
 # Read grid
@@ -59,7 +59,7 @@ if plt_proj == 1:
     # setlabelrot(mr,-90)
 
     x, y = m(lon, lat)
-    m.pcolor(x, y, z, cmap='Blues', edgecolors='k', linewidth=0.05)
+    m.pcolor(x, y, z, cmap='Blues', edgecolors='k', linewidth=0.005)
     plt.clim(0, 400)
     plt.colorbar()
     # m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
@@ -85,7 +85,7 @@ if plt_proj == 1:
 
 elif plt_proj == 0:
 
-    plt.pcolormesh(z, cmap='Blues')
+    plt.pcolor(z, cmap='Blues', edgecolors='k', linewidth=0.005)
     plt.clim(0, 400)
     plt.colorbar()
     # plt.contour(msk, [0.5], linewidths=0.05, colors='k')
@@ -93,7 +93,7 @@ elif plt_proj == 0:
     plt.xticks(np.arange(0, Np, 10), rotation='vertical')
     plt.yticks(np.arange(0, Mp, 20))
     plt.tick_params(axis='both', which='major', labelsize=5)
-    plt.grid()
+    # plt.grid(linewidth=0.05)
 
     plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.tiff', format='tiff', dpi=600)
 

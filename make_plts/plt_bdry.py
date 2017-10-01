@@ -1,8 +1,8 @@
-# from mpl_toolkits.basemap import Basemap
+import sys
 import matplotlib.pyplot as plt
-# from gb_toolbox.gb_ctd import rd_ctd
 import numpy as np
 import netCDF4 as nc
+import pyroms
 
 # ------------------------------------------------------------------------------------------------------
 def setlabelrot(x, rot):
@@ -15,26 +15,24 @@ import read_host_info
 sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
+else:
+    grd1 = 'GB_lr'
+
 # Read grid
-fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_lr_bdry_2008_SODA3.3.1_0.25.nc', mode='r')
-lon_psi = fh.variables['lon_psi'][:]
-lat_psi = fh.variables['lat_psi'][:]
-lon_rho = fh.variables['lon_rho'][:]
-lat_rho = fh.variables['lat_rho'][:]
-lon_u = fh.variables['lon_u'][:]
-lat_u = fh.variables['lat_u'][:]
-lon_v = fh.variables['lon_v'][:]
-lat_v = fh.variables['lat_v'][:]
+grd = pyroms.grid.get_ROMS_grid(grd1)
+lon_rho = grd.hgrid.lon_rho
+lat_rho = grd.hgrid.lat_rho
+lon_u = grd.hgrid.lon_u
+lat_u = grd.hgrid.lat_u
+lon_v = grd.hgrid.lon_v
+lat_v = grd.hgrid.lat_v
 
-lon_psi = lon_psi-360
-lon_rho = lon_rho-360
-lon_u = lon_u-360
-lon_v = lon_v-360
+h = grd.vgrid.h
+Cs_r = grd.vgrid.Cs_r
 
-h = fh.variables['h'][:]
-Cs_r = fh.variables['Cs_r'][:]
-Cs_w = fh.variables['Cs_w'][:]
-msk = fh.variables['mask_psi'][:]
+fh = nc.Dataset(out_dir + 'bc_ic/GlacierBay_lr_bc_2008_CTD_ADCP.nc', mode='r')
 t = fh.variables['ocean_time'][:]
 
 s_e = fh.variables['salt_east'][:].squeeze()
@@ -81,39 +79,46 @@ h_v_e = 0.5*(h_st_e[:, :-1]+h_st_e[:, 1:])
 h_v_w = 0.5*(h_st_w[:, :-1]+h_st_w[:, 1:])
 
 # ------------------------------------------------------------------------------------------------------
-# for i in range(len(t)):
-for i in range(5):
-    # plt.pcolormesh(lat_st_e, h_st_e, s_e[i, :, :])
-    # plt.colorbar()
-    # plt.title('Salinity [PSU] at East Boundary')
-    # plt.xlabel('Latitude')
-    # plt.ylabel('Depth [m]')
-    # plt.savefig(out_dir + 'figs/bdry_e_s_' + str(t[i]) + '.tiff',format='tiff')
-    # plt.close()
+for i in range(len(t)):
+    plt.pcolormesh(lat_st_e, h_st_e, s_e[i, :, :])
+    plt.colorbar()
+    plt.title('Salinity [PSU] at East Boundary')
+    plt.xlabel('Latitude')
+    plt.ylabel('Depth [m]')
+    plt.savefig(out_dir + 'figs/bdry/bdry_e_s_' + str(t[i]) + '.tiff',format='tiff')
+    plt.close()
 
-    # plt.pcolormesh(lat_st_w, h_st_w, s_w[i, :, :])
-    # plt.colorbar()
-    # plt.title('Salinity [PSU] at West Boundary')
-    # plt.xlabel('Latitude')
-    # plt.ylabel('Depth [m]')
-    # plt.savefig(out_dir + 'figs/bdry_w_s_' + str(t[i]) + '.tiff',format='tiff')
+    plt.pcolormesh(lat_st_w, h_st_w, s_w[i, :, :])
+    plt.colorbar()
+    plt.title('Salinity [PSU] at West Boundary')
+    plt.xlabel('Latitude')
+    plt.ylabel('Depth [m]')
+    plt.savefig(out_dir + 'figs/bdry/bdry_w_s_' + str(t[i]) + '.tiff',format='tiff')
 
-    # plt.close()
-    # plt.pcolormesh(lat_st_e, h_st_e, t_e[i, :, :])
-    # plt.colorbar()
-    # plt.title('Temperature [degC] at East Boundary')
-    # plt.xlabel('Latitude')
-    # plt.ylabel('Depth [m]')
-    # plt.savefig(out_dir + 'figs/bdry_e_t_' + str(t[i]) + '.tiff',format='tiff')
-    # plt.close()
+    plt.close()
+    plt.pcolormesh(lat_st_e, h_st_e, t_e[i, :, :])
+    plt.colorbar()
+    plt.title('Temperature [degC] at East Boundary')
+    plt.xlabel('Latitude')
+    plt.ylabel('Depth [m]')
+    plt.savefig(out_dir + 'figs/bdry/bdry_e_t_' + str(t[i]) + '.tiff',format='tiff')
+    plt.close()
 
-    # plt.pcolormesh(lat_st_w, h_st_w, t_w[i, :, :])
-    # plt.colorbar()
-    # plt.title('Temperature [degC] at West Boundary')
-    # plt.xlabel('Latitude')
-    # plt.ylabel('Depth [m]')
-    # plt.savefig(out_dir + 'figs/bdry_w_t_' + str(t[i]) + '.tiff',format='tiff')
-    # plt.close()
+    plt.pcolormesh(lat_st_w, h_st_w, t_w[i, :, :])
+    plt.colorbar()
+    plt.title('Temperature [degC] at West Boundary')
+    plt.xlabel('Latitude')
+    plt.ylabel('Depth [m]')
+    plt.savefig(out_dir + 'figs/bdry/bdry_w_t_' + str(t[i]) + '.tiff',format='tiff')
+    plt.close()
+
+    plt.pcolormesh(lat_u_e, h_u_e, u_e[i, :, :])
+    plt.colorbar()
+    plt.title('U at East Boundary')
+    plt.xlabel('Latitude')
+    plt.ylabel('Depth [m]')
+    plt.savefig(out_dir + 'figs/bdry/bdry_e_u_' + str(t[i]) + '.tiff',format='tiff')
+    plt.close()
 
     plt.pcolormesh(lat_u_w, h_u_w, u_w[i, :, :])
     plt.colorbar()
@@ -121,6 +126,14 @@ for i in range(5):
     plt.xlabel('Latitude')
     plt.ylabel('Depth [m]')
     plt.savefig(out_dir + 'figs/bdry/bdry_w_u_' + str(t[i]) + '.tiff',format='tiff')
+    plt.close()
+
+    plt.pcolormesh(lat_v_e, h_v_e, v_e[i, :, :])
+    plt.colorbar()
+    plt.title('V at East Boundary')
+    plt.xlabel('Latitude')
+    plt.ylabel('Depth [m]')
+    plt.savefig(out_dir + 'figs/bdry/bdry_e_v_' + str(t[i]) + '.tiff',format='tiff')
     plt.close()
 
     plt.pcolormesh(lat_v_w, h_v_w, v_w[i, :, :])
