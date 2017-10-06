@@ -63,7 +63,7 @@ if cal_ts == 1:
 
     z_ts = np.arange(zlev_ts)
 
-    fid = open('/Users/CnWang/Documents/gb_roms/CTDS7513')
+    fid = open(in_dir + 'CTDS7513')
     n = 0  # counter
     t = True
     while t:
@@ -280,15 +280,17 @@ u_east = UU.real
 v_east = UU.imag
 
 # --------------------------------------------------------------------------------
-# remap TS
+# remap TS and write into nc file
 Cs_r = grd.vgrid.Cs_r
 zlev = len(Cs_r)
 h_ts = grd.vgrid.h
 h_u = 0.5*(h_ts[:, 1:] + h_ts[:, :-1])
 h_v = 0.5*(h_ts[1:, :] + h_ts[:-1, :])
 
+dt = (datetime(my_year, 01, 01) - datetime(1900, 01, 01)).days
+
 fh = nc.Dataset(bc_file, 'r+')
-fh.variables['ocean_time'][:] = t_clim
+fh.variables['ocean_time'][:] = t_clim + dt
 spval = -1.0e20
 
 varlist = ['temp', 'salt', 'u', 'v']

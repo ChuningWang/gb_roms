@@ -389,19 +389,93 @@ class ctd(object):
                         self.climatology[var][:, mm, ss] = pr.copy()
         return None
 
-    def plt_casts(self, var='salt'):
-        ''' plot all salinity profile to pick out faulty profiles. '''
+    class plot(object):
+        '''
+        This class contains all the plot scripts.
+        '''
 
-        data = self.data[var]
-        t = self.data['time']
-        stn = self.data['station']
-        z = self.data['z']
-        for i in range(data.shape[-1]):
-            plt.plot(data[:, i], z)
-            tstr = nc.num2date(t[i], 'days since 1900-01-01 00:00:00').strftime('%Y-%m-%d %H:%M')
-            plt.title(tstr + '_' + str(stn[i]))
-            plt.savefig(self.info['file_dir'] + 'figs/ctd/' + tstr + '_' + str(stn[i]) + '.png')
-            plt.close()
+        def plthov_ctd(t, z, data, rho=-1, depth = 200, fig = -1, ax = -1):
+            '''
+            Plot hovmuller diagram of Glacier Bay CTD data.
+            Input
+              t - python datetime
+              z - depth (1D)
+              data - variable to plot
+              rho (optional) - if not -1, contour density on top of scatter plot
+              depth (optional) - maximum depth of y axis
+              fig (optional) - figure handle
+              ax (optional) - axes handle
+            Output
+              fig - figure handle
+              ax - axes handle
+            Chuning Wang 2016/05/27
+            '''
+
+            if fig==-1 and ax==-1:
+                fig = plt.figure()
+                ax  = fig.add_subplot(111)
+            elif fig!=-1 and ax==-1:
+                ax = fig.add_subplot(111)
+                print 'Using input figure handle...'
+            elif fig!=-1 and ax!=-1:
+                print 'Using input figure and axes handle...'
+            else:
+                print 'Please specify fig when ax is specified!!!'
+                fig = plt.gcf()
+
+            ax.set_axis_bgcolor((.85, .85, .85))
+            if clim == 'auto':
+                cmax = np.max(data)
+                cmin = np.min(data)
+            else:
+                cmax = clim[1]
+                cmin = clim[0]
+            data[data>cmax] = cmax
+            data[data<cmin] = cmin
+            steps = 20
+            dc = (cmax-cmin)/steps
+
+            mt = mdates.date2num(t)
+            tt, zz = np.meshgrid(mt,z)
+            tt = tt.flatten()
+            zz = zz.flatten()
+            dd = data.flatten()
+            plt.scatter(tt, zz, s=8,
+                    c=dd, vmin=cmin, vmax=cmax, cmap=cm.get_cmap('RdBu_r'),
+                    marker='s', edgecolor='none')
+            plt.ylim(0, depth)
+            plt.xlim(min(t),max(t))
+            plt.gca().invert_yaxis() 
+            plt.clim(cmin,cmax)
+            plt.colorbar()
+            # reset xticks
+            years = mdates.YearLocator()
+            ax.xaxis.set_major_locator(years)
+            fig.autofmt_xdate()
+
+            if rho !=- 1:
+                # contour density
+                clevs = np.arange(1020, 1030, 1)
+                rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.4)
+                clevs = clevs[::4]
+                rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.8)
+                plt.clabel(rhoc, fontsize=5)
+
+            return fig, ax
+
+        def plt_casts(data):
+            ''' plot all profiles to pick out faulty profiles. '''
+
+            t = self.data['time']
+            stn = self.data['station']
+            z = self.data['z']
+            for i in range(data.shape[-1]):
+                plt.plot(data[:, i], z)
+                tstr = nc.num2date(t[i], 'days since 1900-01-01 00:00:00').strftime('%Y-%m-%d %H:%M')
+                plt.title(tstr + '_' + str(stn[i]))
+                plt.savefig(self.info['file_dir'] + 'figs/ctd/' + tstr + '_' + str(stn[i]) + '.png')
+                plt.close()
+
 
     # def rd_ctd(ctd_dir):
     #     '''

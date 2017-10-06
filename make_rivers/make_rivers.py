@@ -161,6 +161,9 @@ d_h = get_discharge_avgbox(t_h, lat_h, lon_h, trs_h, coast_h, box)
 rr = np.nanmean(d_h/d)
 trs = trs*rr
 
+# set discharge direction (sign)
+trs = trs*sign
+
 # overwrite river_transport
 fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill.nc', 'r+')
 fh.variables['river_transport'][:] = trs

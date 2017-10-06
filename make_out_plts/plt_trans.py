@@ -4,6 +4,7 @@ import netCDF4 as nc
 import pyroms
 import glob
 from matplotlib.mlab import griddata
+import cmocean
 from geopy.distance import vincenty
 from matplotlib import path
 import sys
@@ -18,7 +19,7 @@ model_dir = sv['model_dir']
 my_year = 2008
 pltuv = 1
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
-varlist = ['dye_02']
+varlist = ['salt', 'dye_03']
 dd = 3
 
 if len(sys.argv)>1:
@@ -38,7 +39,7 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
-flist = flist[-35:]
+flist = flist[:7]
 
 zlev = grd.vgrid.N
 uvar = 'u'
@@ -122,6 +123,8 @@ c0 = np.array([[-137.04719708,   59.05076767],
                [-135.08995853,   58.12069925],
                [-135.05792266,   58.10358142]])
 
+c0 = c0[::2, :]
+
 lon_ct = c0[:, 0]
 lat_ct = c0[:, 1]
 
@@ -152,15 +155,6 @@ lon = grd.hgrid.lon_rho
 h = grd.vgrid.h
 ang = grd.hgrid.angle_rho
 msk = grd.hgrid.mask_rho
-
-# # plot transaction on map
-# fig = plt.figure()
-# plt.pcolor(lon, lat, h, cmap='Greens')
-# plt.clim(0, 400)
-# plt.contour(lon, lat, msk, np.array([0.5, 0.5]), colors='k')
-# plt.plot(c0[:, 0], c0[:, 1], '--.k', ms=3)
-# plt.savefig(fig_dir + 'map_transac.png')
-# plt.close()
 
 lon = lon[msk==1]
 lat = lat[msk==1]
@@ -211,8 +205,8 @@ if pltuv==1:
     lonv = lonv[mskv==1]
     latv = latv[mskv==1]
 
-    pcu = p.contains_points(np.array([lonu, latu]).T) 
-    pcv = p.contains_points(np.array([lonv, latv]).T) 
+    pcu = p.contains_points(np.array([lonu, latu]).T)
+    pcv = p.contains_points(np.array([lonv, latv]).T)
     lonu = lonu[pcu]
     latu = latu[pcu]
     lonv = lonv[pcv]
@@ -243,17 +237,21 @@ if pltuv==1:
 plt.switch_backend('Agg')
 
 for var in varlist:
-    if var=='salt':
-        clim = [30, 35]
-    elif var=='temp':
-        clim = [5, 10]
-    elif var=='dye_01' or var=='dye_02' or var=='dye_03':
-        clim = [0, 1]
+    print('For ' + var)
+    if var in ['temp']:
+        clim = [2, 10]
+        cmap_var = cmocean.cm.thermal
+    elif var in ['salt']:
+        clim = [25, 35]
+        cmap_var = cmocean.cm.haline
+    elif var in ['dye_01', 'dye_02', 'dye_03']:
+        clim = [0, .1]
+        cmap_var = cmocean.cm.matter
 
     for fn in flist:
         # read data
         tag = fn.split('/')[-1].split('.')[0]
-        print 'processing ' + tag + ' ...'
+        print('processing ' + tag + ' ...')
         fh = nc.Dataset(fn)
         t = fh.variables['ocean_time'][:]
         tunit = (fh.variables['ocean_time']).units
@@ -286,17 +284,19 @@ for var in varlist:
                 w_tr2 = 0.5*(w_tr2_sw[1:, :]+w_tr2_sw[:-1, :])
 
             # make plot
-            pcm = plt.pcolormesh(dis, z_tr, var_tr)
+            pcm = plt.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
             plt.clim(clim[0], clim[1])
-            plt.colorbar()
+            cb = plt.colorbar()
 
             if pltuv==1:
-                Q = plt.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
+                qv = plt.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
 
             plt.title(var + '_' + ttag)
             plt.savefig(fig_dir + var + '_' + ttag + '.png')
 
-            # pcm.remove()
-            # if pltuv==1:
-            #     Q.remove()
-            plt.close()
+            pcm.remove()
+            cb.remove()
+            if pltuv==1:
+                qv.remove()
+
+plt.close()

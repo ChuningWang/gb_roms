@@ -9,7 +9,8 @@ import numpy as np
 import pyroms
 import pyroms_toolbox
 from scipy.interpolate import interp1d
-from  scipy import ndimage
+from scipy import ndimage
+from datetime import datetime
 
 import netCDF4 as nc
 
@@ -104,6 +105,7 @@ else:
     grd1 = 'GB_lr'
 
 month = 4
+my_year = 2008
 src_grd_name = '2008_04_15_CTD_floodFill'
 
 # Load target grid and land mask
@@ -216,7 +218,12 @@ nctime.long_name = 'time'
 nctime.units = 'days since 1900-01-01 00:00:00'
 pyroms_toolbox.nc_create_roms_file(ic_file, grd, nctime)
 
+ocean_time = nc.date2num(datetime(my_year, month, 15), nctime.units)
+
 fh = nc.Dataset(ic_file, 'r+')
+
+fh.variables['ocean_time'][:] = ocean_time
+
 fh.createVariable('zeta', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), fill_value=spval)
 fh.variables['zeta'].long_name = 'free-surface'
 fh.variables['zeta'].units = 'meter'

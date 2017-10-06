@@ -12,7 +12,6 @@ def add_to_lists(pairs, i, j, sign, dir):
 
         if x2 > x1:
             # negative v-velocity
-            # j.append(y1+1)
             i.append(x1)
             j.append(y1)
             sign.append(-1)
@@ -31,7 +30,6 @@ def add_to_lists(pairs, i, j, sign, dir):
             dir.append(0)
         elif y1 > y2:
             # negative u-velocity
-            # i.append(x1+1)
             i.append(x1)
             j.append(y2)
             sign.append(-1)

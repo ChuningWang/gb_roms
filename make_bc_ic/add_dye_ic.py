@@ -27,9 +27,14 @@ zz = np.tile(Cs_r, (eta, xi, 1)).transpose((2, 0, 1))*np.tile(h, (N, 1, 1))
 mskz = zz<=-50
 
 ic_file = model_dir + 'tmpdir_GB-CIRC/GB-CIRC_rst.nc'
+ic_file = out_dir + 'bc_ic/' + grd.name + '_ic_2008_04_15_CTD_floodFill.nc'
 fh = nc.Dataset(ic_file, 'a')
 salt = fh.variables['salt'][:]
-mskd = ~salt.mask[0, 0, :, :, :]
+dims = len(salt.shape)
+if dims == 5:
+    mskd = ~salt.mask[0, 0, :, :, :]
+else:
+    mskd = ~salt.mask[0, :, :, :]
 
 dye_1 = np.zeros(salt.shape)
 dye_2 = np.zeros(salt.shape)
@@ -58,19 +63,28 @@ box2 = np.array([[-136.10, 58.40],
 p1 = path.Path(box1)
 pc1 = p1.contains_points(np.array([lon.flatten(), lat.flatten()]).T).reshape((eta, xi))
 msk1 = np.tile(pc1, (N, 1, 1)) & mskz & mskd
-dye_1[:, :, msk1] = 1
+if dims == 5:
+    dye_1[:, :, msk1] = 1
+else:
+    dye_1[:, msk1] = 1
 
 p2 = path.Path(box2)
 pc2 = p2.contains_points(np.array([lon.flatten(), lat.flatten()]).T).reshape((eta, xi))
 msk2 = np.tile(pc2, (N, 1, 1)) & mskz & mskd
-dye_2[:, :, msk2] = 1
+if dims == 5:
+    dye_2[:, :, msk1] = 1
+else:
+    dye_2[:, msk1] = 1
 
 dye_1 = np.ma.masked_where(salt.mask, dye_1)
 dye_2 = np.ma.masked_where(salt.mask, dye_2)
 dye_3 = np.ma.masked_where(salt.mask, dye_3)
 
 # add dye tracers to ic file
-fh.createVariable('dye_01', 'f8', ('ocean_time', 'two', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
+if dims == 5:
+    fh.createVariable('dye_01', 'f8', ('ocean_time', 'two', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
+else:
+    fh.createVariable('dye_01', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
 fh.variables['dye_01'].long_name = "Glacier Bay deep water dye"
 fh.variables['dye_01'].units = "kilogram meter-3"
 fh.variables['dye_01'].time = "ocean_time"
@@ -80,7 +94,10 @@ fh.variables['dye_01'].coordinates = "lon_rho lat_rho s_rho ocean_time"
 fh.variables['dye_01'].field = "dye_01, scalar, series"
 fh.variables['dye_01'][:] = dye_1
 
-fh.createVariable('dye_02', 'f8', ('ocean_time', 'two', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
+if dims == 5:
+    fh.createVariable('dye_02', 'f8', ('ocean_time', 'two', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
+else:
+    fh.createVariable('dye_02', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
 fh.variables['dye_02'].long_name = "Shelf deep water dye"
 fh.variables['dye_02'].units = "kilogram meter-3"
 fh.variables['dye_02'].time = "ocean_time"
@@ -90,7 +107,10 @@ fh.variables['dye_02'].coordinates = "lon_rho lat_rho s_rho ocean_time"
 fh.variables['dye_02'].field = "dye_02, scalar, series"
 fh.variables['dye_02'][:] = dye_2
 
-fh.createVariable('dye_03', 'f8', ('ocean_time', 'two', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
+if dims == 5:
+    fh.createVariable('dye_03', 'f8', ('ocean_time', 'two', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
+else:
+    fh.createVariable('dye_03', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), fill_value=1.e37)
 fh.variables['dye_03'].long_name = "River plume dye"
 fh.variables['dye_03'].units = "kilogram meter-3"
 fh.variables['dye_03'].time = "ocean_time"
