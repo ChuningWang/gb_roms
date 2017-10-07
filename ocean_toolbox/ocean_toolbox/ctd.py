@@ -7,8 +7,8 @@ import sys
 from glob import glob
 import fnmatch
 import re
-import pdb
 from datetime import datetime
+from geopy.distance import vincenty
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -16,10 +16,13 @@ from scipy.signal import filtfilt
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import netCDF4 as nc
+from cmocean import cm
 # import matplotlib.cm as cm
 # from matplotlib.mlab import griddata
 # from mpl_toolkits.basemap import Basemap
 # from datetime import datetime, timedelta
+
+import pdb
 
 # ------------------------------------------------------------
 class ctd(object):
@@ -63,6 +66,8 @@ class ctd(object):
         elif self.info['sl'] == 'l':
             self.load_data()
 
+        self.time_converter()
+
         if self.info['sl'] == 's':
             self.cal_clim()
             self.filter(type='climatology')
@@ -72,6 +77,53 @@ class ctd(object):
             self.save_clim()
         if self.info['sl'] == 'l':
             self.load_clim()
+
+# ------------------------------ data loading --------------------------------------
+
+    @staticmethod
+    def read_cnv(fname):
+        ''' read single CTD cast cnv file. '''
+
+        # read raw text
+        f = open(fname, 'r')
+        text = f.readlines()
+        f.close()
+
+        # split header and data
+        text = [x.strip() for x in text]
+        text_split = text.index('*END*')
+        header = text[:text_split]
+        cast_data = text[text_split+1:]
+
+        # parse header
+        cast_info = dict()
+        for line in header:
+            if 'Station:' in line:
+                cast_info['station'] = float(line.split(':')[-1])
+            if 'Latitude:' in line:
+                cast_info['lat'] = float(line.split(':')[-1])
+            if 'Longitude:' in line:
+                cast_info['lon'] = float(line.split(':')[-1])
+            if 'Date GMT:' in line:
+                cast_info['date'] = line.split(':')[-1].replace(' ', '')
+            if 'Time GMT:' in line:
+                cast_info['time'] = line.split(':')[-2] + ':' + line.split(':')[-1].replace(' ', '')
+            if 'Fathometer Depth:' in line:
+                cast_info['fathometer_depth'] = float(line.split(':')[-1])
+            if 'Cast Target Depth:' in line:
+                cast_info['cast_target_depth'] = float(line.split(':')[-1])
+            # variable names
+            for i in range(15):
+                name = 'name ' + str(i) + ' ='
+                if name in line:
+                    var_info = line.split(' = ')[1].split(':')
+                    cast_info[var_info[0] + '_index'] = i
+                    cast_info[var_info[0] + '_unit'] = var_info[1]
+
+        # parse data
+        cast_data = [line.split() for line in cast_data]
+        cast_data = np.array(cast_data).astype(float)
+        return cast_info, cast_data
 
     def tidy_cnv(self):
         '''
@@ -157,50 +209,6 @@ class ctd(object):
         for var in self.info['var']:
             self.data[var] = np.array(self.data[var]).T
 
-    def read_cnv(self, fname):
-        ''' read single CTD cast cnv file. '''
-
-        # read raw text
-        f = open(fname, 'r')
-        text = f.readlines()
-        f.close()
-
-        # split header and data
-        text = [x.strip() for x in text]
-        text_split = text.index('*END*')
-        header = text[:text_split]
-        cast_data = text[text_split+1:]
-
-        # parse header
-        cast_info = dict()
-        for line in header:
-            if 'Station:' in line:
-                cast_info['station'] = float(line.split(':')[-1])
-            if 'Latitude:' in line:
-                cast_info['lat'] = float(line.split(':')[-1])
-            if 'Longitude:' in line:
-                cast_info['lon'] = float(line.split(':')[-1])
-            if 'Date GMT:' in line:
-                cast_info['date'] = line.split(':')[-1].replace(' ', '')
-            if 'Time GMT:' in line:
-                cast_info['time'] = line.split(':')[-2] + ':' + line.split(':')[-1].replace(' ', '')
-            if 'Fathometer Depth:' in line:
-                cast_info['fathometer_depth'] = float(line.split(':')[-1])
-            if 'Cast Target Depth:' in line:
-                cast_info['cast_target_depth'] = float(line.split(':')[-1])
-            # variable names
-            for i in range(15):
-                name = 'name ' + str(i) + ' ='
-                if name in line:
-                    var_info = line.split(' = ')[1].split(':')
-                    cast_info[var_info[0] + '_index'] = i
-                    cast_info[var_info[0] + '_unit'] = var_info[1]
-
-        # parse data
-        cast_data = [line.split() for line in cast_data]
-        cast_data = np.array(cast_data).astype(float)
-        return cast_info, cast_data
-
     def interp(self, pr_z, pr):
         ''' interpolate ctd profiles to standard depth. '''
 
@@ -262,6 +270,13 @@ class ctd(object):
             self.data[var] = fh.variables[var][:]
         self.data['z'] = fh.variables['z'][:]
         fh.close()
+
+# ------------------------------ data processing -----------------------------------
+    def  time_converter(self):
+        ''' a time converter to make nctime to python datetime '''
+        self.data['datetime'] = nc.num2date(self.data['time'], 'days since 1900-01-01 00:00:00')
+
+        return None
 
     def save_clim(self):
         ''' save climatology to netCDF file for easy access later. '''
@@ -389,92 +404,210 @@ class ctd(object):
                         self.climatology[var][:, mm, ss] = pr.copy()
         return None
 
-    class plot(object):
+# ------------------------------ plot making ---------------------------------------
+    def get_cruise(self):
+        ''' Find indices for each cruise '''
+        dt = np.diff(np.floor(mdates.date2num(self.data['datetime'])))
+        dt = np.hstack([0, dt])
+        k1 = np.squeeze(np.where(dt>=7))
+        k1 = np.hstack([0, k1])
+        k2 = np.hstack([k1[1:]-1, np.size(dt)-1])
+        k3 = np.squeeze(np.where((k2-k1)>15))
+        return k1, k2, k3
+
+    def get_trans(self, var_list, stn_list, time, highres = -1):
+        ''' get transect data '''
+
+        self.trans = {}
+        # get data, geo information
+        self.trans['station'] = stn_list
+        self.trans['z'] = self.data['z']
+        self.trans['lat'] = np.zeros(len(stn_list))
+        self.trans['lon'] = np.zeros(len(stn_list))
+
+        for i, j in enumerate(stn_list):
+            msk = self.data['station'] == j
+            self.trans['lat'][i] = np.mean(self.data['lat'][msk])
+            self.trans['lon'][i] = np.mean(self.data['lon'][msk])
+
+        dis = np.zeros(len(stn_list))
+        for i in range(1, len(dis)):
+            dis[i] = vincenty(
+                              (self.trans['lat'][i-1], self.trans['lon'][i-1]),
+                              (self.trans['lat'][i],   self.trans['lon'][i])
+                             ).meters
+        self.trans['dis'] = np.cumsum(dis)/1000.  # [km]
+
+        k1, k2, k3 = self.get_cruise()
+        if highres == -1:
+            k1 = k1[k3]
+            k2 = k2[k3]
+
+        t_mid = 0.5*(self.data['time'][k1]+self.data['time'][k2])
+        dtime = abs(t_mid-time)
+        t_idx = np.where(dtime == dtime.min())[0][0]
+        t1 = k1[t_idx]
+        t2 = k2[t_idx]
+        self.trans['time'] = self.data['time'][t1]
+        stn_cruise = self.data['station'][t1:t2]
+
+        for i, var in enumerate(var_list):
+            data_cruise = self.data[var][:, t1:t2]
+            self.trans[var] = np.NaN*np.zeros((self.info['zlev'], len(stn_list)))
+            for j, stn in enumerate(stn_list):
+                idx = stn_cruise == stn
+                if np.any(idx):
+                    self.trans[var][:, j] = data_cruise[:, idx].mean(axis=1)
+
+        return None
+
+    def plt_scatter(self, var, stn, plt_rho=-1, clim='auto', depth=100, fig=-1, ax=-1):
         '''
-        This class contains all the plot scripts.
+        Plot hovmuller diagram of Glacier Bay CTD data.
+        Input
+            var - variable name to plot
+            stn - station number to plot
+            rho (optional) - if not -1, contour density on top of scatter plot
+            clim (optional) - upper and lower boundary for colormap
+            depth (optional) - maximum depth of y axis
+            fig (optional) - figure handle
+            ax (optional) - axes handle
+        Output
+            fig - figure handle
+            ax - axes handle
+        Chuning Wang 2016/05/27
         '''
 
-        def plthov_ctd(t, z, data, rho=-1, depth = 200, fig = -1, ax = -1):
-            '''
-            Plot hovmuller diagram of Glacier Bay CTD data.
-            Input
-              t - python datetime
-              z - depth (1D)
-              data - variable to plot
-              rho (optional) - if not -1, contour density on top of scatter plot
-              depth (optional) - maximum depth of y axis
-              fig (optional) - figure handle
-              ax (optional) - axes handle
-            Output
-              fig - figure handle
-              ax - axes handle
-            Chuning Wang 2016/05/27
-            '''
+        if fig==-1 and ax==-1:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        elif fig!=-1 and ax==-1:
+            ax = fig.add_subplot(111)
+            print 'Using input figure handle...'
+        elif fig!=-1 and ax!=-1:
+            print 'Using input figure and axes handle...'
+        else:
+            print 'Please specify fig when ax is specified!!!'
+            fig = plt.gcf()
 
-            if fig==-1 and ax==-1:
-                fig = plt.figure()
-                ax  = fig.add_subplot(111)
-            elif fig!=-1 and ax==-1:
-                ax = fig.add_subplot(111)
-                print 'Using input figure handle...'
-            elif fig!=-1 and ax!=-1:
-                print 'Using input figure and axes handle...'
-            else:
-                print 'Please specify fig when ax is specified!!!'
-                fig = plt.gcf()
+        if var == 'temp':
+            cmap = cm.thermal
+        elif var == 'salt':
+            cmap = cm.haline
+        else:
+            cmap = cm.matter
 
-            ax.set_axis_bgcolor((.85, .85, .85))
-            if clim == 'auto':
-                cmax = np.max(data)
-                cmin = np.min(data)
-            else:
-                cmax = clim[1]
-                cmin = clim[0]
-            data[data>cmax] = cmax
-            data[data<cmin] = cmin
-            steps = 20
-            dc = (cmax-cmin)/steps
+        t = self.data['datetime']
+        z = self.data['z']
+        data = self.data[var]
+        msk = self.data['station'] == stn
+        t = t[msk]
+        data = data[:, msk]
+        data = np.ma.masked_invalid(data)
 
-            mt = mdates.date2num(t)
-            tt, zz = np.meshgrid(mt,z)
-            tt = tt.flatten()
-            zz = zz.flatten()
-            dd = data.flatten()
-            plt.scatter(tt, zz, s=8,
-                    c=dd, vmin=cmin, vmax=cmax, cmap=cm.get_cmap('RdBu_r'),
+        ax.set_axis_bgcolor((.85, .85, .85))
+        if clim == 'auto':
+            cmax = np.max(data)
+            cmin = np.min(data)
+        else:
+            cmax = clim[1]
+            cmin = clim[0]
+
+        mt = mdates.date2num(t)
+        tt, zz = np.meshgrid(mt,z)
+        tt = tt.flatten()
+        zz = zz.flatten()
+        dd = data.flatten()
+        plt.scatter(tt, zz, s=8,
+                    c=dd, vmin=cmin, vmax=cmax, cmap=cmap,
                     marker='s', edgecolor='none')
-            plt.ylim(0, depth)
-            plt.xlim(min(t),max(t))
-            plt.gca().invert_yaxis() 
-            plt.clim(cmin,cmax)
-            plt.colorbar()
-            # reset xticks
-            years = mdates.YearLocator()
-            ax.xaxis.set_major_locator(years)
-            fig.autofmt_xdate()
+        plt.ylim(0, depth)
+        plt.xlim(min(t),max(t))
+        plt.gca().invert_yaxis()
+        plt.clim(cmin,cmax)
+        plt.colorbar()
+        # reset xticks
+        years = mdates.YearLocator()
+        ax.xaxis.set_major_locator(years)
+        fig.autofmt_xdate()
 
-            if rho !=- 1:
-                # contour density
-                clevs = np.arange(1020, 1030, 1)
-                rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.4)
-                clevs = clevs[::4]
-                rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.8)
-                plt.clabel(rhoc, fontsize=5)
+        if plt_rho == 1:
+            # contour density
+            rho = self.data['rho']
+            rho = rho[:, msk]
+            rho = np.ma.masked_invalid(rho)
+            clevs = np.arange(20, 31, 1)
+            rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.4)
+            clevs = clevs[::5]
+            rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.8)
+            plt.clabel(rhoc, fontsize=5)
 
-            return fig, ax
+        return fig, ax
 
-        def plt_casts(data):
-            ''' plot all profiles to pick out faulty profiles. '''
+    def plt_trans(self, var, time, plt_rho=-1, clim='auto', depth=100, fig=-1, ax=-1):
+        ''' pcolor transect. '''
 
-            t = self.data['time']
-            stn = self.data['station']
-            z = self.data['z']
-            for i in range(data.shape[-1]):
-                plt.plot(data[:, i], z)
-                tstr = nc.num2date(t[i], 'days since 1900-01-01 00:00:00').strftime('%Y-%m-%d %H:%M')
-                plt.title(tstr + '_' + str(stn[i]))
-                plt.savefig(self.info['file_dir'] + 'figs/ctd/' + tstr + '_' + str(stn[i]) + '.png')
-                plt.close()
+        if fig==-1 and ax==-1:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        elif fig!=-1 and ax==-1:
+            ax = fig.add_subplot(111)
+            print 'Using input figure handle...'
+        elif fig!=-1 and ax!=-1:
+            print 'Using input figure and axes handle...'
+        else:
+            print 'Please specify fig when ax is specified!!!'
+            fig = plt.gcf()
+
+        if var == 'temp':
+            cmap = cm.thermal
+        elif var == 'salt':
+            cmap = cm.haline
+        else:
+            cmap = cm.matter
+
+        self.get_trans([var], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
+        data = self.trans[var]
+        data = np.ma.masked_invalid(data)
+
+        if clim == 'auto':
+            cmax = np.max(data)
+            cmin = np.min(data)
+        else:
+            cmax = clim[1]
+            cmin = clim[0]
+
+        plt.pcolormesh(self.trans['dis'], self.trans['z'], data, cmap=cmap)
+        plt.xlabel('Distance [m]')
+        plt.ylabel('Depth [m]')
+        # plt.yscale('log')
+        plt.ylim(0, depth)
+        plt.xlim(0, 120)
+        plt.clim(cmin,cmax)
+        plt.colorbar()
+        plt.gca().invert_yaxis()
+        # plt.gca().xaxis.tick_top()
+        plt.xticks(self.trans['dis'], ["%02d"%i for i in self.trans['station']], rotation=90)
+        plt.grid('on', linewidth=0.1)
+        ttl = nc.num2date(self.trans['time'], 'days since 1900-01-01').strftime('%Y-%m-%d')
+        plt.title(ttl)
+
+        return fig, ax
+
+    def plt_casts(self):
+        ''' plot all profiles to pick out faulty profiles. '''
+
+        t = self.data['time']
+        stn = self.data['station']
+        z = self.data['z']
+        for i in range(data.shape[-1]):
+            plt.plot(data[:, i], z)
+            tstr = nc.num2date(t[i], 'days since 1900-01-01 00:00:00').strftime('%Y-%m-%d %H:%M')
+            plt.title(tstr + '_' + str(stn[i]))
+            plt.savefig(self.info['file_dir'] + 'figs/ctd/' + tstr + '_' + str(stn[i]) + '.png')
+            plt.close()
+
+        return None
 
 
     # def rd_ctd(ctd_dir):
