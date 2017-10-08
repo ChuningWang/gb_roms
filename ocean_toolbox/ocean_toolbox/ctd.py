@@ -577,7 +577,8 @@ class ctd(object):
             cmax = clim[1]
             cmin = clim[0]
 
-        plt.pcolormesh(self.trans['dis'], self.trans['z'], data, cmap=cmap)
+        # plt.pcolormesh(self.trans['dis'], self.trans['z'], data, cmap=cmap)
+        plt.contourf(self.trans['dis'], self.trans['z'], data, cmap=cmap)
         plt.xlabel('Distance [m]')
         plt.ylabel('Depth [m]')
         # plt.yscale('log')
