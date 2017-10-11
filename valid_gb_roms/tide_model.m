@@ -4,8 +4,8 @@ clear; clc; close all
 in_dir = '/glade/scratch/chuning/tmpdir_GB-CIRC/outputs/2008/';
 grd_file = '/glade/p/work/chuning/gb_roms/grd/GlacierBay_lr_grd.nc';
 out_file = '/glade/p/work/chuning/gb_roms/tides/Tide_model_lr.mat';
-flist = dir([in_dir '*nc']);
-flist = flist(end-29:end);
+flist = dir([in_dir '*his*nc']);
+% flist = flist(end-29:end);
 
 save(out_file)
 
