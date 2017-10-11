@@ -2,6 +2,7 @@ import numpy as np
 import glob
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import cmocean
 from mpl_toolkits.basemap import Basemap
 import pyroms
@@ -16,11 +17,40 @@ model_dir = sv['model_dir']
 
 # my inputs
 my_year = 2008
+ftype = 'his'
 varlist = ['zeta', 'temp', 'salt', 'dye_03']
-varlist = ['salt', 'dye_03']
+varlist = ['tke', 'gls']
 depth = 1
 dd = 10
+plt_uv = 0
 uscale = 20
+
+# dicts for variable clims, colormaps, and other properties
+clim = {'temp': [2, 10],
+        'salt': [15, 35],
+        'zeta': [-3, 3],
+        'wetdry_mask_rho': [0, 1],
+        'dye_01': [0, 1],
+        'dye_02': [0, 1],
+        'dye_03': [0, 1],
+        'tke': [1e-5, 1e0],
+        'gls': [1e-6, 1e-4],
+       }
+
+cmap = {'temp': cmocean.cm.thermal,
+        'salt': cmocean.cm.haline,
+        'zeta': cmocean.cm.balance,
+        'wetdry_mask_rho': cmocean.cm.balance,
+        'dye_01': cmocean.cm.matter,
+        'dye_02': cmocean.cm.matter,
+        'dye_03': cmocean.cm.matter,
+        'tke': cmocean.cm.matter,
+        'gls': cmocean.cm.matter,
+       }
+
+var_2d = ['zeta', 'wetdry_mask_rho']
+var_omega = ['tke', 'gls']
+var_log = ['tke', 'gls']
 
 depth = -abs(depth)
 lat_min = 57.75
@@ -50,8 +80,8 @@ model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
 outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/zview/' + tag + '/' + str(my_year) + '/'
 
-flist = sorted(glob.glob(outputs_dir+'*his*.nc'))
-flist = flist[:7]
+flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
+flist = flist[-1:]
 
 plt.switch_backend('Agg')
 
@@ -66,23 +96,36 @@ pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize
 
 for var in varlist:
     print('For ' + var)
-    if var in ['temp']:
-        clim = [2, 10]
-        cmap_var = cmocean.cm.thermal
-    elif var in ['salt']:
-        clim = [25, 35]
-        cmap_var = cmocean.cm.haline
-    elif var in ['zeta']:
-        clim = [-3, 3]
-        cmap_var = cmocean.cm.balance
-    elif var in ['wetdry_mask_rho']:
-        clim = [-1, 1]
-        cmap_var = cmocean.cm.balance
-    elif var in ['dye_03']:
-        clim = [0, 0.1]
+    # if var in ['temp']:
+    #     clim = [2, 10]
+    #     cmap_var = cmocean.cm.thermal
+    # elif var in ['salt']:
+    #     clim = [15, 35]
+    #     cmap_var = cmocean.cm.haline
+    # elif var in ['zeta']:
+    #     clim = [-3, 3]
+    #     cmap_var = cmocean.cm.balance
+    # elif var in ['wetdry_mask_rho']:
+    #     clim = [-1, 1]
+    #     cmap_var = cmocean.cm.balance
+    # elif var in ['dye_03']:
+    #     clim = [0, 1]
+    #     cmap_var = cmocean.cm.matter
+    # elif var in ['tke', 'gls']:
+    #     clim = [1e-5, 1e0]
+    #     cmap_var = cmocean.cm.matter
+    # else:
+    #     clim = [0, 1]
+    #     cmap_var = cmocean.cm.matter
+
+    if var in clim.keys():
+        clim_var = clim[var]
+        cmap_var = cmap[var]
+    else:
+        clim_var = [0, 1]
         cmap_var = cmocean.cm.matter
 
-    if var in ['zeta', 'wetdry_mask_rho']:
+    if var in var_2d:
         uvar = 'ubar'
         vvar = 'vbar'
     else:
@@ -100,57 +143,68 @@ for var in varlist:
         t = fh.variables['ocean_time'][:]
         tunit = (fh.variables['ocean_time']).units
         data = fh.variables[var][:]
-        u = fh.variables[uvar][:]
-        v = fh.variables[vvar][:]
+        if plt_uv == 1:
+            u = fh.variables[uvar][:]
+            v = fh.variables[vvar][:]
         fh.close()
+
+        if var in var_omega:
+            data = 0.5*(data[:, :-1, :, :] + data[:, 1:, :, :])
 
         for tindex in range(len(t)):
             ttag = nc.num2date(t[tindex], tunit).strftime("%Y-%m-%d_%H:%M:%S")
 
-            if var not in ['zeta', 'wetdry_mask_rho']:
+            if var not in var_2d:
                 # get z slice
                 zslice, _, _ = pyroms.tools.zslice(data[tindex, :, :, :], depth, grd, \
                                           Cpos='rho', vert=True)
-                # get u and v slice at requested depth
-                zsliceu, _, _ = pyroms.tools.zslice(u[tindex, :, :, :], depth, grd, Cpos='u')
-                zslicev, _, _ = pyroms.tools.zslice(v[tindex, :, :, :], depth, grd, Cpos='v')
+                if plt_uv == 1:
+                    # get u and v slice at requested depth
+                    zsliceu, _, _ = pyroms.tools.zslice(u[tindex, :, :, :], depth, grd, Cpos='u')
+                    zslicev, _, _ = pyroms.tools.zslice(v[tindex, :, :, :], depth, grd, Cpos='v')
 
             else:
                 zslice = data[tindex, :, :]
-                zsliceu = u[tindex, :, :]
-                zslicev = v[tindex, :, :]
+                if plt_uv == 1:
+                    zsliceu = u[tindex, :, :]
+                    zslicev = v[tindex, :, :]
 
             zslice = np.ma.masked_where(mask == 0, zslice)
-            # average field at rho point position
-            zsliceu = 0.5 * (zsliceu[:,:-1] + zsliceu[:,1:])
-            zsliceu = zsliceu[:,np.r_[0,:np.size(zsliceu,1),-1]]
-            zsliceu = np.ma.masked_where(mask == 0, zsliceu)
-            zsliceu = np.ma.masked_where(zsliceu >= 1000, zsliceu)
-            zslicev = 0.5 * (zslicev[:-1,:] + zslicev[1:,:])
-            zslicev = zslicev[np.r_[0,:np.size(zslicev,0),-1],:]
-            zslicev = np.ma.masked_where(mask == 0, zslicev)
-            zslicev = np.ma.masked_where(zslicev >= 1000, zslicev)
-            U = zsliceu + 1j * zslicev
-            # rotate velocity vector according to grid angle
-            U = U * np.exp(1j * grd.hgrid.angle_rho)
+            if plt_uv == 1:
+                # average field at rho point position
+                zsliceu = 0.5 * (zsliceu[:,:-1] + zsliceu[:,1:])
+                zsliceu = zsliceu[:,np.r_[0,:np.size(zsliceu,1),-1]]
+                zsliceu = np.ma.masked_where(mask == 0, zsliceu)
+                zsliceu = np.ma.masked_where(zsliceu >= 1000, zsliceu)
+                zslicev = 0.5 * (zslicev[:-1,:] + zslicev[1:,:])
+                zslicev = zslicev[np.r_[0,:np.size(zslicev,0),-1],:]
+                zslicev = np.ma.masked_where(mask == 0, zslicev)
+                zslicev = np.ma.masked_where(zslicev >= 1000, zslicev)
+                U = zsliceu + 1j * zslicev
+                # rotate velocity vector according to grid angle
+                U = U * np.exp(1j * grd.hgrid.angle_rho)
 
-            pc = m.pcolormesh(x, y, zslice, cmap=cmap_var)
-            plt.clim(clim[0], clim[1])
+            if var in var_log:
+                pc = m.pcolormesh(x, y, zslice, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
+            else:
+                pc = m.pcolormesh(x, y, zslice, cmap=cmap_var)
+                plt.clim(clim_var[0], clim_var[1])
             cb = m.colorbar()
-            qv = m.quiver(x[::dd,::dd], y[::dd,::dd], \
-                          np.real(U[::dd,::dd]), np.imag(U[::dd,::dd]), \
-                          scale = uscale, linewidths=0.01)
+            if plt_uv == 1:
+                qv = m.quiver(x[::dd,::dd], y[::dd,::dd], \
+                              np.real(U[::dd,::dd]), np.imag(U[::dd,::dd]), \
+                              scale = uscale, linewidths=0.01)
 
-            if var not in ['zeta', 'wetdry_mask_rho']:
-                ttl = plt.title(var + '_' + str(int(-depth)) + 'm_' + ttag + '.png')
-                plt.savefig(fig_dir + var + '_' + str(int(-depth)) + 'm_' + ttag + '.png')
+            if var not in var_2d:
+                ttl = plt.title(var + '_' + str(int(-depth)) + 'm_' + grd.name + '_' + ftype + '_' + ttag)
+                plt.savefig(fig_dir + var + '_' + str(int(abs(depth))) + 'm_' + grd.name + '_' + ftype + '_' + ttag + '.png')
             else:
                 ttl = plt.title(var + '_' + ttag)
-                plt.savefig(fig_dir + var + '_' + ttag + '.png')
+                plt.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')
 
             pc.remove()
             cb.remove()
-            qv.remove()
-            # ttl.remove()
+            if plt_uv == 1:
+                qv.remove()
 
 plt.close()
