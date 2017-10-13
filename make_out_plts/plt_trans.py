@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import pyroms
 import glob
-# from matplotlib.mlab import griddata
 from matplotlib.colors import LogNorm
 import cmocean
 from geopy.distance import vincenty
@@ -27,9 +26,9 @@ model_dir = sv['model_dir']
 my_year = 2008
 plt_uv = 1
 plt_contourf = 1
-ftype = 'avg'
+ftype = 'his'
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
-# varlist = ['tke', 'gls']
+varlist = ['tke', 'gls']
 dd = 3
 depth1 = 450
 depth0 = 50
@@ -77,7 +76,7 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-# flist = flist[-1:]
+flist = flist[-1:]
 
 zlev = grd.vgrid.N
 uvar = 'u'
