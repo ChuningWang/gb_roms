@@ -2,6 +2,7 @@
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from matplotlib.mlab import griddata
+import cmocean
 import numpy as np
 import netCDF4 as nc
 import pyroms
@@ -24,7 +25,7 @@ else:
     grd1 = 'GB_lr'
 
 plt_proj = 0
-plt_hill_coast = 1
+plt_hill_coast = 0
 
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -53,13 +54,13 @@ if plt_proj == 1:
                 resolution='f')
 
     # m.drawcoastlines(linewidth=0.01)
-    m.fillcontinents(color='palegreen', alpha=0.5)
+    m.fillcontinents(color='lightgrey', alpha=0.5)
     mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
     pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
     # setlabelrot(mr,-90)
 
     x, y = m(lon, lat)
-    m.pcolor(x, y, z, cmap='Blues', edgecolors='k', linewidth=0.005)
+    m.pcolor(x, y, z, cmap=cmocean.cm.deep, edgecolors='k', linewidth=0.005)
     plt.clim(0, 400)
     plt.colorbar()
     # m.contour(x, y, msk, [0.5], linewidths=0.05, colors='k')
@@ -85,13 +86,16 @@ if plt_proj == 1:
 
 elif plt_proj == 0:
 
-    plt.pcolor(z, cmap='Blues', edgecolors='k', linewidth=0.005)
+    plt.pcolor(z, cmap=cmocean.cm.deep, edgecolors='k', linewidth=0.005)
     plt.clim(0, 400)
     plt.colorbar()
     # plt.contour(msk, [0.5], linewidths=0.05, colors='k')
 
     plt.xticks(np.arange(0, Np, 10), rotation='vertical')
     plt.yticks(np.arange(0, Mp, 20))
+    plt.xlim(0, Np)
+    plt.ylim(0, Mp)
+
     plt.tick_params(axis='both', which='major', labelsize=5)
     # plt.grid(linewidth=0.05)
 

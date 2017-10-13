@@ -1,8 +1,9 @@
 # Plot Glacier Bay map
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
-from gb_toolbox.gb_ctd import rd_ctd
+from ocean_toolbox import ctd
 from matplotlib.mlab import griddata
+import cmocean
 import numpy as np
 import netCDF4 as nc
 import pyroms
@@ -24,7 +25,18 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-ctd = rd_ctd(in_dir + 'ctd.nc')
+# load CTD data
+info = {'data_dir': in_dir + 'ctd_raw/',
+        'file_dir': in_dir,
+        'file_name': 'ctd.nc',
+        'sl': 'l',
+        'var': ['salt', 'temp', 'o2', 'rho', 'pre', 'fluor', 'tur', 'par'],
+        'clim_station': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20],
+        'clim_deep_interp': 'yes',
+       }
+
+c = ctd.ctd(info)
+c()
 lat_ctd = ctd['lat_stn']
 lon_ctd = ctd['lon_stn']
 
@@ -140,7 +152,7 @@ setlabelrot(mr,-30)
 setlabelrot(pr,-30)
 
 x, y = m(lon, lat)
-m.pcolor(x, y, z, cmap='Blues')
+m.pcolor(x, y, z, cmap=cmocean.cm.deep)
 plt.clim(0, 400)
 plt.colorbar()
 

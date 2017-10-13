@@ -19,10 +19,11 @@ model_dir = sv['model_dir']
 my_year = 2008
 ftype = 'his'
 varlist = ['zeta', 'temp', 'salt', 'dye_03']
-varlist = ['tke', 'gls']
+varlist = ['salt', 'dye_03']
 depth = 1
 dd = 10
-plt_uv = 0
+plt_uv = 1
+plt_contourf = 1
 uscale = 20
 
 # dicts for variable clims, colormaps, and other properties
@@ -66,11 +67,6 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-grd = pyroms.grid.get_ROMS_grid(grd1)
-lon = grd.hgrid.lon_rho
-lat = grd.hgrid.lat_rho
-mask = grd.hgrid.mask_rho
-
 if grd1=='GB_lr':
     tag = 'GB-CIRC'
 if grd1=='GB_hr':
@@ -82,6 +78,11 @@ fig_dir = out_dir + 'figs/zview/' + tag + '/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
 flist = flist[-1:]
+
+grd = pyroms.grid.get_ROMS_grid(grd1)
+lon = grd.hgrid.lon_rho
+lat = grd.hgrid.lat_rho
+mask = grd.hgrid.mask_rho
 
 plt.switch_backend('Agg')
 
@@ -96,27 +97,6 @@ pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize
 
 for var in varlist:
     print('For ' + var)
-    # if var in ['temp']:
-    #     clim = [2, 10]
-    #     cmap_var = cmocean.cm.thermal
-    # elif var in ['salt']:
-    #     clim = [15, 35]
-    #     cmap_var = cmocean.cm.haline
-    # elif var in ['zeta']:
-    #     clim = [-3, 3]
-    #     cmap_var = cmocean.cm.balance
-    # elif var in ['wetdry_mask_rho']:
-    #     clim = [-1, 1]
-    #     cmap_var = cmocean.cm.balance
-    # elif var in ['dye_03']:
-    #     clim = [0, 1]
-    #     cmap_var = cmocean.cm.matter
-    # elif var in ['tke', 'gls']:
-    #     clim = [1e-5, 1e0]
-    #     cmap_var = cmocean.cm.matter
-    # else:
-    #     clim = [0, 1]
-    #     cmap_var = cmocean.cm.matter
 
     if var in clim.keys():
         clim_var = clim[var]
@@ -124,6 +104,11 @@ for var in varlist:
     else:
         clim_var = [0, 1]
         cmap_var = cmocean.cm.matter
+
+    if var in var_log:
+        clevs = np.logspace(clim_var[0], clim_var[1], 3)
+    else:
+        clevs = np.linspace(clim_var[0], clim_var[1], 5)
 
     if var in var_2d:
         uvar = 'ubar'
@@ -190,10 +175,14 @@ for var in varlist:
                 pc = m.pcolormesh(x, y, zslice, cmap=cmap_var)
                 plt.clim(clim_var[0], clim_var[1])
             cb = m.colorbar()
+            if plt_contourf == 1:
+                varc = plt.contour(x, y, zslice, clevs, linestyle='--', linewidths=.4, colors='w')
+                # varcl = plt.clabel(varc, fontsize=5)
+
             if plt_uv == 1:
                 qv = m.quiver(x[::dd,::dd], y[::dd,::dd], \
                               np.real(U[::dd,::dd]), np.imag(U[::dd,::dd]), \
-                              scale = uscale, linewidths=0.01)
+                              scale = uscale, width=0.001)
 
             if var not in var_2d:
                 ttl = plt.title(var + '_' + str(int(-depth)) + 'm_' + grd.name + '_' + ftype + '_' + ttag)
@@ -204,6 +193,9 @@ for var in varlist:
 
             pc.remove()
             cb.remove()
+            if plt_contourf == 1:
+                for cc in varc.collections:
+                    cc.remove()
             if plt_uv == 1:
                 qv.remove()
 

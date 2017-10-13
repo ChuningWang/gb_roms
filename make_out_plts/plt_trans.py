@@ -1,9 +1,16 @@
+'''
+Contour transect along Glacier Bay.
+
+2017/10/12
+Use nearest neighbor instead griddata to get the transect data.
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import pyroms
 import glob
-from matplotlib.mlab import griddata
+# from matplotlib.mlab import griddata
 from matplotlib.colors import LogNorm
 import cmocean
 from geopy.distance import vincenty
@@ -18,11 +25,14 @@ model_dir = sv['model_dir']
 
 # my inputs
 my_year = 2008
-pltuv = 1
-ftype = 'his'
+plt_uv = 1
+plt_contourf = 1
+ftype = 'avg'
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
-varlist = ['tke', 'gls']
+# varlist = ['tke', 'gls']
 dd = 3
+depth1 = 450
+depth0 = 50
 
 # dicts for variable clims, colormaps, and other properties
 clim = {'temp': [2, 10],
@@ -67,7 +77,7 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-flist = flist[-1:]
+# flist = flist[-1:]
 
 zlev = grd.vgrid.N
 uvar = 'u'
@@ -151,29 +161,16 @@ c0 = np.array([[-137.05000708,   59.05576767],
                [-135.08995853,   58.12069925],
                [-135.05792266,   58.10358142]])
 
-# c0 = c0[::2, :]
-
 lon_ct = c0[:, 0]
 lat_ct = c0[:, 1]
 
 ct_tr = (len(lon_ct)-1)*dd
-lon_t = np.zeros(ct_tr)
-lat_t = np.zeros(ct_tr)
-
-lon_b0 = lon_ct[:1]-0.01
-lat_b0 = lat_ct[:1]+0.01
-lon_b1 = lon_ct-0.01
-lat_b1 = lat_ct-0.01
-lon_b2 = lon_ct[-1:]+0.01
-lat_b2 = lat_ct[-1:]-0.01
-lon_b3 = lon_ct[::-1]+0.01
-lat_b3 = lat_ct[::-1]+0.01
-lon_bdry = np.concatenate((lon_b0, lon_b1, lon_b2, lon_b3))
-lat_bdry = np.concatenate((lat_b0, lat_b1, lat_b2, lat_b3))
+lon_tr = np.zeros(ct_tr)
+lat_tr = np.zeros(ct_tr)
 
 for i in range(len(lon_ct)-1):
-    lon_t[i*dd:(i+1)*dd] = np.linspace(lon_ct[i], lon_ct[i+1], dd+1)[:-1]
-    lat_t[i*dd:(i+1)*dd] = np.linspace(lat_ct[i], lat_ct[i+1], dd+1)[:-1]
+    lon_tr[i*dd:(i+1)*dd] = np.linspace(lon_ct[i], lon_ct[i+1], dd+1)[:-1]
+    lat_tr[i*dd:(i+1)*dd] = np.linspace(lat_ct[i], lat_ct[i+1], dd+1)[:-1]
 
 # read grid information
 lat = grd.hgrid.lat_rho
@@ -184,43 +181,42 @@ h = grd.vgrid.h
 ang = grd.hgrid.angle_rho
 msk = grd.hgrid.mask_rho
 
-lon = lon[msk==1]
-lat = lat[msk==1]
-h = h[msk==1]
-ang = ang[msk==1]
+# instead of using griddata to find interpolated values, use distance to find the nearest rho point and
+# represent the value at (lon_tr, lat_tr).
+eta_tr = np.zeros(lat_tr.shape)
+xi_tr = np.zeros(lon_tr.shape)
 
-p0 = [(lon_bdry[i], lat_bdry[i]) for i in range(len(lon_bdry))]
-p = path.Path(p0)
-pc = p.contains_points(np.array([lon, lat]).T)
-lon = lon[pc]
-lat = lat[pc]
-h = h[pc]
-ang = ang[pc]
+for i in range(len(eta_tr)):
+    D2 = (lat-lat_tr[i])**2+(lon-lon_tr[i])**2
+    eta_tr[i], xi_tr[i] = np.where(D2==D2.min())
 
-h_tr = griddata(lon, lat, h, lon_t, lat_t, interp='linear').diagonal()
+h_tr = h[eta_tr.tolist(), xi_tr.tolist()]
+# update lon_tr, lat_tr
+lon_tr = lon[eta_tr.tolist(), xi_tr.tolist()]
+lat_tr = lat[eta_tr.tolist(), xi_tr.tolist()]
 
 # get rho point depth
-Cs = grd.vgrid.Cs_r
+Cs = -grd.vgrid.Cs_r
 z_tr = np.dot(np.matrix(h_tr).T, np.matrix(Cs))
 z_tr = z_tr.T
 
 # calculate distance
-dis = np.zeros(lat_t.size)
-for i in range(1, lat_t.size):
+dis = np.zeros(lat_tr.size)
+for i in range(1, lat_tr.size):
     dis[i] = vincenty(
-                      (lat_t[i-1], lon_t[i-1]),
-                      (lat_t[i], lon_t[i])
+                      (lat_tr[i-1], lon_tr[i-1]),
+                      (lat_tr[i], lon_tr[i])
                      ).meters
 dis = np.cumsum(dis)
 dis = dis/1000  # [km]
 dis = np.tile(dis, (zlev, 1))
 
 # initiate vairables
-var_tr = np.zeros((zlev, ct_tr))
+# var_tr = np.zeros((zlev, ct_tr))
 
 # -------------------------------------------------------------------------------
 # if plot velocity vector, also calculate and define these variables
-if pltuv==1:
+if plt_uv==1:
     latu = grd.hgrid.lat_u
     lonu = grd.hgrid.lon_u
     latv = grd.hgrid.lat_v
@@ -233,51 +229,49 @@ if pltuv==1:
     lonv = lonv[mskv==1]
     latv = latv[mskv==1]
 
-    pcu = p.contains_points(np.array([lonu, latu]).T)
-    pcv = p.contains_points(np.array([lonv, latv]).T)
-    lonu = lonu[pcu]
-    latu = latu[pcu]
-    lonv = lonv[pcv]
-    latv = latv[pcv]
-
-    lon_t2 = lon_t[::dd]
-    lat_t2 = lat_t[::dd]
+    eta_tr2 = eta_tr[::dd]
+    xi_tr2 = xi_tr[::dd]
+    lon_tr2 = lon_tr[::dd]
+    lat_tr2 = lat_tr[::dd]
     h_tr2 = h_tr[::dd]
     z_tr2 = z_tr[:, ::dd]
     dis2 = dis[:, ::dd]
 
     # calculate angle
-    ang_tr = griddata(lon, lat, ang, lon_t, lat_t, interp='linear').diagonal()
+    ang_tr = ang[eta_tr.tolist(), xi_tr.tolist()]
     ang_tr2 = ang_tr[::dd]
     ang_add = np.zeros(len(ang_tr2))
     dx = 59
     dy = 111
-    dvec = np.diff(lon_t2*dx + 1j*lat_t2*dy)
+    dvec = np.diff(lon_tr2*dx + 1j*lat_tr2*dy)
     ang_add[:-1] = np.angle(dvec)
     ang_add[-1] = ang_add[-2]
     ang_tr2 = ang_tr2-ang_add
 
-    U_tr2 = np.zeros((zlev, len(lon_t2)))
-    w_tr2_sw = np.zeros((zlev+1, len(lon_t2)))
+    U_tr2 = np.zeros((zlev, len(lon_tr2)))
+    w_tr2_sw = np.zeros((zlev+1, len(lon_tr2)))
 
 # -------------------------------------------------------------------------------
 # make plots
 plt.switch_backend('Agg')
 
+# set the axises
+f, (ax1, ax2) = plt.subplots(2, sharex=True)
+f.subplots_adjust(hspace=0.05)
+ax1.set_xlim(dis[0, 0], dis[0, -1])
+ax1.set_ylim(0, depth0)
+ax1.set_yticks(range(0, depth0, 10))
+ax1.invert_yaxis()
+ax2.set_xlim(dis[0, 0], dis[0, -1])
+ax2.set_ylim(depth0, depth1)
+ax2.set_yticks(range(depth0, depth1, 100))
+ax2.invert_yaxis()
+# plot bathymetry
+ax1.fill_between(dis[0, :], -h_tr, depth1, facecolor='lightgrey')
+ax2.fill_between(dis[0, :], -h_tr, depth1, facecolor='lightgrey')
+
 for var in varlist:
     print('For ' + var)
-    # if var in ['temp']:
-    #     clim = [2, 10]
-    #     cmap_var = cmocean.cm.thermal
-    # elif var in ['salt']:
-    #     clim = [15, 35]
-    #     cmap_var = cmocean.cm.haline
-    # elif var in ['dye_01', 'dye_02', 'dye_03']:
-    #     clim = [0, 1]
-    #     cmap_var = cmocean.cm.matter
-    # else:
-    #     clim = [0, 1]
-    #     cmap_var = cmocean.cm.matter
 
     if var in clim.keys():
         clim_var = clim[var]
@@ -285,6 +279,11 @@ for var in varlist:
     else:
         clim_var = [0, 1]
         cmap_var = cmocean.cm.matter
+
+    if var in var_log:
+        clevs = np.logspace(clim_var[0], clim_var[1], 3)
+    else:
+        clevs = np.linspace(clim_var[0], clim_var[1], 5)
 
     for fn in flist:
         # read data
@@ -294,10 +293,13 @@ for var in varlist:
         t = fh.variables['ocean_time'][:]
         tunit = (fh.variables['ocean_time']).units
         data = fh.variables[var][:]
-        if pltuv==1:
+        if plt_uv==1:
             u = fh.variables[uvar][:]
             v = fh.variables[vvar][:]
             w = fh.variables[wvar][:]
+            u = 0.5*(u[:, :, 1:, :]+u[:, :, :-1, :])
+            v = 0.5*(v[:, :, :, 1:]+v[:, :, :, :-1])
+            w = 0.5*(w[:, 1:, :, :]+w[:, :-1, :, :])
         fh.close()
 
         if var in var_omega:
@@ -305,42 +307,48 @@ for var in varlist:
 
         for tt in range(len(t)):
             ttag = nc.num2date(t[tt], tunit).strftime("%Y-%m-%d_%H:%M:%S")
-            for i in range(zlev):
-                dslice = data[tt, i, :, :][msk==1][pc]
-                var_tr[i, :] = griddata(lon, lat, dslice, lon_t, lat_t, interp='linear').diagonal()
+            var_tr = data[tt, :, eta_tr.tolist(), xi_tr.tolist()].T
 
-            if pltuv==1:
-                for i in range(zlev):
-                    uslice = u[tt, i, :, :][msku==1][pcu]
-                    vslice = v[tt, i, :, :][mskv==1][pcv]
-                    u_tr2 = griddata(lonu, latu, uslice, lon_t2, lat_t2, interp='linear').diagonal()
-                    v_tr2 = griddata(lonv, latv, vslice, lon_t2, lat_t2, interp='linear').diagonal()
-
-                    U_tr2[i, :] = u_tr2*np.cos(ang_tr2)-v_tr2*np.sin(ang_tr2)
-
-                for i in range(zlev+1):
-                    wslice = w[tt, i, :, :][msk==1][pc]
-                    w_tr2_sw[i, :] = griddata(lon, lat, wslice, lon_t2, lat_t2, interp='linear').diagonal()
-
-                w_tr2 = 0.5*(w_tr2_sw[1:, :]+w_tr2_sw[:-1, :])
+            if plt_uv==1:
+                u_tr2 = u[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
+                v_tr2 = u[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
+                U_tr2 = u_tr2*np.cos(np.tile(ang_tr2, (40, 1)))-v_tr2*np.sin(np.tile(ang_tr2, (40, 1)))
+                w_tr2 = w[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
 
             # make plot
             if var in var_log:
-                pcm = plt.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
+                pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
+                pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
             else:
-                pcm = plt.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
-            plt.clim(clim_var[0], clim_var[1])
-            cb = plt.colorbar()
+                pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
+                pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
+                pcm1.set_clim(clim_var[0], clim_var[1])
+                pcm2.set_clim(clim_var[0], clim_var[1])
+            # add colorbar axis handle
+            cbar_ax = f.add_axes([0.92, 0.10, 0.02, 0.8])
+            cb = f.colorbar(pcm1, cax=cbar_ax)
 
-            if pltuv==1:
-                qv = plt.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
+            if plt_contourf==1:
+                varc1 = ax1.contour(dis, z_tr, var_tr, clevs, linestyle='--', linewidths=.4, colors='k')
+                varc2 = ax2.contour(dis, z_tr, var_tr, clevs, linestyle='--', linewidths=.4, colors='k')
+                # plt.clabel(varc, fontsize=5)
+            if plt_uv==1:
+                qv1 = ax1.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
+                qv2 = ax2.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
 
-            plt.title(var + '_' + grd.name + '_' + ftype + '_' + ttag)
-            plt.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')
+            ax1.set_title(var + '_' + grd.name + '_' + ftype + '_' + ttag)
+            f.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')
 
-            pcm.remove()
+            pcm1.remove()
+            pcm2.remove()
             cb.remove()
-            if pltuv==1:
-                qv.remove()
+            if plt_contourf==1:
+                for cc in varc1.collections:
+                    cc.remove()
+                for cc in varc2.collections:
+                    cc.remove()
+            if plt_uv==1:
+                qv1.remove()
+                qv2.remove()
 
 plt.close()
