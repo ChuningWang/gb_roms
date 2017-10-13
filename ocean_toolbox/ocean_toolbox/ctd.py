@@ -17,14 +17,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import netCDF4 as nc
 from cmocean import cm
-# import matplotlib.cm as cm
-# from matplotlib.mlab import griddata
-# from mpl_toolkits.basemap import Basemap
-# from datetime import datetime, timedelta
 
 import pdb
 
-# ------------------------------------------------------------
+# ------------------------------ class ctd -----------------------------------------
+
 class ctd(object):
     ''' main class '''
 
@@ -40,13 +37,13 @@ class ctd(object):
             self.info['clim_deep_interp'] = 'no'
 
         if 'filter_span' not in self.info.keys():
-            self.info['filter_span'] = 9
+            self.info['filter_span'] = 5
         if 'deep_var_value' not in self.info.keys():
             self.info['deep_var_value'] = {'salt': 31.5, 'temp': 5.0}
 
         self.data = {}
         self.climatology = {}
-        self.data_info_list = ['station', 'lat', 'lon', 'time']
+        self.data_info_list = ['station', 'lat', 'lon', 'time', 'fathometer_depth']
         self.varnames = {'salt':  ['sal00'],
                          'temp':  ['tv290C', 't090C'],
                          'pre':   ['prdM', 'prSM'],
@@ -58,15 +55,16 @@ class ctd(object):
 
     def __call__(self):
         if self.info['sl'] == 's':
-            self.read_ctd()
+            self.get_raw_data()
             self.qc_data()
             self.fill_nan()
             self.filter()
             self.save_data()
         elif self.info['sl'] == 'l':
-            self.load_data()
+            self.get_data()
 
         self.time_converter()
+        self.get_data_info()
 
         if self.info['sl'] == 's':
             self.cal_clim()
@@ -76,7 +74,7 @@ class ctd(object):
                 self.filter(type='climatology')
             self.save_clim()
         if self.info['sl'] == 'l':
-            self.load_clim()
+            self.get_clim()
 
 # ------------------------------ data loading --------------------------------------
 
@@ -108,9 +106,9 @@ class ctd(object):
                 cast_info['date'] = line.split(':')[-1].replace(' ', '')
             if 'Time GMT:' in line:
                 cast_info['time'] = line.split(':')[-2] + ':' + line.split(':')[-1].replace(' ', '')
-            if 'Fathometer Depth:' in line:
+            if ('Fathometer depth:' in line) | ('Fathometer Depth:' in line):
                 cast_info['fathometer_depth'] = float(line.split(':')[-1])
-            if 'Cast Target Depth:' in line:
+            if ('Cast target depth:' in line) | ('Cast Target Depth:' in line):
                 cast_info['cast_target_depth'] = float(line.split(':')[-1])
             # variable names
             for i in range(15):
@@ -128,7 +126,7 @@ class ctd(object):
     def tidy_cnv(self):
         '''
         tidy .cnv files to get rid of some formatting issues.
-        this method is trashed with the new data reader.
+        this method is obsolete with the new data reader.
         '''
 
         flist = self.recursive_glob(pattern='*.cnv')
@@ -156,7 +154,7 @@ class ctd(object):
 
         return matches
 
-    def read_ctd(self):
+    def get_raw_data(self):
         ''' read, interpolate and combine ctd casts. '''
 
         flist = self.recursive_glob(pattern='*.cnv')
@@ -209,15 +207,6 @@ class ctd(object):
         for var in self.info['var']:
             self.data[var] = np.array(self.data[var]).T
 
-    def interp(self, pr_z, pr):
-        ''' interpolate ctd profiles to standard depth. '''
-
-        z = self.data['z']
-        pr_new = np.NaN*np.zeros(self.info['zlev'])
-        msk = (z >= pr_z.min()) & (z <= pr_z.max())
-        pr_new[msk] = interp1d(pr_z, pr)(z[msk])
-        return pr_new
-
     def qc_data(self):
         '''data quality control. get rid of bad data using a salinity critiria.'''
 
@@ -259,7 +248,7 @@ class ctd(object):
 
         fh.close()
 
-    def load_data(self):
+    def get_data(self):
         ''' load data from netCDF file. '''
 
         print('Loading data from netCDF...')
@@ -272,53 +261,21 @@ class ctd(object):
         fh.close()
 
 # ------------------------------ data processing -----------------------------------
-    def  time_converter(self):
+
+    def interp(self, pr_z, pr):
+        ''' interpolate ctd profiles to standard depth. '''
+
+        z = self.data['z']
+        pr_new = np.NaN*np.zeros(self.info['zlev'])
+        msk = (z >= pr_z.min()) & (z <= pr_z.max())
+        pr_new[msk] = interp1d(pr_z, pr)(z[msk])
+        return pr_new
+
+    def time_converter(self):
         ''' a time converter to make nctime to python datetime '''
         self.data['datetime'] = nc.num2date(self.data['time'], 'days since 1900-01-01 00:00:00')
 
         return None
-
-    def save_clim(self):
-        ''' save climatology to netCDF file for easy access later. '''
-
-        print('Saving climatology to netCDF...')
-        # open existing nc file
-        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'a')
-        fh.createDimension('t_clim', 12)
-        fh.createDimension('stn_clim', len(self.info['clim_station']))
-
-        # write time & station info
-        fh.createVariable('time_clim', 'd', ('t_clim'))
-        fh.variables['time_clim'][:] = self.climatology['time']
-        fh.createVariable('station_clim', 'd', ('stn_clim'))
-        fh.variables['station_clim'][:] = self.climatology['station']
-        fh.createVariable('lat_clim', 'd', ('stn_clim'))
-        fh.variables['lat_clim'][:] = self.climatology['lat']
-        fh.createVariable('lon_clim', 'd', ('stn_clim'))
-        fh.variables['lon_clim'][:] = self.climatology['lon']
-
-        # write data
-        for var in self.info['var']:
-            fh.createVariable(var + '_clim', 'd', ('z', 't_clim', 'stn_clim'))
-            fh.variables[var + '_clim'][:] = self.climatology[var]
-
-        fh.close()
-
-    def load_clim(self):
-        ''' load climatology from netCDF file. '''
-
-        print('Loading climatology from netCDF...')
-        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'r')
-        for var in self.info['var']:
-            self.climatology[var] = fh.variables[var+'_clim'][:]
-
-        self.climatology['z'] = fh.variables['z'][:]
-        self.climatology['time'] = fh.variables['time_clim'][:]
-        self.climatology['station'] = fh.variables['station_clim'][:]
-        self.climatology['lat'] = fh.variables['lat_clim'][:]
-        self.climatology['lon'] = fh.variables['lon_clim'][:]
-
-        fh.close()
 
     def fill_nan(self):
         ''' deal with NaNs at surface. '''
@@ -346,6 +303,26 @@ class ctd(object):
                 mskz = self.data['z'] >100
                 b2 = np.ones(self.info['filter_span']*5)/float(self.info['filter_span']*5)
                 self.climatology[var][mskz, :, :] = filtfilt(b2, a, self.climatology[var][mskz, :, :], axis=0)
+
+    def get_data_info(self):
+        '''
+        get station information (lat, lon, fatheometer depth)
+        '''
+
+        self.data_info = {}
+        self.data_info['station'] = np.unique(self.data['station'])
+        for var in ['lat', 'lon', 'fathometer_depth']:
+            self.data_info[var] = np.zeros(self.data_info['station'].shape)
+        i = 0
+        for stn in self.data_info['station']:
+            msk = self.data['station'] == stn
+            for var in ['lat', 'lon', 'fathometer_depth']:
+                self.data_info[var][i] = self.data[var][msk].mean()
+            i += 1
+
+        return None
+
+# ------------------------------ climatology ---------------------------------------
 
     def cal_clim(self):
         ''' calculate climatology for each station. '''
@@ -387,6 +364,48 @@ class ctd(object):
                 ss_cts += 1
         return None
 
+    def save_clim(self):
+        ''' save climatology to netCDF file for easy access later. '''
+
+        print('Saving climatology to netCDF...')
+        # open existing nc file
+        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'a')
+        fh.createDimension('t_clim', 12)
+        fh.createDimension('stn_clim', len(self.info['clim_station']))
+
+        # write time & station info
+        fh.createVariable('time_clim', 'd', ('t_clim'))
+        fh.variables['time_clim'][:] = self.climatology['time']
+        fh.createVariable('station_clim', 'd', ('stn_clim'))
+        fh.variables['station_clim'][:] = self.climatology['station']
+        fh.createVariable('lat_clim', 'd', ('stn_clim'))
+        fh.variables['lat_clim'][:] = self.climatology['lat']
+        fh.createVariable('lon_clim', 'd', ('stn_clim'))
+        fh.variables['lon_clim'][:] = self.climatology['lon']
+
+        # write data
+        for var in self.info['var']:
+            fh.createVariable(var + '_clim', 'd', ('z', 't_clim', 'stn_clim'))
+            fh.variables[var + '_clim'][:] = self.climatology[var]
+
+        fh.close()
+
+    def get_clim(self):
+        ''' load climatology from netCDF file. '''
+
+        print('Loading climatology from netCDF...')
+        fh = nc.Dataset(self.info['file_dir'] + self.info['file_name'], 'r')
+        for var in self.info['var']:
+            self.climatology[var] = fh.variables[var+'_clim'][:]
+
+        self.climatology['z'] = fh.variables['z'][:]
+        self.climatology['time'] = fh.variables['time_clim'][:]
+        self.climatology['station'] = fh.variables['station_clim'][:]
+        self.climatology['lat'] = fh.variables['lat_clim'][:]
+        self.climatology['lon'] = fh.variables['lon_clim'][:]
+
+        fh.close()
+
     def clim_deep_interp(self):
         ''' extrapolate climatology to deep water. '''
 
@@ -405,6 +424,7 @@ class ctd(object):
         return None
 
 # ------------------------------ plot making ---------------------------------------
+
     def get_cruise(self):
         ''' Find indices for each cruise '''
         dt = np.diff(np.floor(mdates.date2num(self.data['datetime'])))
@@ -424,11 +444,13 @@ class ctd(object):
         self.trans['z'] = self.data['z']
         self.trans['lat'] = np.zeros(len(stn_list))
         self.trans['lon'] = np.zeros(len(stn_list))
+        self.trans['fathometer_depth'] = np.zeros(len(stn_list))
 
         for i, j in enumerate(stn_list):
             msk = self.data['station'] == j
             self.trans['lat'][i] = np.mean(self.data['lat'][msk])
             self.trans['lon'][i] = np.mean(self.data['lon'][msk])
+            self.trans['fathometer_depth'][i] = np.mean(self.data['fathometer_depth'][msk])
 
         dis = np.zeros(len(stn_list))
         for i in range(1, len(dis)):
@@ -544,21 +566,10 @@ class ctd(object):
 
         return fig, ax
 
-    def plt_trans(self, var, time, plt_rho=-1, clim='auto', depth=100, fig=-1, ax=-1):
+    def plt_trans(self, var, time, plt_rho=-1, clim='auto', depth0=50, depth1=450):
         ''' pcolor transect. '''
 
-        if fig==-1 and ax==-1:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-        elif fig!=-1 and ax==-1:
-            ax = fig.add_subplot(111)
-            print 'Using input figure handle...'
-        elif fig!=-1 and ax!=-1:
-            print 'Using input figure and axes handle...'
-        else:
-            print 'Please specify fig when ax is specified!!!'
-            fig = plt.gcf()
-
+        # define colormap
         if var == 'temp':
             cmap = cm.thermal
         elif var == 'salt':
@@ -566,7 +577,10 @@ class ctd(object):
         else:
             cmap = cm.matter
 
-        self.get_trans([var], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
+        if plt_rho == 1:
+            self.get_trans([var, 'rho'], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
+        else:
+            self.get_trans([var], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
         data = self.trans[var]
         data = np.ma.masked_invalid(data)
 
@@ -576,22 +590,78 @@ class ctd(object):
         else:
             cmax = clim[1]
             cmin = clim[0]
+        clevs = np.linspace(cmin, cmax, 5)
+
+        data[data>cmax] = cmax
+        data[data<cmin] = cmin
+
+        # make plot
+        try:
+            plt.style.use('classic')
+        except:
+            pass
+        # set the axises
+        fig, ax = plt.subplots(2, sharex=True)
+        fig.subplots_adjust(hspace=0.05)
+        ax[0].set_xlim(self.trans['dis'][0], self.trans['dis'][-1])
+        ax[0].set_ylim(0, depth0)
+        ax[0].set_yticks(range(0, depth0, 10))
+        ax[0].invert_yaxis()
+        ax[1].set_ylim(depth0, depth1)
+        ax[1].set_yticks(range(depth0, depth1, 100))
+        ax[1].invert_yaxis()
+
+        # set axis position
+        pos = ax[0].get_position()
+        pos2 = [pos.x0-0.04, pos.y0,  pos.width, pos.height]
+        ax[0].set_position(pos2)
+        pos = ax[1].get_position()
+        pos2 = [pos.x0-0.04, pos.y0,  pos.width, pos.height]
+        ax[1].set_position(pos2)
+
+        # plot bathymetry
+        ax[0].fill_between(self.trans['dis'], self.trans['fathometer_depth'], depth1, facecolor='lightgrey')
+        ax[1].fill_between(self.trans['dis'], self.trans['fathometer_depth'], depth1, facecolor='lightgrey')
 
         # plt.pcolormesh(self.trans['dis'], self.trans['z'], data, cmap=cmap)
-        plt.contourf(self.trans['dis'], self.trans['z'], data, cmap=cmap)
-        plt.xlabel('Distance [m]')
-        plt.ylabel('Depth [m]')
-        # plt.yscale('log')
-        plt.ylim(0, depth)
-        plt.xlim(0, 120)
-        plt.clim(cmin,cmax)
-        plt.colorbar()
-        plt.gca().invert_yaxis()
+        varc0 = ax[0].contour(self.trans['dis'], self.trans['z'], data, clevs, linestyle='--', colors='k', linewidths=.4)
+        varc1 = ax[1].contour(self.trans['dis'], self.trans['z'], data, clevs, linestyle='--', colors='k', linewidths=.4)
+        varc0.clabel(fontsize=5)
+        varc1.clabel(fontsize=5)
+        ctf1 = ax[0].contourf(self.trans['dis'], self.trans['z'], data, 100, cmap=cmap)
+        ctf2 = ax[1].contourf(self.trans['dis'], self.trans['z'], data, 100, cmap=cmap)
+        ctf1.set_clim(cmin,cmax)
+        ctf2.set_clim(cmin,cmax)
+
+        # labels
+        ax[1].set_xlabel('Distance [km]')
+        ax[0].set_ylabel('Depth [m]')
+
+        # add colorbar axis handle
+        cbar_ax = fig.add_axes([0.88, 0.1, 0.02, 0.8])
+        cb = fig.colorbar(ctf1, cax=cbar_ax)
+
         # plt.gca().xaxis.tick_top()
-        plt.xticks(self.trans['dis'], ["%02d"%i for i in self.trans['station']], rotation=90)
+        # plt.xticks(self.trans['dis'], ["%02d"%i for i in self.trans['station']], rotation=90)
+
+        # plot station location
+        ax[1].plot(self.trans['dis'], depth1*np.ones(self.trans['dis'].shape), '^')
         plt.grid('on', linewidth=0.1)
         ttl = nc.num2date(self.trans['time'], 'days since 1900-01-01').strftime('%Y-%m-%d')
-        plt.title(ttl)
+        ax[0].set_title(ttl)
+
+        if plt_rho == 1:
+            # contour density
+            rho = self.trans['rho']
+            rho = np.ma.masked_invalid(rho)
+            clevs = np.arange(20, 31, 1)
+            rhoc0 = ax[0].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.4)
+            rhoc1 = ax[1].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.4)
+            clevs = clevs[::5]
+            rhoc0 = ax[0].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.8)
+            rhoc1 = ax[1].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.8)
+            rhoc0.clabel(fontsize=5)
+            rhoc1.clabel(fontsize=5)
 
         return fig, ax
 
@@ -611,6 +681,7 @@ class ctd(object):
         return None
 
 
+# ------------------------------ obsolete code -------------------------------------
     # def rd_ctd(ctd_dir):
     #     '''
     #     Read CTD data collected in Glacier Bay National Park.

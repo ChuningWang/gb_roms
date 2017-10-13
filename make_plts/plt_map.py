@@ -37,8 +37,8 @@ info = {'data_dir': in_dir + 'ctd_raw/',
 
 c = ctd.ctd(info)
 c()
-lat_ctd = ctd['lat_stn']
-lon_ctd = ctd['lon_stn']
+lat_ctd = c.data_info['lat']
+lon_ctd = c.data_info['lon']
 
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -143,7 +143,7 @@ m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             resolution='f')
 
 # m.drawcoastlines(linewidth=0.5)
-m.fillcontinents(color='palegreen')
+m.fillcontinents(color='lightgrey')
 # mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.05), labels=[0,0,1,1], fontsize=4, linewidth=.1)
 # pr = m.drawparallels(np.arange(lat_min, lat_max, 0.025), labels=[1,1,0,0], fontsize=4, linewidth=.1)
 mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2), labels=[0,0,0,1], fontsize=10, linewidth=.1)
@@ -158,11 +158,11 @@ plt.colorbar()
 
 # plot CTD stations
 x2, y2 = m(lon_ctd, lat_ctd)
-m.plot(x2, y2, '.k', ms=2)
+m.plot(x2, y2, '^k', ms=2)
 
 # plot transect
 xc0, yc0 = m(c0[:, 0], c0[:, 1])
-m.plot(xc0, yc0, '--k')
+m.plot(xc0, yc0, '--k', linewidth=.3)
 
 # plot boxes
 box1 = np.array([[-136.10, 58.40],
