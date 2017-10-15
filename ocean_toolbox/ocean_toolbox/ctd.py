@@ -590,6 +590,11 @@ class ctd(object):
         else:
             cmax = clim[1]
             cmin = clim[0]
+
+        if np.ma.is_masked(cmax):
+            cmax = 1
+            cmin = 0
+
         clevs = np.linspace(cmin, cmax, 5)
 
         data[data>cmax] = cmax
@@ -664,6 +669,16 @@ class ctd(object):
             rhoc1.clabel(fontsize=5)
 
         return fig, ax
+
+    def plt_all_trans(self, var, save_dir):
+        """ pcolor all transect use plt_trans. """
+        k1, k2, k3 = self.get_cruise()
+        time0 = self.data['time'][k1[k3]]
+        for time in time0:
+            ttag = nc.num2date(time, 'days since 1900-01-01').strftime('%Y-%m-%d')
+            self.plt_trans(var, time)
+            plt.savefig(save_dir + var + '_' + ttag + '.png')
+            plt.close()
 
     def plt_casts(self):
         ''' plot all profiles to pick out faulty profiles. '''
