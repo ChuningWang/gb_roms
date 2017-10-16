@@ -450,7 +450,8 @@ class ctd(object):
             msk = self.data['station'] == j
             self.trans['lat'][i] = np.mean(self.data['lat'][msk])
             self.trans['lon'][i] = np.mean(self.data['lon'][msk])
-            self.trans['fathometer_depth'][i] = np.mean(self.data['fathometer_depth'][msk])
+            self.trans['fathometer_depth'][i] = \
+                np.mean(self.data['fathometer_depth'][msk])
 
         dis = np.zeros(len(stn_list))
         for i in range(1, len(dis)):
@@ -670,13 +671,13 @@ class ctd(object):
 
         return fig, ax
 
-    def plt_all_trans(self, var, save_dir):
+    def plt_all_trans(self, var, save_dir, clim='auto'):
         """ pcolor all transect use plt_trans. """
         k1, k2, k3 = self.get_cruise()
         time0 = self.data['time'][k1[k3]]
         for time in time0:
             ttag = nc.num2date(time, 'days since 1900-01-01').strftime('%Y-%m-%d')
-            self.plt_trans(var, time)
+            self.plt_trans(var, time, clim=clim)
             plt.savefig(save_dir + var + '_' + ttag + '.png')
             plt.close()
 
