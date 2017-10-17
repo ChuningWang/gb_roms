@@ -1,10 +1,10 @@
 clc; clear; close all
 
-mod = load('/glade/p/work/chuning/gb_roms/tides/Tide_model_hr.mat');
+mod = load('/glade/p/work/chuning/gb_roms/tides/Tide_model_lr.mat');
 stn = load('/glade/p/work/chuning/gb_roms/tides/Tide_stn.mat');
-tag = 'hr'
+tag = 'lr'
 
-dd = 14;
+dd = 7;
 
 tlist = {'Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2', 'MF'};
 

@@ -6,11 +6,11 @@ def read_host_info():
     print('hostname: ' +hostname)
     hostname = hostname[:3]
 
-    if hostname=='ysl' or hostname=='yel' or hostname=='gey' or hostname=='pro' or hostname=='cal':
+    if hostname in ['ysl', 'che', 'yel', 'gey', 'pro', 'cal']:
         file_in = '/glade/u/home/chuning/git/gb_roms/Modules/yellowstone.info'
-    elif hostname=='aln':
+    elif hostname in ['aln']:
         file_in = '/Users/chuning/git/gb_roms/Modules/alnilam.info'
-    elif hostname=='Cod' or hostname=='nwk':
+    elif hostnam ['Cod', 'nwk']:
         file_in = '/Users/CnWang/git/gb_roms/Modules/cod.info'
 
     f = open(file_in, 'rb')

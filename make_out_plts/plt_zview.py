@@ -17,9 +17,9 @@ model_dir = sv['model_dir']
 
 # my inputs
 my_year = 2008
-ftype = 'his'
-varlist = ['zeta', 'temp', 'salt', 'dye_03']
-varlist = ['salt', 'dye_03']
+ftype = 'avg'
+varlist = ['temp', 'salt', 'dye_03']
+# varlist = ['tke', 'gls']
 depth = 1
 dd = 10
 plt_uv = 1
@@ -77,20 +77,26 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/zview/' + tag + '/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-flist = flist[-1:]
+# flist = flist[-1:]
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon = grd.hgrid.lon_rho
 lat = grd.hgrid.lat_rho
 mask = grd.hgrid.mask_rho
 
+# plot options
 plt.switch_backend('Agg')
+try:
+    plt.style.use('classic')
+except:
+    pass
 
+# draw background
+f, ax = plt.subplots()
 m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
             resolution='f')
 
-# draw background
 m.fillcontinents(color='lightgrey', alpha=0.5)
 mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=6, linewidth=.2)
 pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
@@ -173,26 +179,30 @@ for var in varlist:
                 pc = m.pcolormesh(x, y, zslice, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
             else:
                 pc = m.pcolormesh(x, y, zslice, cmap=cmap_var)
-                plt.clim(clim_var[0], clim_var[1])
-            cb = m.colorbar()
-            if plt_contourf == 1:
-                varc = plt.contour(x, y, zslice, clevs, linestyle='--', linewidths=.4, colors='w')
-                # varcl = plt.clabel(varc, fontsize=5)
+                pc.set_clim(clim_var[0], clim_var[1])
 
             if plt_uv == 1:
                 qv = m.quiver(x[::dd,::dd], y[::dd,::dd], \
                               np.real(U[::dd,::dd]), np.imag(U[::dd,::dd]), \
                               scale = uscale, width=0.001)
 
+            cbar_ax = f.add_axes([0.78, 0.12, 0.02, 0.76])
+            cb = f.colorbar(pc, cax=cbar_ax)
+
+            if plt_contourf == 1:
+                varc = ax.contour(x, y, zslice, clevs, linestyle='--', linewidths=.4, colors='w')
+                # varcl = plt.clabel(varc, fontsize=5)
+
             if var not in var_2d:
-                ttl = plt.title(var + '_' + str(int(-depth)) + 'm_' + grd.name + '_' + ftype + '_' + ttag)
+                ttl = ax.set_title(var + '_' + str(int(-depth)) + 'm_' + grd.name + '_' + ftype + '_' + ttag)
                 plt.savefig(fig_dir + var + '_' + str(int(abs(depth))) + 'm_' + grd.name + '_' + ftype + '_' + ttag + '.png')
             else:
-                ttl = plt.title(var + '_' + ttag)
+                ttl = ax.set_title(var + '_' + ttag)
                 plt.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')
 
             pc.remove()
-            cb.remove()
+            f.delaxes(cbar_ax)
+            # cb.remove()
             if plt_contourf == 1:
                 for cc in varc.collections:
                     cc.remove()

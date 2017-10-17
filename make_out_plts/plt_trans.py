@@ -26,9 +26,9 @@ model_dir = sv['model_dir']
 my_year = 2008
 plt_uv = 1
 plt_contourf = 1
-ftype = 'his'
+ftype = 'avg'
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
-varlist = ['tke', 'gls']
+# varlist = ['tke', 'gls']
 dd = 3
 depth1 = 450
 depth0 = 50
@@ -76,7 +76,7 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-flist = flist[-1:]
+# flist = flist[-1:]
 
 zlev = grd.vgrid.N
 uvar = 'u'
@@ -189,6 +189,9 @@ for i in range(len(eta_tr)):
     D2 = (lat-lat_tr[i])**2+(lon-lon_tr[i])**2
     eta_tr[i], xi_tr[i] = np.where(D2==D2.min())
 
+eta_tr = eta_tr.astype(int)
+xi_tr = xi_tr.astype(int)
+
 h_tr = h[eta_tr.tolist(), xi_tr.tolist()]
 # update lon_tr, lat_tr
 lon_tr = lon[eta_tr.tolist(), xi_tr.tolist()]
@@ -253,6 +256,10 @@ if plt_uv==1:
 # -------------------------------------------------------------------------------
 # make plots
 plt.switch_backend('Agg')
+try:
+    plt.style.use('classic')
+except:
+    pass
 
 # set the axises
 f, (ax1, ax2) = plt.subplots(2, sharex=True)
@@ -339,7 +346,8 @@ for var in varlist:
 
             pcm1.remove()
             pcm2.remove()
-            cb.remove()
+            f.delaxes(cbar_ax)
+            # cb.remove()
             if plt_contourf==1:
                 for cc in varc1.collections:
                     cc.remove()

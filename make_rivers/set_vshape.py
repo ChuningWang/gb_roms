@@ -14,7 +14,7 @@ else:
     grd1 = 'GB_lr'
 
 my_year = 2008
-discharge_depth = 5
+discharge_depth = 1
 grd = pyroms.grid.get_ROMS_grid(grd1)
 h = grd.vgrid.h
 Cs_r = grd.vgrid.Cs_r
