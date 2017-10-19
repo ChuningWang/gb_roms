@@ -28,6 +28,7 @@ plt_uv = 1
 plt_contourf = 1
 ftype = 'avg'
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
+varlist = ['salt', 'dye_03']
 # varlist = ['tke', 'gls']
 dd = 3
 depth1 = 450
@@ -76,7 +77,7 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-# flist = flist[-1:]
+flist = flist[-14:]
 
 zlev = grd.vgrid.N
 uvar = 'u'

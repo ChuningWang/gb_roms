@@ -18,6 +18,7 @@ else:
     grd1 = 'GB_lr'
 
 my_year = 2008
+rspread = 3
 
 # load GB grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -25,7 +26,7 @@ grd = pyroms.grid.get_ROMS_grid(grd1)
 # load 2-dimentional discharge data 
 print 'Load discharge data'
 tag = 'Hill'
-in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag + '.nc'
+in_file = in_dir + grd.name + '_runoff_' + str(rspread) + '_' + str(my_year) + '_' + tag + '.nc'
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 nc_data = nc.Dataset(in_file, 'r')
@@ -57,7 +58,7 @@ for k in range(Nr):
     elif (sign[k] == -1 and dir[k] == 0):
         count[eta[k],xi[k]-1] += 1
         rivers[eta[k],xi[k]-1].append(k)
-    elif (sign[k]==-1 and dir[k]==1):
+    elif (sign[k] == -1 and dir[k] == 1):
         count[eta[k]-1,xi[k]] += 1
         rivers[eta[k]-1,xi[k]].append(k)
 

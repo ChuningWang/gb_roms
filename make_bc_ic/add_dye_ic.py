@@ -72,9 +72,9 @@ p2 = path.Path(box2)
 pc2 = p2.contains_points(np.array([lon.flatten(), lat.flatten()]).T).reshape((eta, xi))
 msk2 = np.tile(pc2, (N, 1, 1)) & mskz & mskd
 if dims == 5:
-    dye_2[:, :, msk1] = 1
+    dye_2[:, :, msk2] = 1
 else:
-    dye_2[:, msk1] = 1
+    dye_2[:, msk2] = 1
 
 dye_1 = np.ma.masked_where(salt.mask, dye_1)
 dye_2 = np.ma.masked_where(salt.mask, dye_2)
