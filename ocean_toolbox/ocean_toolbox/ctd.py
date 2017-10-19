@@ -36,6 +36,8 @@ class ctd(object):
         if 'clim_deep_interp' not in self.info.keys():
             self.info['clim_deep_interp'] = 'no'
 
+        if 'filter' not in self.info.keys():
+            self.info['filter'] = -1
         if 'filter_span' not in self.info.keys():
             self.info['filter_span'] = 5
         if 'deep_var_value' not in self.info.keys():
@@ -58,7 +60,8 @@ class ctd(object):
             self.get_raw_data()
             self.qc_data()
             self.fill_nan()
-            self.filter()
+            if self.info['filter'] == 'yes':
+                self.filter()
             self.save_data()
         elif self.info['sl'] == 'l':
             self.get_data()
