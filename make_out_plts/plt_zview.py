@@ -17,8 +17,9 @@ model_dir = sv['model_dir']
 
 # my inputs
 my_year = 2008
+grd1 = 'GB_lr'
 ftype = 'avg'
-varlist = ['temp', 'salt', 'dye_03']
+varlist = ['temp', 'salt']
 # varlist = ['tke', 'gls']
 depth = 1
 dd = 10
@@ -63,18 +64,13 @@ lon_max = -135.0
 lon_0 = 0.5 * (lon_min + lon_max)
 
 if len(sys.argv)>1:
-    grd1 = sys.argv[-1]
+    tag = sys.argv[-1]
 else:
-    grd1 = 'GB_lr'
-
-if grd1=='GB_lr':
-    tag = 'GB-CIRC'
-if grd1=='GB_hr':
-    tag = 'GB-TIDE'
+    tag = 'GB-ref'
 
 model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
 outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/zview/' + tag + '/' + str(my_year) + '/'
+fig_dir = out_dir + 'figs/zview/' + tag + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
 # flist = flist[-1:]

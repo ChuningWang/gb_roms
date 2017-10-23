@@ -31,10 +31,7 @@ h = np.ma.masked_where(grd.hgrid.mask==0, h)
 hraw = grd.vgrid.hraw.squeeze()
 hraw = np.ma.masked_where(grd.hgrid.mask==0, hraw)
 
-if grd1=='GB_lr':
-    tag = 'GB-CIRC'
-if grd1=='GB_hr':
-    tag = 'GB-TIDE'
+tag = 'GB-riveronly'
 
 varlist = ['u', 'v', 'temp', 'salt', 'zeta', 'wetdry_mask_rho']
 # varlist = ['wetdry_mask_rho']
@@ -80,11 +77,11 @@ for var in varlist:
         xx = 0
         yy = 0
     else:
-        zlevel = idx[0].data[0]
+        zlevel = idx[0][0]
         dataz = data[zlevel, :, :]
         # zlevel = 40  # surface
-        yy = idx[1].data[0]
-        xx = idx[2].data[0]
+        yy = idx[1][0]
+        xx = idx[2][0]
 
     if rmap=='full':
         xmin = 0

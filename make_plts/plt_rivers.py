@@ -21,7 +21,7 @@ elif grd1=='GB_lr':
 
 rspread = 3
 
-dtype = 3
+dtype = 1
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon_grd = grd.hgrid.lon_rho
@@ -63,8 +63,8 @@ elif dtype==3:
     fh.close()
     lon = lon_grd
     lat = lat_grd
-    r = np.zeros((len(time), lon.shape[0], lon.shape[1]))
-    h = np.zeros(lon.shape)
+    r = np.NaN*np.zeros((len(time), lon.shape[0], lon.shape[1]))
+    h = np.NaN*np.zeros(lon.shape)
     for i in range(len(time)):
         for j in range(len(eta)):
             if sign[j] == 1:
@@ -78,25 +78,32 @@ elif dtype==3:
                     r[i, eta[j], xi[j]-1] = trs[i, j]
                     h[eta[j], xi[j]-1] = hraw[eta[j], xi[j]-1]
 
+    r = np.ma.masked_invalid(r)
+    h = np.ma.masked_invalid(h)
+    plt.pcolormesh(lon, lat, h, cmap='Greens')
+    plt.savefig(out_dir+'figs/rivers/h.png')
+    plt.close()
+
+
 r = np.ma.masked_where(r < 0, r)
 tp, xp, yp = r.shape
-
-plt.pcolormesh(lon, lat, h, cmap='Greens')
-plt.savefig(out_dir+'figs/rivers/h.png')
-plt.close()
 
 fig, ax1 = plt.subplots()
 
 for i, t in enumerate(time):
-    pcm = plt.pcolormesh(lon, lat, r[i, :, :], cmap='Greens')
+    data = r[i, :, :]
+    # data = np.ma.masked_where(data, msk == 1)
+    ttag = nc.num2date(t, 'days since 1900-01-01').strftime("%Y-%m-%d_%H:%M:%S")
+    # pcm = plt.pcolormesh(lon, lat, r[i, :, :], cmap='Greens')
+    pcm = plt.pcolormesh(data, cmap='Greens', edgecolors='k', linewidth=0.0005)
     plt.clim(0, 10)
 
     if i == 0:
-        plt.xlim(-137.5, -135)
-        plt.ylim(58., 59.25)
+        # plt.xlim(-137.5, -135)
+        # plt.ylim(58., 59.25)
         plt.colorbar()
 
-    plt.savefig(out_dir+'figs/rivers/runoff_'+str(int(t))+'.png')
+    plt.savefig(out_dir+'figs/rivers/runoff_' + ttag + '.png', dpi=300)
     pcm.remove()
 
 # def plt_rivers(t, r, out_dir):

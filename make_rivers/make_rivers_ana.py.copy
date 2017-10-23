@@ -18,7 +18,6 @@ else:
     grd1 = 'GB_lr'
 
 my_year = 2008
-rspread = 3
 
 # load GB grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -26,8 +25,8 @@ grd = pyroms.grid.get_ROMS_grid(grd1)
 # load 2-dimentional discharge data 
 print 'Load discharge data'
 tag1 = 'Hill'
-tag2 = 'Hill'
-in_file = in_dir + grd.name + '_runoff_' + str(rspread) + '_' + str(my_year) + '_' + tag1 + '.nc'
+tag2 = 'Hill_ana'
+in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag1 + '.nc'
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag2 + '.nc'
 
 nc_data = nc.Dataset(in_file, 'r')
@@ -64,12 +63,14 @@ for k in range(Nr):
         rivers[eta[k]-1,xi[k]].append(k)
 
 nct=0
+# tst = []
 for t in range(nt):
     print 'Remapping runoff for time %f' %time[t]
     for j in range(Mp):
         for i in range(Lp):
             for n in range(count[j,i]):
                 frac = 1.0/count[j,i]
+                # tst.append(frac)
                 k = rivers[j,i][n]
                 runoff[k] = frac*data[t,j,i]
 
@@ -126,7 +127,7 @@ box = np.array([[-137.40, 59.10],
                 [-136.10, 59.35]])
 
 # forcing file
-fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill.nc', 'r')
+fh = nc.Dataset(out_file, 'r')
 t = fh.variables['river_time'][:]
 epos = fh.variables['river_Eposition'][:]
 xpos = fh.variables['river_Xposition'][:]
@@ -167,6 +168,6 @@ trs = trs*rr
 trs = trs*sign
 
 # overwrite river_transport
-fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill.nc', 'r+')
+fh = nc.Dataset(out_file, 'r+')
 fh.variables['river_transport'][:] = trs
 fh.close()

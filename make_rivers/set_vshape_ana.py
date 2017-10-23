@@ -19,7 +19,7 @@ grd = pyroms.grid.get_ROMS_grid(grd1)
 h = grd.vgrid.h
 Cs_r = grd.vgrid.Cs_r
 
-tag = 'Hill'
+tag = 'Hill_ana'
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 # Set the vertical distribution of the river transport.
