@@ -19,9 +19,7 @@ if grd1=='GB_hr':
 elif grd1=='GB_lr':
     tag = 'GlacierBay_lr'
 
-rspread = 3
-
-dtype = 1
+dtype = 3
 
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon_grd = grd.hgrid.lon_rho
@@ -53,7 +51,7 @@ elif dtype==2:
     fh.close()
 elif dtype==3:
     # load original data
-    fh = nc.Dataset(out_dir + 'frc/' + tag + '_rivers_2008_Hill.nc', 'r')
+    fh = nc.Dataset(out_dir + 'frc/' + tag + '_rivers_2008_Hill_ana.nc', 'r')
     time = fh.variables['river_time'][:]
     eta = fh.variables['river_Eposition'][:]
     xi = fh.variables['river_Xposition'][:].astype(int)
@@ -84,8 +82,6 @@ elif dtype==3:
     plt.savefig(out_dir+'figs/rivers/h.png')
     plt.close()
 
-
-r = np.ma.masked_where(r < 0, r)
 tp, xp, yp = r.shape
 
 fig, ax1 = plt.subplots()
@@ -95,8 +91,8 @@ for i, t in enumerate(time):
     # data = np.ma.masked_where(data, msk == 1)
     ttag = nc.num2date(t, 'days since 1900-01-01').strftime("%Y-%m-%d_%H:%M:%S")
     # pcm = plt.pcolormesh(lon, lat, r[i, :, :], cmap='Greens')
-    pcm = plt.pcolormesh(data, cmap='Greens', edgecolors='k', linewidth=0.0005)
-    plt.clim(0, 10)
+    pcm = plt.pcolor(data, edgecolors='k', linewidth=0.005)
+    plt.clim(-10, 10)
 
     if i == 0:
         # plt.xlim(-137.5, -135)
@@ -105,6 +101,8 @@ for i, t in enumerate(time):
 
     plt.savefig(out_dir+'figs/rivers/runoff_' + ttag + '.png', dpi=300)
     pcm.remove()
+
+plt.close()
 
 # def plt_rivers(t, r, out_dir):
 #     plt.pcolormesh(lon, lat, r, cmap='Greens')

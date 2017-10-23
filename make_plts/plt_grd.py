@@ -82,7 +82,7 @@ if plt_proj == 1:
         lath = lath-0.005
         xh, yh = m(lonh, lath)
         m.plot(xh, yh, '.k', ms=2)
-        plt.savefig(out_dir + 'figs/'+grd1+'_Hill_grd.tiff', format='tiff', dpi=600)
+        plt.savefig(out_dir + 'figs/'+grd1+'_Hill_grd.png', dpi=600)
 
 elif plt_proj == 0:
 
@@ -100,6 +100,6 @@ elif plt_proj == 0:
     plt.tick_params(axis='both', which='major', labelsize=5)
     # plt.grid(linewidth=0.05)
 
-    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.tiff', format='tiff', dpi=600)
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd_noproj.png', dpi=600)
 
 plt.close()

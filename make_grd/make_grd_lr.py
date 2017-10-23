@@ -69,7 +69,7 @@ h0 = h0[msk2,:][:,msk1]
 h0 = -h0
 
 # fix minimum depth
-hmin = -1  # allow dry_wet
+hmin = 1  # allow dry_wet
 hmax = 425
 # h0 = pyroms_toolbox.change(h0, '<', hmin, hmin)
 
@@ -217,6 +217,27 @@ h1[h1<hmin0] = hmin0
 h[232:241, 165:172] = h1
 
 # ------------------------------------------------------------------------
+# # constrain water depth of coastal cells. This is critical for p-source
+# # style runoff.
+# hmax0 = 20
+# print 'get littoral points'
+# lit = pyroms_toolbox.get_littoral2(water)
+# coord = [[lit[0][i], lit[1][i]] for i in range(len(lit[0]))]
+# # check for repeated elements
+# coord2 = []
+# for i in coord:
+#     if i not in coord2:
+#         coord2.append(i)
+# 
+# coord = np.array(coord2)
+# idx = coord[:, 0]
+# idy = coord[:, 1]
+# 
+# hcoast = h[idx, idy]
+# hcoast[hcoast > hmax0] = hmax0
+# h[idx, idy] = hcoast
+
+# ------------------------------------------------------------------------
 # use a 2D filter to smooth locally
 # from scipy.ndimage import uniform_filter
 # h1 = h[:250, :110]
@@ -233,7 +254,7 @@ h[232:241, 165:172] = h1
 # h[575:585, 225:235] = uniform_filter(h1, size=3)
 # h1 = h[910:930, 85:95]
 # h[910:930, 85:95] = uniform_filter(h1, size=5)
-# 
+
 # # ------------------------------------------------------------------------
 # # deal with shallow water regions
 # def local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.3):

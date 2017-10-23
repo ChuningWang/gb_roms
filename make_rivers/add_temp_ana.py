@@ -37,12 +37,14 @@ river_salt = s0*np.ones(river_time.shape)
 # create file with all the objects
 fh = nc.Dataset(out_file, 'a', format='NETCDF3_64BIT')
 
-temp = fh.createVariable('river_temp', 'f8', ('river_time'))
+# temp = fh.createVariable('river_temp', 'f8', ('river_time'))
+temp = fh.variables['river_temp']
 temp.long_name = 'river runoff temperature'
 temp.units = 'Celcius'
 temp.time = 'river_time'
 
-salt = fh.createVariable('river_salt', 'f8', ('river_time'))
+# salt = fh.createVariable('river_salt', 'f8', ('river_time'))
+salt = fh.variables['river_salt']
 salt.long_name = 'river runoff salinity'
 salt.units = 'PSU'
 salt.time = 'river_time'

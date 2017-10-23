@@ -13,7 +13,7 @@ grd = pyroms.grid.get_ROMS_grid(grd1)
 lat = grd.hgrid.lat_rho
 lon = grd.hgrid.lon_rho
 
-fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill_ana.nc', 'r')
+fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill_ana2.nc', 'r')
 t = fh.variables['river_time'][:]
 epos = fh.variables['river_Eposition'][:]
 xpos = fh.variables['river_Xposition'][:]
@@ -105,6 +105,16 @@ box4 = np.array([[  -136.65,    58.55 ],
                  [  -135.65,    58.45 ],
                  [  -136.0,     58.375]])
 
+box5 = np.array([[  -136.9,     58.95],
+                 [  -137.1,     58.95],
+                 [  -137.1,     59.15],
+                 [  -136.9,     59.15]])
+
+box6 = np.array([[  -136.4,     58.90],
+                 [  -136.8,     58.90],
+                 [  -136.8,     59.15],
+                 [  -136.4,     59.15]])
+
 box = np.array([[-137.40, 59.10],
                 [-137.00, 58.50],
                 [-136.55, 58.30],
@@ -112,16 +122,6 @@ box = np.array([[-137.40, 59.10],
                 [-136.00, 57.95],
                 [-135.00, 58.05],
                 [-136.10, 59.35]])
-
-box5 = np.array([[-136.9, 58.95],
-                 [-137,1, 58.95],
-                 [-137.1, 59.15],
-                 [-136.9, 59.15]])
-
-box6 = np.array([[-136.4, 58.90],
-                 [-136,8, 58.90],
-                 [-136.8, 59.15],
-                 [-136.4, 59.15]])
 
 # d1 = get_discharge_avgbox(t, latt, lont, trs, coast, box1)
 # d2 = get_discharge_avgbox(t, latt, lont, trs, coast, box2)

@@ -26,7 +26,7 @@ my_year = 2008
 plt_uv = 1
 plt_contourf = 1
 grd1 = 'GB_lr'
-ftype = 'avg'
+ftype = 'his'
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
 varlist = ['salt']
 # varlist = ['tke', 'gls']
@@ -334,8 +334,8 @@ for var in varlist:
                 clb11 = plt.clabel(varc11, fontsize=10)
                 clb21 = plt.clabel(varc21, fontsize=10)
             if plt_uv==1:
-                qv1 = ax1.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
-                qv2 = ax2.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
+                qv1 = ax1.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=10)
+                qv2 = ax2.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=10)
 
             ax1.set_title(var + '_' + grd.name + '_' + ftype + '_' + ttag)
             f.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')

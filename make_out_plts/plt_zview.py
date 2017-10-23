@@ -18,7 +18,7 @@ model_dir = sv['model_dir']
 # my inputs
 my_year = 2008
 grd1 = 'GB_lr'
-ftype = 'avg'
+ftype = 'his'
 varlist = ['temp', 'salt']
 # varlist = ['tke', 'gls']
 depth = 1
