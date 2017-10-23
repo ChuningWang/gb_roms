@@ -95,6 +95,7 @@ elif plt_proj == 0:
     plt.yticks(np.arange(0, Mp, 20))
     plt.xlim(0, Np)
     plt.ylim(0, Mp)
+    plt.grid(linewidth=0.05)
 
     plt.tick_params(axis='both', which='major', labelsize=5)
     # plt.grid(linewidth=0.05)
