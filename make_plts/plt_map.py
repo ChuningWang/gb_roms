@@ -144,12 +144,12 @@ m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
 
 # m.drawcoastlines(linewidth=0.5)
 m.fillcontinents(color='lightgrey')
-# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.05), labels=[0,0,1,1], fontsize=4, linewidth=.1)
-# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.025), labels=[1,1,0,0], fontsize=4, linewidth=.1)
-mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2), labels=[0,0,0,1], fontsize=10, linewidth=.1)
-pr = m.drawparallels(np.arange(lat_min, lat_max, 0.1), labels=[1,0,0,0], fontsize=10, linewidth=.1)
-setlabelrot(mr,-30)
-setlabelrot(pr,-30)
+mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.04), labels=[0,0,1,1], fontsize=3, linewidth=.1)
+pr = m.drawparallels(np.arange(lat_min, lat_max, 0.02), labels=[1,1,0,0], fontsize=3, linewidth=.1)
+# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2), labels=[0,0,0,1], fontsize=10, linewidth=.1)
+# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.1), labels=[1,0,0,0], fontsize=10, linewidth=.1)
+setlabelrot(mr,-90)
+setlabelrot(pr,0)
 
 x, y = m(lon, lat)
 m.pcolor(x, y, z, cmap=cmocean.cm.deep)
@@ -192,5 +192,5 @@ box2 = np.array([[-136.10, 58.40],
 # m.plot(xbox2, ybox2, '--k')
 # m.plot([xbox2[0], xbox2[-1]], [ybox2[0], ybox2[-1]], '--k')
 
-plt.savefig(out_dir + 'figs/'+grd1+'_map.tiff', format='tiff', dpi=600)
+plt.savefig(out_dir + 'figs/'+grd1+'_map.png', format='png', dpi=600)
 plt.close()

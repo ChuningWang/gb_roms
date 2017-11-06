@@ -31,7 +31,7 @@ h = np.ma.masked_where(grd.hgrid.mask==0, h)
 hraw = grd.vgrid.hraw.squeeze()
 hraw = np.ma.masked_where(grd.hgrid.mask==0, hraw)
 
-tag = 'GB-riveronly'
+tag = 'GB-ref'
 
 varlist = ['u', 'v', 'temp', 'salt', 'zeta', 'wetdry_mask_rho']
 # varlist = ['wetdry_mask_rho']

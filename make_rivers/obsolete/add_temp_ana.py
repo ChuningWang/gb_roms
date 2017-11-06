@@ -19,7 +19,7 @@ else:
     grd1 = 'GB_lr'
 
 my_year = 2008
-tag = 'Hill_ana'
+tag = 'Hill'
 t0 = 10.
 s0 = 0.
 

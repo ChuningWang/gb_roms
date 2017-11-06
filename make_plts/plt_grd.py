@@ -67,7 +67,7 @@ if plt_proj == 1:
     # x2, y2 = m(lon_ctd, lat_ctd)
     # m.plot(x2, y2, '.k', ms=2)
 
-    plt.savefig(out_dir + 'figs/'+grd1+'_grd.tiff', format='tiff', dpi=600)
+    plt.savefig(out_dir + 'figs/'+grd1+'_grd.png', format='png', dpi=600)
 
     if plt_hill_coast==1:
         # Overlay Hill discharge point on the map
@@ -87,7 +87,7 @@ if plt_proj == 1:
 elif plt_proj == 0:
 
     plt.pcolor(z, cmap=cmocean.cm.deep, edgecolors='k', linewidth=0.005)
-    plt.clim(0, 400)
+    plt.clim(0, 20)
     plt.colorbar()
     # plt.contour(msk, [0.5], linewidths=0.05, colors='k')
 

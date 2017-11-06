@@ -90,16 +90,16 @@ for i, t in enumerate(time):
     data = r[i, :, :]
     # data = np.ma.masked_where(data, msk == 1)
     ttag = nc.num2date(t, 'days since 1900-01-01').strftime("%Y-%m-%d_%H:%M:%S")
-    # pcm = plt.pcolormesh(lon, lat, r[i, :, :], cmap='Greens')
-    pcm = plt.pcolor(abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
+    pcm = plt.pcolor(lon, lat, abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
+    # pcm = plt.pcolor(abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
     plt.clim(0, 10)
 
     if i == 0:
-        # plt.xlim(-137.5, -135)
-        # plt.ylim(58., 59.25)
+        plt.xlim(-137.5, -135)
+        plt.ylim(58., 59.25)
         plt.colorbar()
 
-    plt.savefig(out_dir+'figs/rivers/runoff_' + ttag + '.png', dpi=300)
+    plt.savefig(out_dir+'figs/rivers/runoff_proj_' + ttag + '.png', dpi=300)
     pcm.remove()
 
 plt.close()

@@ -102,7 +102,7 @@ h[pc] = griddata((lon0.flatten(), lat0.flatten()), h0.flatten(),
 hraw = h.copy()
 
 # save hraw to netcdf
-fout = nc.Dataset(in_dir + 'hraw.nc', 'w')
+fout = nc.Dataset('hraw.nc', 'w')
 fout.createDimension('x', h.shape[0])
 fout.createDimension('y', h.shape[1])
 

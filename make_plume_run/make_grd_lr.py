@@ -57,6 +57,13 @@ h = hraw.copy()
 h = pyroms_toolbox.shapiro_filter.shapiro2(h, 32)
 
 # ------------------------------------------------------------------------
+# locally constrain hmin at some location
+hmin0 = 20  # m
+h1 = h[160:180, 139:144]
+h1[h1<hmin0] = hmin0
+h[160:180, 139:144] = h1
+
+# ------------------------------------------------------------------------
 # insure that depth is always deeper than hmin
 hmin = 10
 hmax = 450
@@ -78,29 +85,79 @@ print 'Max Roughness value is: ', RoughMat.max()
 # ------------------------------------------------------------------------
 # constrain water depth of coastal cells. This is critical for p-source
 # style runoff.
-hmax0 = 10
+hmin0 = 3
 idx = []
 idy = []
 sign = []
 rdir = []
+river = []
 # read in coast cells
+river_num = 0
 fin = open('river_cells.txt', 'r')
 for line in fin:
     llist = line.rstrip('\n').split(',')
     if int(llist[0]) == -1:
-        isign = int(llist[1])
-        irdir = int(llist[2])
+        river_num += 1
+        irdir = int(llist[1])
+        isign = int(llist[2])
     elif int(llist[0]) == -10:
         break
     else:
+        river.append(river_num)
         idx.append(int(llist[0]))
         idy.append(int(llist[1]))
-        sign.append(isign)
         rdir.append(irdir)
+        sign.append(isign)
 
-h[idx, idy] = hmax0
+idx = np.array(idx)
+idy = np.array(idy)
+rdir = np.array(rdir)
+sign = np.array(sign)
+river = np.array(river)
+
+h[idx, idy] = hmin0
+
+# smooth fake estuaries
+def local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.3):
+
+    h1 = h[xmin:xmax, ymin:ymax]
+    msk1 = water[xmin:xmax, ymin:ymax]
+
+    # smooth bathymetry
+    hs = bathy_smoother.bathy_smoothing.smoothing_Negative_rx0(msk1, h1, rx0_max)
+    h[xmin:xmax, ymin:ymax] = hs
+
+for i in range(1, river_num+1):
+    msk = river == i
+    iidx = idx[msk]
+    iidy = idy[msk]
+    irdir = rdir[msk][0]
+    isign = sign[msk][0]
+    if (isign == 1) & (irdir == 0):
+        xmin = iidx[0]; xmax = iidx[-1]+1
+        ymin = iidy[0]; ymax = iidy[-1]+5
+    elif (isign == 1) & (irdir == 1):
+        xmin = iidx[0]; xmax = iidx[-1]+5
+        ymin = iidy[0]; ymax = iidy[-1]+1
+    elif (isign == -1) & (irdir == 0):
+        xmin = iidx[0]; xmax = iidx[-1]+1
+        ymin = iidy[0]-4; ymax = iidy[-1]+1
+    elif (isign == -1) & (irdir == 1):
+        xmin = iidx[0]-4; xmax = iidx[-1]+1
+        ymin = iidy[0]; ymax = iidy[-1]+1
+
+    local_smooth(h, water, xmin, xmax, ymin, ymax, rx0_max=0.2)
+
 # smooth again
 h = bathy_smoother.bathy_smoothing.smoothing_Negative_rx0(water, h, rx0_max)
+
+# ------------------------------------------------------------------------
+# # insure that depth is always deeper than hmin (again)
+# h = pyroms_toolbox.change(h, '<', hmin, hmin0)
+# # constrain maximum depth
+# h = pyroms_toolbox.change(h, '>', hmax, hmax)
+# # # fix depth of land points
+# h[water == 0] = hmin0
 
 # ------------------------------------------------------------------------
 # redesign the vertical coordinate

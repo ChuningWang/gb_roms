@@ -19,7 +19,7 @@ grd = pyroms.grid.get_ROMS_grid(grd1)
 h = grd.vgrid.h
 z = grd.vgrid.z_r[:]
 
-tag = 'Hill_ana'
+tag = 'Hill'
 out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
 # Set the vertical distribution of the river transport.
@@ -32,27 +32,7 @@ xi = fh.variables['river_Xposition'][:]
 sign = fh.variables['river_sign'][:]
 direction = fh.variables['river_direction'][:]
 
-hh = np.zeros(Nr)
-zz = np.zeros((grd.vgrid.N, Nr))
-for i in range(Nr):
-    if sign[i] == 1:
-        hh[i] = h[eta[i], xi[i]]
-        zz[:, i] = -z[:, eta[i], xi[i]]
-    else:
-        if direction[i] == 0:
-            hh[i] = h[eta[i], xi[i]-1]
-            zz[:, i] = -z[:, eta[i], xi[i]-1]
-        else:
-            hh[i] = h[eta[i]-1, xi[i]]
-            zz[:, i] = -z[:, eta[i]-1, xi[i]]
-
-vshape = np.zeros((N, Nr))
-for i in range(Nr):
-    msk = zz[:, i] <= discharge_depth
-    print msk
-    weight = np.arange(sum(msk))
-    vshape[msk, i] = weight
-    vshape[:, i] = vshape[:, i]/sum(vshape[:, i])
+vshape = np.ones((N, Nr))/float(N)
 
 fh.variables['river_Vshape'][:] = vshape
 fh.close()
