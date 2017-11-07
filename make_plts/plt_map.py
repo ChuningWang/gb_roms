@@ -162,7 +162,7 @@ m.plot(x2, y2, '^k', ms=2)
 
 # plot transect
 xc0, yc0 = m(c0[:, 0], c0[:, 1])
-m.plot(xc0, yc0, '--k', linewidth=.3)
+m.plot(xc0, yc0, '--ok', linewidth=.3, markersize=.3)
 
 # plot boxes
 box1 = np.array([[-136.10, 58.40],

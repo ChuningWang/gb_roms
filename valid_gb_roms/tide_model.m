@@ -1,7 +1,7 @@
 clear; clc; close all
 
 % first, concatenate ubar, vbar from netCDF files
-in_dir = '/glade/scratch/chuning/tmpdir_GB-CIRC/outputs/2008/';
+in_dir = '/glade/scratch/chuning/tmpdir_GB-ref/outputs/2008/';
 grd_file = '/glade/p/work/chuning/gb_roms/grd/GlacierBay_lr_grd.nc';
 out_file = '/glade/p/work/chuning/gb_roms/tides/Tide_model_lr.mat';
 flist = dir([in_dir '*his*nc']);

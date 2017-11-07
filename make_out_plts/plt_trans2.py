@@ -41,7 +41,7 @@ if 'v' in varlist:
 
 # dicts for variable clims, colormaps, and other properties
 clim = {'temp': [2, 10],
-        'salt': [15, 35],
+        'salt': [15, 30],
         'zeta': [-3, 3],
         'wetdry_mask_rho': [0, 1],
         'dye_01': [0, 1],
