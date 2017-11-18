@@ -22,7 +22,7 @@ out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
 # my inputs
-my_year = 2008
+my_year = 2009
 plt_uv = 1
 plt_contourf = 1
 grd1 = 'GB_lr'

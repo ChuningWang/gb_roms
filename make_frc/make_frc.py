@@ -12,9 +12,9 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 dst_dir = sv['out_dir']
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
-my_year = 2008
+my_year = 2009
 tag = 'JRA55v1.1'
 vlist = ['Qair', 'rain', 'snow', 'lwrad_down', 'swrad', 'Pair', 'Tair', 'Uwind', 'Vwind']
 vlist2 = ['huss_10m', 'prrn', 'prsn', 'rlds', 'rsds', 'psl', 'tas_10m', 'uas_10m', 'vas_10m']
