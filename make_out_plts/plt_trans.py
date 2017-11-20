@@ -4,12 +4,14 @@ Contour transect along Glacier Bay.
 Use nearest neighbor instead griddata to get the transect data.
 '''
 
+# --------------------- load modules --------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import pyroms
 import glob
 from matplotlib.colors import LogNorm
+from matplotlib.gridspec import GridSpec
 import cmocean
 from geopy.distance import vincenty
 from matplotlib import path
@@ -21,8 +23,9 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
+# --------------------- input arguments -----------------------------------
 # my inputs
-my_year = 2009
+my_year = 2008
 plt_uv = 1
 plt_contourf = 1
 grd1 = 'GB_lr'
@@ -57,6 +60,17 @@ cmap = {'temp': cmocean.cm.thermal,
         'gls': cmocean.cm.matter,
        }
 
+long_name = {'temp': r'Temperature [$^{\circ}$C]',
+             'salt': r'Salinity [PSU]',
+             'zeta': r'Sea Surface Height [m]',
+             'wetdry_mask_rho': r'Wet Dry Mask',
+             'dye_01': r'Dye 1',
+             'dye_02': r'Dye 2',
+             'dye_03': r'Dye 3',
+             'tke': r'TKE [m$^2$s$^{-2}$]',
+             'gls': r'GLS [m$^3$s$^{-2}$]',
+            }
+
 var_omega = ['tke', 'gls']
 var_log = ['tke', 'gls']
 
@@ -72,13 +86,17 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/trans/' + tag +'/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-# flist = flist[-14:]
+# flist = flist[-2:]
 
 zlev = grd.vgrid.N
 uvar = 'u'
 vvar = 'v'
 wvar = 'w'
 
+# river discharge file
+river_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_Hill.nc'
+
+# --------------------- transect coordinates ------------------------------
 # c0 = np.array([[-137.05000708,   59.05576767],
 #                [-137.02431432,   59.03650282],
 #                [-136.99075294,   59.02081148],
@@ -229,6 +247,8 @@ c0 = np.array([[-137.05000708,   59.05576767],
                [-136.54818841,   58.19977015],
                [-136.56479585,   58.18395966],
                [-136.58693910,   58.16958648]])
+
+# --------------------- data preparation ----------------------------------
 lon_ct = c0[:, 0]
 lat_ct = c0[:, 1]
 
@@ -282,7 +302,14 @@ dis = np.tile(dis, (zlev, 1))
 # initiate vairables
 # var_tr = np.zeros((zlev, ct_tr))
 
-# -------------------------------------------------------------------------------
+# river file
+friver = nc.Dataset(river_file, 'r')
+river_time = friver.variables['river_time'][:]
+t0 = river_time[0]
+river_time = river_time - t0 + 1
+river = np.abs(friver.variables['river_transport'][:]).sum(axis=1)
+
+# --------------------- velocity plot preparation -------------------------
 # if plot velocity vector, also calculate and define these variables
 if plt_uv==1:
     latu = grd.hgrid.lat_u
@@ -319,24 +346,54 @@ if plt_uv==1:
     U_tr2 = np.zeros((zlev, len(lon_tr2)))
     w_tr2_sw = np.zeros((zlev+1, len(lon_tr2)))
 
-# -------------------------------------------------------------------------------
-# make plots
+# --------------------- make plots ----------------------------------------
 plt.switch_backend('Agg')
 try:
     plt.style.use('classic')
 except:
     pass
 
-# set the axises
-f, (ax0, ax1, ax2) = plt.subplots(3, sharex=True, gridspec_kw={'height_ratios':[1, 2, 2]})
+# set the figure
+# f, (axR, ax0, ax1, ax2) = plt.subplots(4, gridspec_kw={'height_ratios':[1, 1, 4, 4]})
+f = plt.figure()
+gs = GridSpec(12, 10)
+axR = f.add_subplot(gs[0:2, :9])
+ax0 = f.add_subplot(gs[2:4, :9])
+ax1 = f.add_subplot(gs[4:8, :9], sharex=ax0)
+ax2 = f.add_subplot(gs[8:12, :9], sharex=ax0)
 f.subplots_adjust(hspace=0.05)
-ax1.set_xlim(dis[0, 0], dis[0, -1])
+
+# plot river
+axR.xaxis.tick_top()
+axR.plot(river_time, river)
+# axR.set_xlabel(r'Year Day')
+# axR.set_ylabel('Discharge [m^3s^{-1}]')
+axR.text(5, 3500, r'Runoff [m$^3$s$^{-1}$]')
+axR.set_xlim(0, 366)
+axR.set_ylim(0, 5000)
+axR.set_yticks([1000, 3000, 5000])
+
+# set axixes
+ax0.plot(dis[0, :], np.zeros(dis.shape[1]), '--k', linewidth=0.3)
+ax0.set_ylim(-25, 25)
+ax0.set_yticks([-15, 0, 15])
+ax0.set_xlim(dis[0, 0], dis[0, -1])
+ax2.set_xticks(range(10, 151, 20))
+
+ax0.text(5, -12, r'SSH [cm]')
+
+# ax0.set_ylabel('SSH [cm]')
+ax1.set_ylabel(r'Depth [m]')
+ax2.set_xlabel(r'Distance [km]')
+
 ax1.set_ylim(0, depth0)
 ax1.set_yticks(range(0, depth0, 10))
 ax1.invert_yaxis()
+
 ax2.set_ylim(depth0, depth1)
 ax2.set_yticks(range(depth0, depth1, 100))
 ax2.invert_yaxis()
+
 # plot bathymetry
 ax1.fill_between(dis[0, :], -h_tr, depth1, facecolor='lightgrey')
 ax2.fill_between(dis[0, :], -h_tr, depth1, facecolor='lightgrey')
@@ -358,13 +415,13 @@ for var in varlist:
 
     for fn in flist:
         # read data
-        tag = fn.split('/')[-1].split('.')[0]
+        tag = fn.split('/')[-1].split('.nc')[0]
         print('processing ' + tag + ' ...')
         fh = nc.Dataset(fn)
         t = fh.variables['ocean_time'][:]
         tunit = (fh.variables['ocean_time']).units
         data = fh.variables[var][:]
-        zeta = fh.variables['zeta'][:]
+        zeta = 100*fh.variables['zeta'][:]
         if plt_uv==1:
             u = fh.variables[uvar][:]
             v = fh.variables[vvar][:]
@@ -388,9 +445,9 @@ for var in varlist:
                 U_tr2 = u_tr2*np.cos(np.tile(ang_tr2, (40, 1)))-v_tr2*np.sin(np.tile(ang_tr2, (40, 1)))
                 w_tr2 = w[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
 
-            # make plot
+            # make the plot
+            pltr = axR.plot([t[tt]/24/60/60-t0+1, t[tt]/24/60/60-t0+1], [0, 5000], 'k')
             pltz = ax0.plot(dis[0, :], zeta_tr, 'k')
-            ax0.set_ylim(-0.25, 0.25)
             if var in var_log:
                 pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
                 pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
@@ -400,8 +457,9 @@ for var in varlist:
                 pcm1.set_clim(clim_var[0], clim_var[1])
                 pcm2.set_clim(clim_var[0], clim_var[1])
             # add colorbar axis handle
-            cbar_ax = f.add_axes([0.92, 0.10, 0.02, 0.8])
+            cbar_ax = f.add_axes([0.85, 0.10, 0.02, 0.8])
             cb = f.colorbar(pcm1, cax=cbar_ax)
+            cbar_ax.set_ylabel(long_name[var])
 
             if plt_contourf==1:
                 varc11 = ax1.contour(dis, z_tr, var_tr, clevs[::5], linestyle='--', linewidths=1.0, colors='k')
@@ -417,6 +475,7 @@ for var in varlist:
             f.suptitle(var + '_' + grd.name + '_' + ftype + '_' + ttag)
             f.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')
 
+            pltr.pop(0).remove()
             pltz.pop(0).remove()
             pcm1.remove()
             pcm2.remove()

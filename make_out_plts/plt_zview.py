@@ -18,7 +18,7 @@ model_dir = sv['model_dir']
 # my inputs
 my_year = 2008
 grd1 = 'GB_lr'
-ftype = 'his'
+ftype = 'avg'
 varlist = ['salt', 'temp']
 # varlist = ['tke', 'gls']
 depth = 1
@@ -123,7 +123,7 @@ for var in varlist:
 
     for fn in flist:
 
-        tag = fn.split('/')[-1].split('.')[0]
+        tag = fn.split('/')[-1].split('.nc')[0]
         print('  processing ' + tag + ' ...')
 
         fh = nc.Dataset(fn)
