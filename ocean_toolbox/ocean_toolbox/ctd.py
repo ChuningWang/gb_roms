@@ -126,7 +126,7 @@ class ctd(object):
         cast_data = np.array(cast_data).astype(float)
         return cast_info, cast_data
 
-    def tidy_cnv(self):
+    def _tidy_cnv(self):
         '''
         tidy .cnv files to get rid of some formatting issues.
         this method is obsolete with the new data reader.
