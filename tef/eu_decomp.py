@@ -92,20 +92,22 @@ def extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1):
         v[i*ts:(i+1)*ts, :, :] = 0.5*(vi[:, :, xpos, ypos0:ypos1] + vi[:, :, xpos-1, ypos0:ypos1])
         fin.close()
 
+    # time = time/24/3600
+
     fout = nc.Dataset(out_file, 'w')
     fout.createDimension('time')
     fout.createDimension('N', N)
     fout.createDimension('x', dx)
-    fout.createVariable('time', 'f', ('time'))
-    fout.createVariable('zeta', 'f', ('time', 'x'))
-    fout.createVariable('zr', 'f', ('time', 'N', 'x'))
-    fout.createVariable('dz', 'f', ('time', 'N', 'x'))
-    fout.createVariable('salt', 'f', ('time', 'N', 'x'))
-    fout.createVariable('temp', 'f', ('time', 'N', 'x'))
-    fout.createVariable('ubar', 'f', ('time', 'x'))
-    fout.createVariable('vbar', 'f', ('time', 'x'))
-    fout.createVariable('u', 'f', ('time', 'N', 'x'))
-    fout.createVariable('v', 'f', ('time', 'N', 'x'))
+    fout.createVariable('time', 'd', ('time'))
+    fout.createVariable('zeta', 'd', ('time', 'x'))
+    fout.createVariable('zr', 'd', ('time', 'N', 'x'))
+    fout.createVariable('dz', 'd', ('time', 'N', 'x'))
+    fout.createVariable('salt', 'd', ('time', 'N', 'x'))
+    fout.createVariable('temp', 'd', ('time', 'N', 'x'))
+    fout.createVariable('ubar', 'd', ('time', 'x'))
+    fout.createVariable('vbar', 'd', ('time', 'x'))
+    fout.createVariable('u', 'd', ('time', 'N', 'x'))
+    fout.createVariable('v', 'd', ('time', 'N', 'x'))
 
     fout.variables['time'][:] = time
     fout.variables['zeta'][:] = zeta
@@ -118,7 +120,7 @@ def extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1):
     fout.variables['u'][:] = u
     fout.variables['v'][:] = v
     fout.close()
-    return time
+    return None
 
 # -------------- extract data -------------------------------
 my_year = 2008
@@ -151,11 +153,11 @@ out_file = out_dir + 'tef/i_trans_' + \
            str(xpos) + '_' + str(ypos0) + '_' + str(ypos1) + '.nc'
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
 flist = flist[1:]
-flist = flist[1:5]
+# flist = flist[1:5]
 
 # transect data
 if itrans_sl == 's':
-    time = extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1)
+    extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1)
 elif itrans_sl == 'l':
     fin = nc.Dataset(out_file, 'r')
     time = fin.variables['time'][:]
