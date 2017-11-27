@@ -10,8 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 
+import cmocean
 import pyroms
-import ttide as tt
+import ttide
 
 import read_host_info
 sv = read_host_info.read_host_info()
@@ -117,22 +118,27 @@ def extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1):
     fout.variables['u'][:] = u
     fout.variables['v'][:] = v
     fout.close()
-    return None
+    return time
 
 # -------------- extract data -------------------------------
 my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
-itrans_sl = 'l'
+itrans_sl = 's'
 xpos = 210
 ypos0 = 127
 ypos1 = 145
 t0 = 720
-t1 = 2160
+t1 = 1080
 
-dx = ypos1 - ypos0
+xx = ypos1 - ypos0
+tt = t1 - t0
 grd = pyroms.grid.get_ROMS_grid(grd1)
+lat = grd.hgrid.lat_rho[xpos, ypos0:ypos1]
+lon = grd.hgrid.lon_rho[xpos, ypos0:ypos1]
+h = grd.vgrid.h[xpos, ypos0:ypos1]
+dx = grd.hgrid.dx[xpos, ypos0:ypos1]
 
 if len(sys.argv)>1:
     tag = sys.argv[-1]
@@ -145,15 +151,16 @@ out_file = out_dir + 'tef/i_trans_' + \
            str(xpos) + '_' + str(ypos0) + '_' + str(ypos1) + '.nc'
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
 flist = flist[1:]
+flist = flist[1:5]
 
 # transect data
 if itrans_sl == 's':
-    extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1)
+    time = extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1)
 elif itrans_sl == 'l':
     fin = nc.Dataset(out_file, 'r')
     time = fin.variables['time'][:]
     zeta = fin.variables['zeta'][:]
-    zr = fin.variables['zr'][:]
+    zr = -fin.variables['zr'][:]
     dz = fin.variables['dz'][:]
     salt = fin.variables['salt'][:]
     temp = fin.variables['temp'][:]
@@ -163,24 +170,87 @@ elif itrans_sl == 'l':
     v = fin.variables['v'][:]
     fin.close()
 
-# harmonic analysis
-utide = np.zeros(zeta.shape)
-vtide = np.zeros(zeta.shape)
-for i in range(dx):
-    tfit = tt.t_tide(ubar[:, i] + 1j*vbar[:, i], dt=2,
-                     out_style=None, errcalc='wboot')
-    utide[:, i] = tfit(time).real
-    vtide[:, i] = tfit(time).imag
+# ur = u - np.tile(np.expand_dims(ubar, axis=1), (1, 40, 1))
+# vr = v - np.tile(np.expand_dims(vbar, axis=1), (1, 40, 1))
 
-ures = ubar - utide
-vres = vbar - vtide
+# # time convertion
+# time = time/24./3600.
+# pytime = nc.num2date(time, 'days since 1900-01-01')
 
-ubar = ubar[t0:t1, :]
-vbar = vbar[t0:t1, :]
-utide = utide[t0:t1, :]
-vtide = vtide[t0:t1, :]
-ures = ures[t0:t1, :]
-vres = vres[t0:t1, :]
-u = u[t0:t1, :, :]
-v = v[t0:t1, :, :]
-
+# # -------------- harmonic analysis --------------------------
+# # perform harmonic analysis
+# ut = np.zeros(zeta.shape)
+# vt = np.zeros(zeta.shape)
+# for i in range(xx):
+#     tfit = ttide.t_tide(ubar[:, i] + 1j*vbar[:, i], dt=2,
+#                         stime=pytime[0], out_style=None, errcalc='wboot')
+#     Ut = tfit(pytime)
+#     ut[:, i] = Ut.real
+#     vt[:, i] = Ut.imag
+# 
+# ue = ubar - ut
+# ve = vbar - vt
+# 
+# # only use a piece of the data
+# time = time[t0:t1]
+# pytime = pytime[t0:t1]
+# zeta = zeta[t0:t1, :]
+# zr = zr[t0:t1, :]
+# dz = dz[t0:t1, :]
+# 
+# u = u[t0:t1, :, :]
+# v = v[t0:t1, :, :]
+# ubar = ubar[t0:t1, :]
+# vbar = vbar[t0:t1, :]
+# 
+# ut = ut[t0:t1, :]
+# vt = vt[t0:t1, :]
+# ue = ue[t0:t1, :]
+# ve = ve[t0:t1, :]
+# ur = ur[t0:t1, :, :]
+# vr = vr[t0:t1, :, :]
+# 
+# # -------------- area weighted average ----------------------
+# Ut = np.zeros(tt)
+# Vt = np.zeros(tt)
+# Ue = np.zeros(tt)
+# Ve = np.zeros(tt)
+# 
+# for i in range(tt):
+#     Ut[i] = np.sum((h-zeta[i, :])*dx*ut[i, :]) / \
+#         np.sum((h-zeta[i, :])*dx)
+#     Vt[i] = np.sum((h-zeta[i, :])*dx*vt[i, :]) / \
+#         np.sum((h-zeta[i, :])*dx)
+#     Ue[i] = np.sum((h-zeta[i, :])*dx*ue[i, :]) / \
+#         np.sum((h-zeta[i, :])*dx)
+#     Ve[i] = np.sum((h-zeta[i, :])*dx*ve[i, :]) / \
+#         np.sum((h-zeta[i, :])*dx)
+# 
+# # -------------- make plots ---------------------------------
+# fig, (axt, axe, ax) = plt.subplots(3, gridspec_kw={'height_ratios': [2, 2, 6]})
+# ax.set_position([0.1, 0.1, 0.7, 0.45])
+# axe.set_position([0.1, 0.65, 0.7, 0.15])
+# axt.set_position([0.1, 0.81, 0.7, 0.15])
+# 
+# ax.set_xlabel(r'Longitude')
+# ax.set_ylabel(r'Depth [m]')
+# ax.set_xlim(lon.min(), lon.max())
+# ax.set_ylim(-5, 60)
+# ax.invert_xaxis()
+# ax.invert_yaxis()
+# ax.fill_between(lon, -5, 60, facecolor='lightgrey')
+# 
+# axe.set_xlabel(r'Time')
+# axe.set_ylabel(r'$V_e$ [ms$^{-1}$]')
+# 
+# pltut = axt.plot(time, Vt)
+# pltue = axe.plot(time, Ve)
+# 
+# pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[0, :, :], ur[0, :, :], [0],
+#                  colors='k')
+# pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[0, :, :], ur[0, :, :],
+#                    np.linspace(-0.3, 0.3, 31), extend='both',
+#                    cmap=cmocean.cm.balance)
+# cbar_ax = fig.add_axes([0.85, 0.10, 0.02, 0.8])
+# cb = fig.colorbar(pctf, cax=cbar_ax, ticks=np.linspace(-0.3, 0.3, 7))
+# cbar_ax.set_ylabel(r'$U$ [ms$^{-1}$]')
