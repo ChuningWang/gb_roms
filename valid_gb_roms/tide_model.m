@@ -1,17 +1,18 @@
-clear; clc; close all
+clear; close all
 
 % first, concatenate ubar, vbar from netCDF files
 in_dir = '/glade/scratch/chuning/tmpdir_GB-ref/outputs/2008/';
 grd_file = '/glade/p/work/chuning/gb_roms/grd/GlacierBay_lr_grd.nc';
-out_file = '/glade/p/work/chuning/gb_roms/tides/Tide_model_lr.mat';
+out_file = '/glade/p/work/chuning/gb_roms/tides/Tide_model_lr.nc';
 flist = dir([in_dir '*his*nc']);
+flist = flist(2:end);
 % flist = flist(end-29:end);
-
-save(out_file)
 
 % stride
 dd = 1;
-ts = 24;
+ts = 12;
+
+interval = 24/ts;
 
 % read all dimensions
 nci = ncinfo([in_dir flist(1).name]);
@@ -21,13 +22,11 @@ for i=1:length(nci)
 end
 
 % read lon lat
-lat = ncread(grd_file, 'lat_psi');
-lon = ncread(grd_file, 'lon_psi');
-msk = ncread(grd_file, 'mask_psi');
+lat = ncread(grd_file, 'lat_rho');
+lon = ncread(grd_file, 'lon_rho');
+msk = ncread(grd_file, 'mask_rho');
 h = ncread(grd_file, 'h');
 ang = ncread(grd_file, 'angle');
-h = 0.25*(h(1:end-1, 1:end-1)+h(1:end-1, 2:end)+h(2:end, 1:end-1)+h(2:end, 2:end));
-ang = 0.25*(ang(1:end-1, 1:end-1)+ang(1:end-1, 2:end)+ang(2:end, 1:end-1)+ang(2:end, 2:end));
 
 lat = lat(1:dd:end, 1:dd:end);
 lon = lon(1:dd:end, 1:dd:end);
@@ -42,26 +41,26 @@ tt = length(flist);
 
 % create variables
 t = zeros(tt*ts, 1);
-Ubar = zeros(xi_psi, eta_psi, tt*ts);
-Ubar = Ubar(1:dd:end, 1:dd:end, :);
-
-Utide = nan(xi_psi, eta_psi, tt*ts);
-Utide = Utide(1:dd:end, 1:dd:end, :);
+Ubar = zeros(xi_s, eta_s, tt*ts);
 
 for i=1:tt
 	disp(['Loading time step ' num2str(i)])
     t((i-1)*ts+1:(i-1)*ts+ts) = ncread([in_dir flist(i).name], 'ocean_time');
 	ubar = ncread([in_dir flist(i).name], 'ubar');
 	vbar = ncread([in_dir flist(i).name], 'vbar');
-	ubar = 0.5*(ubar(:, 1:end-1, :)+ubar(:, 2:end, :));
-	vbar = 0.5*(vbar(1:end-1, :, :)+vbar(2:end, :, :));
-	Ub = ubar(1:dd:end, 1:dd:end, :) + 1i*vbar(1:dd:end, 1:dd:end, :);
-	Ub = Ub.*exp(1j*repmat(ang, [1, 1, ts]));
-	Ubar(:, :, (i-1)*ts+1:(i-1)*ts+ts) = Ub;
+    ubar(isnan(ubar)) = 0;
+    vbar(isnan(vbar)) = 0;
+    ubar = 0.5*(ubar(1:end-1, :, :) + ubar(2:end, :, :));
+    vbar = 0.5*(vbar(:, 1:end-1, :) + vbar(:, 2:end, :));
+    Ub = ubar(:, 2:end-1, :) + 1i*vbar(2:end-1, :, :);
+    Ubar(2:end-1, 2:end-1, (i-1)*ts+1:(i-1)*ts+ts) = Ub;
 end
 
-Ubar = permute(Ubar, [3, 1, 2]);
-Utide = permute(Utide, [3, 1, 2]);
+Ubar = Ubar(1:dd:end, 1:dd:end, :);
+
+% rotate velocity vector
+Ubar = Ubar.*exp(1j*repmat(ang, [1, 1, tt*ts]));
+Utide = nan(size(Ubar));
 
 % tidal analysis
 tlist = {'Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2', 'MF'};
@@ -73,21 +72,37 @@ end
 
 for i=1:xi_s
 	for j=1:eta_s
-		if all(~isnan(Ubar(:, i, j)))
-			[ts, pout] = t_tide(Ubar(:, i, j), 'interval',1);
-			Utide(:, i, j) = pout;
-			for k=1:length(tlist)
-				tname = tlist{k};
-				idx = strmatch(tname, ts.name);
-                if ~isempty(idx)
-                    eval(['btr.', tname, '(1, i, j) = ts.tidecon(idx, 1);'])
-                    eval(['btr.', tname, '(2, i, j) = ts.tidecon(idx, 3);'])
-                    eval(['btr.', tname, '(3, i, j) = ts.tidecon(idx, 5);'])
-                    eval(['btr.', tname, '(4, i, j) = ts.tidecon(idx, 7);'])
-                end
-			end
+		if any(Ubar(i, j, :) ~= 0)
+			[tts, pout] = t_tide(Ubar(i, j, :), 'interval', interval, ...
+                                 'error', 'wboot', 'output', 'none');
+			Utide(i, j, :) = pout;
+			% for k=1:length(tlist)
+			% 	tname = tlist{k};
+			% 	idx = strmatch(tname, tts.name);
+            %     if ~isempty(idx)
+            %         eval(['btr.', tname, '(1, i, j) = tts.tidecon(idx, 1);'])
+            %         eval(['btr.', tname, '(2, i, j) = tts.tidecon(idx, 3);'])
+            %         eval(['btr.', tname, '(3, i, j) = tts.tidecon(idx, 5);'])
+            %         eval(['btr.', tname, '(4, i, j) = tts.tidecon(idx, 7);'])
+            %     end
+			% end
 		end
 	end
 end
 
-save(out_file, 'btr', 'Utide', 'lat', 'lon', 'h', 'ang', 'msk', '-append')
+% save(out_file, 'btr', 'Utide', 'lat', 'lon', 'h', 'ang', 'msk')
+nccreate(out_file, 'time', 'dimension', ...
+         {'t', length(t)})
+nccreate(out_file, 'utide', 'dimension', ...
+         {'y', size(Utide, 1), 'x', size(Utide, 2), 't', size(Utide, 3)})
+nccreate(out_file, 'vtide', 'dimension', ...
+         {'y', size(Utide, 1), 'x', size(Utide, 2), 't', size(Utide, 3)})
+nccreate(out_file, 'ures', 'dimension', ...
+         {'y', size(Utide, 1), 'x', size(Utide, 2), 't', size(Utide, 3)})
+nccreate(out_file, 'vres', 'dimension', ...
+         {'y', size(Utide, 1), 'x', size(Utide, 2), 't', size(Utide, 3)})
+ncwrite(out_file, 'time', t)
+ncwrite(out_file, 'utide', real(Utide))
+ncwrite(out_file, 'vtide', imag(Utide))
+ncwrite(out_file, 'ures', real(Ubar - Utide))
+ncwrite(out_file, 'vres', imag(Ubar - Utide))

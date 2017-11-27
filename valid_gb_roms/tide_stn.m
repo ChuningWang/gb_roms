@@ -2,7 +2,7 @@ clear; clc; close all
 
 in_dir = '/glade/p/work/chuning/data/NOAA_ADCP/';
 out_dir = '/glade/p/work/chuning/gb_roms/tides/';
-flist = dir([in_dir '*20080810_20080910.nc']);
+flist = dir([in_dir '*.nc']);
 
 save([out_dir 'Tide_stn.mat'])
 
@@ -31,15 +31,37 @@ for i=1:length(flist)
     lon(i) = ncreadatt(in_file, '/', 'lon');
 
     U = u+1i*v;
-    U = tide_filter(U, t, 1);
+    U = tide_filter(U, t, 3);
     Ubar = mean(U, 2);
 
     [ts, pout] = t_tide(Ubar, 'interval',0.1);
+    eval(['btr.time_' stn_name, '= t;'])
     eval(['btr.Utide_' stn_name, '= pout;'])
     for j=1:length(tlist)
         tname = tlist{j};
         eval(['bcl.', tname, '_', stn_name, '=nan(4, length(z));'])
     end
+
+    % save barotropic tide velocity to ncfiles
+    nccreate([out_dir stn_name '.nc'], 'time', ...
+             'dimensions', {'time', length(t)});
+    nccreate([out_dir stn_name '.nc'], 'lat')
+    nccreate([out_dir stn_name '.nc'], 'lon')
+    nccreate([out_dir stn_name '.nc'], 'utide', ...
+             'dimensions', {'time', length(t)});
+    nccreate([out_dir stn_name '.nc'], 'vtide', ...
+             'dimensions', {'time', length(t)});
+    nccreate([out_dir stn_name '.nc'], 'ures', ...
+             'dimensions', {'time', length(t)});
+    nccreate([out_dir stn_name '.nc'], 'vres', ...
+             'dimensions', {'time', length(t)});
+    ncwrite([out_dir stn_name '.nc'], 'time', t)
+    ncwrite([out_dir stn_name '.nc'], 'lat', lat(i))
+    ncwrite([out_dir stn_name '.nc'], 'lon', lon(i))
+    ncwrite([out_dir stn_name '.nc'], 'utide', real(pout))
+    ncwrite([out_dir stn_name '.nc'], 'vtide', imag(pout))
+    ncwrite([out_dir stn_name '.nc'], 'ures', real(Ubar - pout))
+    ncwrite([out_dir stn_name '.nc'], 'vres', imag(Ubar - pout))
 
     for j=1:length(tlist)
         tname = tlist{j};
@@ -77,6 +99,7 @@ for i=1:length(flist)
         Urs(:, j) = Ucl(:, j)-pout;
     end
 
+    eval(['bcl.time_' stn_name, '= t;'])
     eval(['bcl.', stn_name, '_Ucl = Ucl;'])
     eval(['bcl.', stn_name, '_Uit = Uit;'])
     eval(['bcl.', stn_name, '_Urs = Urs;'])

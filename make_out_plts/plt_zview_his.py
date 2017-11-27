@@ -1,36 +1,54 @@
-import numpy as np
+"""
+Plot map view of variables in Glacier Bay.
+"""
+
+# --------------------- load modules --------------------------------------
+import sys
 import glob
 from datetime import datetime, timedelta
+
+import netCDF4 as nc
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import cmocean
 from mpl_toolkits.basemap import Basemap
+
+import cmocean
 import pyroms
 import pyroms_toolbox as prt
-import netCDF4 as nc
-import sys
 
 import read_host_info
 sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
+# --------------------- input arguments -----------------------------------
 # my inputs
 my_year = 2008
 grd1 = 'GB_lr'
-ftype = 'avg'
+ftype = 'his'
 varlist = ['salt', 'temp']
-# varlist = ['tke', 'gls']
 depth = 1
 dd = 10
 plt_uv = 1
 plt_contourf = 1
 uscale = 20
 
+if len(sys.argv)>1:
+    tag = sys.argv[-1]
+else:
+    tag = 'GB-ref'
+
+model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
+outputs_dir = model_dir + model
+fig_dir = out_dir + 'figs/zview/' + tag + '/' + ftype + '/'
+
+flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
+
 # dicts for variable clims, colormaps, and other properties
 clim = {'temp': [2, 10],
         'salt': [15, 30],
-        'zeta': [-3, 3],
+        'zeta': [-0.15, 0.15],
         'wetdry_mask_rho': [0, 1],
         'dye_01': [0, 1],
         'dye_02': [0, 1],
@@ -54,7 +72,6 @@ var_2d = ['zeta', 'wetdry_mask_rho']
 var_omega = ['tke', 'gls']
 var_log = ['tke', 'gls']
 
-depth = -abs(depth)
 lat_min = 57.75
 lat_max = 59.25
 lat_0 = 0.5 * (lat_min + lat_max)
@@ -63,23 +80,14 @@ lon_min = -137.5
 lon_max = -135.0
 lon_0 = 0.5 * (lon_min + lon_max)
 
-if len(sys.argv)>1:
-    tag = sys.argv[-1]
-else:
-    tag = 'GB-ref'
-
-model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
-outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/zview/' + tag + '/'
-
-flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-# flist = flist[-1:]
-
+# --------------------- data preparation ----------------------------------
+depth = -abs(depth)
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon = grd.hgrid.lon_rho
 lat = grd.hgrid.lat_rho
 mask = grd.hgrid.mask_rho
 
+# --------------------- make plots ----------------------------------------
 # plot options
 plt.switch_backend('Agg')
 try:
@@ -98,7 +106,6 @@ mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),labels=[0,0,0,1],fontsize=
 pr = m.drawparallels(np.arange(lat_min, lat_max, 0.25),labels=[1,0,0,0],fontsize=6, linewidth=.2)
 
 for var in varlist:
-    print('For ' + var)
 
     if var in clim.keys():
         clim_var = clim[var]
@@ -124,7 +131,7 @@ for var in varlist:
     for fn in flist:
 
         tag = fn.split('/')[-1].split('.nc')[0]
-        print('  processing ' + tag + ' ...')
+        print('processing ' + var + ' for ' + fn + ' ...')
 
         fh = nc.Dataset(fn)
         t = fh.variables['ocean_time'][:]
@@ -181,6 +188,7 @@ for var in varlist:
                 qv = m.quiver(x[::dd,::dd], y[::dd,::dd], \
                               np.real(U[::dd,::dd]), np.imag(U[::dd,::dd]), \
                               scale = uscale, width=0.001)
+                qvkey = plt.quiverkey(qv, 0.2, 0.1, 2, r'2 ms$^{-1}$')
 
             cbar_ax = f.add_axes([0.78, 0.12, 0.02, 0.76])
             cb = f.colorbar(pc, cax=cbar_ax)
@@ -204,5 +212,6 @@ for var in varlist:
                     cc.remove()
             if plt_uv == 1:
                 qv.remove()
+                qvkey.remove()
 
 plt.close()

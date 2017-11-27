@@ -102,6 +102,7 @@ xi = {}
 rdir = {}
 
 for tp in ['c0', 'c1', 'c2', 'c3']:
+# for tp in ['c3']:
     cc = trs_points[tp]
     if cc[0, 0] == cc[1, 0]:
         eta = cc[0, 0]*np.ones(abs(cc[1, 1] - cc[0, 1]))
