@@ -141,18 +141,20 @@ my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
-itrans_sl = 's'
+itrans_sl = 'l'
 xpos = 211
 ypos0 = 127
 ypos1 = 145
-t0 = 720
-t1 = 1080
+t0 = 720 + 52*12
+t1 = 1080 + 60*12
+yidx = 10
 
 xx = ypos1 - ypos0
 tt = t1 - t0
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lat = grd.hgrid.lat_rho[xpos, ypos0:ypos1]
 lon = grd.hgrid.lon_rho[xpos, ypos0:ypos1]
+ang = grd.hgrid.angle_rho[xpos, ypos0:ypos1]
 h = grd.vgrid.h[xpos, ypos0:ypos1]
 dx = grd.hgrid.dx[xpos, ypos0:ypos1]
 
@@ -175,19 +177,19 @@ if itrans_sl == 's':
 
 fin = nc.Dataset(out_file, 'r')
 time = fin.variables['time'][:]
-zeta = fin.variables['zeta'][:]
-zr = -fin.variables['zr'][:]
-dz = fin.variables['dz'][:]
-salt = fin.variables['salt'][:]
-temp = fin.variables['temp'][:]
-ubar = fin.variables['ubar'][:]
-vbar = fin.variables['vbar'][:]
-u = fin.variables['u'][:]
-v = fin.variables['v'][:]
+zeta = fin.variables['zeta'][:, yidx]
+zr = -fin.variables['zr'][:, :, yidx]
+dz = fin.variables['dz'][:, :, yidx]
+salt = fin.variables['salt'][:, :, yidx]
+temp = fin.variables['temp'][:, :, yidx]
+ubar = fin.variables['ubar'][:, yidx]
+vbar = fin.variables['vbar'][:, yidx]
+u = fin.variables['u'][:, :, yidx]
+v = fin.variables['v'][:, :, yidx]
 fin.close()
 
-ur = u - np.tile(np.expand_dims(ubar, axis=1), (1, 40, 1))
-vr = v - np.tile(np.expand_dims(vbar, axis=1), (1, 40, 1))
+ur = u - np.tile(np.expand_dims(ubar, axis=1), (1, 40))
+vr = v - np.tile(np.expand_dims(vbar, axis=1), (1, 40))
 
 # time convertion
 time = time/24./3600.
@@ -198,14 +200,11 @@ yearday = time - \
 
 # -------------- harmonic analysis --------------------------
 # perform harmonic analysis
-ut = np.zeros(zeta.shape)
-vt = np.zeros(zeta.shape)
-for i in range(xx):
-    tfit = ttide.t_tide(ubar[:, i] + 1j*vbar[:, i], dt=2,
-                        stime=pytime[0], out_style=None, errcalc='wboot')
-    Ut = tfit(pytime)
-    ut[:, i] = Ut.real
-    vt[:, i] = Ut.imag
+tfit = ttide.t_tide(ubar + 1j*vbar, dt=2,
+                    stime=pytime[0], out_style=None, errcalc='wboot')
+Ut = tfit(pytime)
+ut = Ut.real
+vt = Ut.imag
 
 ue = ubar - ut
 ve = vbar - vt
@@ -214,37 +213,21 @@ ve = vbar - vt
 time = time[t0:t1]
 pytime = pytime[t0:t1]
 yearday = yearday[t0:t1]
-zeta = zeta[t0:t1, :]
-zr = zr[t0:t1, :]
-dz = dz[t0:t1, :]
+zeta = zeta[t0:t1]
+zr = zr[t0:t1]
+dz = dz[t0:t1]
 
-u = u[t0:t1, :, :]
-v = v[t0:t1, :, :]
-ubar = ubar[t0:t1, :]
-vbar = vbar[t0:t1, :]
+u = u[t0:t1, :]
+v = v[t0:t1, :]
+ubar = ubar[t0:t1]
+vbar = vbar[t0:t1]
 
-ut = ut[t0:t1, :]
-vt = vt[t0:t1, :]
-ue = ue[t0:t1, :]
-ve = ve[t0:t1, :]
-ur = ur[t0:t1, :, :]
-vr = vr[t0:t1, :, :]
-
-# -------------- area weighted average ----------------------
-Ut = np.zeros(tt)
-Vt = np.zeros(tt)
-Ue = np.zeros(tt)
-Ve = np.zeros(tt)
-
-for i in range(tt):
-    Ut[i] = np.sum((h-zeta[i, :])*dx*ut[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
-    Vt[i] = np.sum((h-zeta[i, :])*dx*vt[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
-    Ue[i] = np.sum((h-zeta[i, :])*dx*ue[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
-    Ve[i] = np.sum((h-zeta[i, :])*dx*ve[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
+ut = ut[t0:t1]
+vt = vt[t0:t1]
+ue = ue[t0:t1]
+ve = ve[t0:t1]
+ur = ur[t0:t1, :]
+vr = vr[t0:t1, :]
 
 # -------------- read in station data -----------------------
 info = {'stn' : 'SEA0847',
@@ -255,63 +238,141 @@ info = {'stn' : 'SEA0847',
 crt = noaa_adcp.get_noaa_current(info)
 crt()
 
+time2 = crt.ctime
+yearday2 = time2 - \
+    nc.date2num(datetime(pytime[0].year, 1, 1), 'days since 1900-01-01') + \
+    1
+z2 = crt.z
+U2 = crt.u.T + 1j*crt.v.T
+U2 = U2*np.exp(-ang[10]*1j)
+
+u2 = U2.real
+v2 = U2.imag
+ubar2 = u2.mean(axis=1)
+vbar2 = v2.mean(axis=1)
+
+ur2 = u2 - np.tile(np.expand_dims(ubar2, axis=1), (1, len(z2)))
+vr2 = v2 - np.tile(np.expand_dims(vbar2, axis=1), (1, len(z2)))
+
+# -------------- harmonic analysis --------------------------
+tfit = ttide.t_tide(ubar2 + 1j*vbar2, dt=0.1,
+                    stime=nc.num2date(time2[0], 'days since 1900-01-01'),
+                    out_style=None)
+Ut = tfit(nc.num2date(time2, 'days since 1900-01-01'))
+ut2 = Ut.real
+vt2 = Ut.imag
+
+ue2 = ubar2 - ut2
+ve2 = vbar2 - vt2
+
+# -------------- filter bcl ---------------------------------
+vef = filter(ve, 2, 30)
+ve2f = filter(ve2, 0.1, 30)
+vrf = filter(vr, 2, 30)
+vr2f = filter(vr2, 0.1, 30)
+
+saltf = filter(salt, 2, 30)
+tempf = filter(temp, 2, 30)
+
 # -------------- make plots ---------------------------------
-# fig, (axt, axe, ax) = plt.subplots(3, gridspec_kw={'height_ratios': [2, 2, 6]})
-# ax.set_position([0.15, 0.1, 0.7, 0.4])
-# axe.set_position([0.15, 0.6, 0.7, 0.15])
-# axt.set_position([0.15, 0.76, 0.7, 0.15])
-# 
-# ax.set_xlabel(r'Longitude [$^{\circ}$W]')
-# ax.set_ylabel(r'Depth [m]')
-# ax.set_xlim(lon.min(), lon.max())
-# ax.set_ylim(-5, 60)
-# ax.set_xticks([-136.08, -136.04, -136.00])
-# ax.set_xticklabels(['136.08', '136.04', '136.00'])
-# ax.invert_yaxis()
-# ax.fill_between(lon, -5, 60, facecolor='lightgrey')
-# 
-# axe.set_xlabel(r'Yearday')
-# axe.set_ylabel(r'$U_e$ [ms$^{-1}$]')
-# axt.set_ylabel(r'$U_f$ [ms$^{-1}$]')
-# 
-# axt.set_xlim(yearday[0], yearday[-1])
-# axe.set_xlim(yearday[0], yearday[-1])
-# axt.set_ylim(-2.5, 2.5)
-# axe.set_ylim(-0.05, 0.05)
-# axt.set_yticks([-2., 0, 2.])
-# axe.set_yticks([-0.05, 0, 0.05])
-# 
-# axt.plot(yearday, Vt, 'k')
-# axe.plot(yearday, Ve, '--', color='grey', linewidth=.5)
-# axe.plot(yearday, filter(Ve, 2, 30), 'k')
-# 
-# for i in range(len(time)):
-# # for i in range(2):
-#     pltue = axe.plot([yearday[i], yearday[i]], [-0.05, 0.05], 'r')
-#     pltut = axt.plot([yearday[i], yearday[i]], [-2.5, 2.5], 'r')
-# 
-#     pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :], [0],
-#                      colors='k')
-#     pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :],
-#                        np.linspace(-0.5, 0.5, 51), extend='both',
-#                        cmap=cmocean.cm.balance)
-#     cbar_ax = fig.add_axes([0.87, 0.10, 0.02, 0.8])
-#     cb = fig.colorbar(pctf, cax=cbar_ax, ticks=np.linspace(-0.5, 0.5, 11))
-#     cbar_ax.set_ylabel(r'$U$ [ms$^{-1}$]')
-# 
-#     ttag = pytime[i].strftime("%Y-%m-%d_%H:%M:%S")
-#     fig.suptitle(ttag)
-#     # save fig
-#     fig.savefig(out_dir + 'figs/tef/itrans_' + ttag + '.png')
-# 
-#     # remove plot objects
-#     pltue.pop(0).remove()
-#     pltut.pop(0).remove()
-#     for cc in pct.collections:
-#         cc.remove()
-#     for cc in pctf.collections:
-#         cc.remove()
-# 
-#     fig.delaxes(cbar_ax)
-# 
-# plt.close()
+fig, (axt, axe, axbcl1, axbcl2, axbcl3, axbcl4) = \
+        plt.subplots(6, 1, sharex=True,
+                     gridspec_kw={'height_ratios':[1, 1, 1, 1, 1, 1]})
+fig.subplots_adjust(right=0.83, hspace=.05)
+axt.set_xlim(yearday[0], yearday[-1])
+
+axt.set_ylim(-2.7, 2.7)
+axe.set_ylim(-0.15, 0.15)
+
+axt.set_yticks([-2., 0., 2.])
+axe.set_yticks([-0.1, 0., 0.1])
+
+axbcl1.set_ylim(-5, 65)
+axbcl2.set_ylim(-5, 65)
+axbcl3.set_ylim(-5, 65)
+axbcl4.set_ylim(-5, 65)
+
+axbcl1.invert_yaxis()
+axbcl2.invert_yaxis()
+axbcl3.invert_yaxis()
+axbcl4.invert_yaxis()
+
+axbcl4.set_xlabel(r'Yearday')
+axbcl1.set_ylabel(r'Depth [m]')
+
+# axt.set_ylabel(r'Tides [ms$^{-1}$]')
+# axe.set_ylabel(r'2D Res [ms$^{-1}$]')
+
+axt.plot(yearday, vt, 'r', linewidth=.7)
+axt.plot(yearday2, vt2, 'b', linewidth=.7)
+
+axe.plot(yearday, vef, 'r', linewidth=1)
+axe.plot(yearday2, ve2f, 'b', linewidth=1)
+axe.plot(yearday, ve, '--r', linewidth=.5)
+axe.plot(yearday2, ve2, '--b', linewidth=.5)
+axe.legend(['Model', 'Obs'])
+
+axt.plot(yearday, np.zeros(yearday.shape), '--k', linewidth=.3)
+axe.plot(yearday, np.zeros(yearday.shape), '--k', linewidth=.3)
+
+pctf1 = axbcl1.contourf(np.tile(np.expand_dims(yearday, axis=1),
+                        (1, grd.vgrid.N)),
+                        zr, vrf,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+pctf2 = axbcl2.contourf(yearday2, z2, vr2f.T,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+pctf3 = axbcl3.contourf(np.tile(np.expand_dims(yearday, axis=1),
+                        (1, grd.vgrid.N)),
+                        zr, vr - vrf,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+pctf4 = axbcl4.contourf(yearday2, z2, vr2.T - vr2f.T,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+cbar_ax = fig.add_axes([0.85, 0.10, 0.02, 0.8])
+cb = fig.colorbar(pctf1, cax=cbar_ax, ticks=np.linspace(-0.3, 0.3, 13))
+cbar_ax.set_ylabel(r'Baroclinic [ms$^{-1}$]')
+plt.savefig(out_dir + 'figs/tef/stn_cmp.png', dpi=300)
+plt.close()
+
+
+fig, (axbcl1, axbcl2, axbcl3, axbcl4) = \
+        plt.subplots(4, 1, sharex=True, sharey=True)
+fig.subplots_adjust(right=0.83, hspace=.05)
+axbcl1.set_xlim(yearday[0], yearday[-1])
+axbcl1.set_ylim(-5, 65)
+axbcl1.invert_yaxis()
+axbcl4.set_xlabel(r'Yearday')
+axbcl4.set_ylabel(r'Depth [m]')
+
+pctf1 = axbcl1.contourf(np.tile(np.expand_dims(yearday, axis=1),
+                        (1, grd.vgrid.N)),
+                        zr, saltf,
+                        np.linspace(-29., 31., 21.),
+                        extend='both', cmap=cmocean.cm.balance)
+
+pctf2 = axbcl2.contourf(np.tile(np.expand_dims(yearday, axis=1),
+                        (1, grd.vgrid.N)),
+                        zr, salt - saltf,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+pctf3 = axbcl3.contourf(yearday2, z2, tempf.T,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+pctf4 = axbcl4.contourf(yearday2, z2, temp.T - tempf.T,
+                        np.linspace(-.3, .3, 13),
+                        extend='both', cmap=cmocean.cm.balance)
+
+cbar_ax1 = fig.add_axes([0.85, 0.10, 0.02, 0.8])
+cb1 = fig.colorbar(pctf1, cax=cbar_ax1, ticks=np.linspace(-0.3, 0.3, 13))
+cbar_ax1.set_ylabel(r'Salinity [PSU]')
+plt.savefig(out_dir + 'figs/tef/stn_st_cmp.png', dpi=300)
+plt.close()
