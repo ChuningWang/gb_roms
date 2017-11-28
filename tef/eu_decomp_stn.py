@@ -16,6 +16,7 @@ import cmocean
 import pyroms
 import ttide
 
+from ocean_toolbox import noaa_adcp
 import read_host_info
 sv = read_host_info.read_host_info()
 out_dir = sv['out_dir']
@@ -140,8 +141,8 @@ my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
-itrans_sl = 'l'
-xpos = 210
+itrans_sl = 's'
+xpos = 212
 ypos0 = 127
 ypos1 = 145
 t0 = 720
@@ -245,63 +246,72 @@ for i in range(tt):
     Ve[i] = np.sum((h-zeta[i, :])*dx*ve[i, :]) / \
         np.sum((h-zeta[i, :])*dx)
 
+# -------------- read in station data -----------------------
+info = {'stn' : 'SEA0847',
+        'file_dir': out_dir + 'tef/',
+        'sl': 'l',
+        'Wp_hrs': 2}
+
+crt = noaa_adcp.get_noaa_current(info)
+crt()
+
 # -------------- make plots ---------------------------------
-fig, (axt, axe, ax) = plt.subplots(3, gridspec_kw={'height_ratios': [2, 2, 6]})
-ax.set_position([0.15, 0.1, 0.7, 0.4])
-axe.set_position([0.15, 0.6, 0.7, 0.15])
-axt.set_position([0.15, 0.76, 0.7, 0.15])
-
-ax.set_xlabel(r'Longitude [$^{\circ}$W]')
-ax.set_ylabel(r'Depth [m]')
-ax.set_xlim(lon.min(), lon.max())
-ax.set_ylim(-5, 60)
-ax.set_xticks([-136.08, -136.04, -136.00])
-ax.set_xticklabels(['136.08', '136.04', '136.00'])
-ax.invert_yaxis()
-ax.fill_between(lon, -5, 60, facecolor='lightgrey')
-
-axe.set_xlabel(r'Yearday')
-axe.set_ylabel(r'$U_e$ [ms$^{-1}$]')
-axt.set_ylabel(r'$U_f$ [ms$^{-1}$]')
-
-axt.set_xlim(yearday[0], yearday[-1])
-axe.set_xlim(yearday[0], yearday[-1])
-axt.set_ylim(-2.5, 2.5)
-axe.set_ylim(-0.05, 0.05)
-axt.set_yticks([-2., 0, 2.])
-axe.set_yticks([-0.05, 0, 0.05])
-
-axt.plot(yearday, Vt, 'k')
-axe.plot(yearday, Ve, '--', color='grey', linewidth=.5)
-axe.plot(yearday, filter(Ve, 2, 30), 'k')
-
-for i in range(len(time)):
-# for i in range(2):
-    pltue = axe.plot([yearday[i], yearday[i]], [-0.05, 0.05], 'r')
-    pltut = axt.plot([yearday[i], yearday[i]], [-2.5, 2.5], 'r')
-
-    pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :], [0],
-                     colors='k')
-    pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :],
-                       np.linspace(-0.5, 0.5, 51), extend='both',
-                       cmap=cmocean.cm.balance)
-    cbar_ax = fig.add_axes([0.87, 0.10, 0.02, 0.8])
-    cb = fig.colorbar(pctf, cax=cbar_ax, ticks=np.linspace(-0.5, 0.5, 11))
-    cbar_ax.set_ylabel(r'$U$ [ms$^{-1}$]')
-
-    ttag = pytime[i].strftime("%Y-%m-%d_%H:%M:%S")
-    fig.suptitle(ttag)
-    # save fig
-    fig.savefig(out_dir + 'figs/tef/itrans_' + ttag + '.png')
-
-    # remove plot objects
-    pltue.pop(0).remove()
-    pltut.pop(0).remove()
-    for cc in pct.collections:
-        cc.remove()
-    for cc in pctf.collections:
-        cc.remove()
-
-    fig.delaxes(cbar_ax)
-
-plt.close()
+# fig, (axt, axe, ax) = plt.subplots(3, gridspec_kw={'height_ratios': [2, 2, 6]})
+# ax.set_position([0.15, 0.1, 0.7, 0.4])
+# axe.set_position([0.15, 0.6, 0.7, 0.15])
+# axt.set_position([0.15, 0.76, 0.7, 0.15])
+# 
+# ax.set_xlabel(r'Longitude [$^{\circ}$W]')
+# ax.set_ylabel(r'Depth [m]')
+# ax.set_xlim(lon.min(), lon.max())
+# ax.set_ylim(-5, 60)
+# ax.set_xticks([-136.08, -136.04, -136.00])
+# ax.set_xticklabels(['136.08', '136.04', '136.00'])
+# ax.invert_yaxis()
+# ax.fill_between(lon, -5, 60, facecolor='lightgrey')
+# 
+# axe.set_xlabel(r'Yearday')
+# axe.set_ylabel(r'$U_e$ [ms$^{-1}$]')
+# axt.set_ylabel(r'$U_f$ [ms$^{-1}$]')
+# 
+# axt.set_xlim(yearday[0], yearday[-1])
+# axe.set_xlim(yearday[0], yearday[-1])
+# axt.set_ylim(-2.5, 2.5)
+# axe.set_ylim(-0.05, 0.05)
+# axt.set_yticks([-2., 0, 2.])
+# axe.set_yticks([-0.05, 0, 0.05])
+# 
+# axt.plot(yearday, Vt, 'k')
+# axe.plot(yearday, Ve, '--', color='grey', linewidth=.5)
+# axe.plot(yearday, filter(Ve, 2, 30), 'k')
+# 
+# for i in range(len(time)):
+# # for i in range(2):
+#     pltue = axe.plot([yearday[i], yearday[i]], [-0.05, 0.05], 'r')
+#     pltut = axt.plot([yearday[i], yearday[i]], [-2.5, 2.5], 'r')
+# 
+#     pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :], [0],
+#                      colors='k')
+#     pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :],
+#                        np.linspace(-0.5, 0.5, 51), extend='both',
+#                        cmap=cmocean.cm.balance)
+#     cbar_ax = fig.add_axes([0.87, 0.10, 0.02, 0.8])
+#     cb = fig.colorbar(pctf, cax=cbar_ax, ticks=np.linspace(-0.5, 0.5, 11))
+#     cbar_ax.set_ylabel(r'$U$ [ms$^{-1}$]')
+# 
+#     ttag = pytime[i].strftime("%Y-%m-%d_%H:%M:%S")
+#     fig.suptitle(ttag)
+#     # save fig
+#     fig.savefig(out_dir + 'figs/tef/itrans_' + ttag + '.png')
+# 
+#     # remove plot objects
+#     pltue.pop(0).remove()
+#     pltut.pop(0).remove()
+#     for cc in pct.collections:
+#         cc.remove()
+#     for cc in pctf.collections:
+#         cc.remove()
+# 
+#     fig.delaxes(cbar_ax)
+# 
+# plt.close()

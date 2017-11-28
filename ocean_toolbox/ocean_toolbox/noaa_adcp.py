@@ -43,16 +43,16 @@ class get_noaa_current(object):
         print 'Formating download urls'
         self.time_splitter()
         self.make_url()
-        if self.info['sl']=='s':
+        if self.info['sl'] == 's':
             print 'Acquiring data from NOAA server'
             self.get_current()
-        if self.info['sl']=='l':
+        if self.info['sl'] == 'l':
             print 'Loading data locally'
             self.load_data()
         self.compute_uv()
-        if self.info['Wp_hrs']>0:
+        if self.info['Wp_hrs'] > 0:
             self.filter()
-        if self.info['sl']=='s':
+        if self.info['sl'] == 's':
             self.save_data()
 
         return None
@@ -163,7 +163,7 @@ class get_noaa_current(object):
                     speed = np.concatenate((speed, speed0))
                     dir = np.concatenate((dir, dir0))
 
-            if idx==0:
+            if idx == 0:
                 # interpolate onto a new time grid
                 # remove the first and last few records to make interpolation easier
                 self.dt_hrs = self.get_dt(ctime)
@@ -172,7 +172,7 @@ class get_noaa_current(object):
             speed = interp1d(ctime, speed)(self.ctime)
             dir = interp1d(ctime, dir)(self.ctime)
 
-            if idx==0:
+            if idx == 0:
                 self.speed = speed
                 self.dir = dir
             else:
@@ -264,5 +264,7 @@ class get_noaa_current(object):
         self.speed = fh.variables['speedraw'][:]
         self.dir = fh.variables['dirraw'][:]
         fh.close()
+
+        self.dt_hrs = self.get_dt(self.ctime)
 
         return None
