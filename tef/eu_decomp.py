@@ -89,7 +89,7 @@ def extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1):
 
         # salt, temp
         salt[i*ts:(i+1)*ts, :, :] = fin.variables['salt'][:, :, xpos, ypos0:ypos1]
-        temp[i*ts:(i+1)*ts, :, :] = fin.variables['salt'][:, :, xpos, ypos0:ypos1]
+        temp[i*ts:(i+1)*ts, :, :] = fin.variables['temp'][:, :, xpos, ypos0:ypos1]
 
         # u, v, ubar, vbar
         ubari = fin.variables['ubar'][:]
