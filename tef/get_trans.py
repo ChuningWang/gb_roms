@@ -44,10 +44,10 @@ my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
-xpos0 = 175
-xpos1 = 184
-ypos0 = 145
-ypos1 = 126
+xpos0 = 184
+xpos1 = 175
+ypos0 = 126
+ypos1 = 145
 
 if len(sys.argv)>1:
     tag = sys.argv[-1]
@@ -90,6 +90,12 @@ lon1 = lon_raw[-1]
 
 lat = np.linspace(lat0, lat1, pts)
 lon = np.linspace(lon0, lon1, pts)
+dis = np.zeros(pts)
+
+# calculate distance
+for i in range(pts):
+    dis[i] = vincenty((lat[i], lon[i]),
+                      (lat0, lon0)).meters
 
 # correct the angle
 disx = np.sign(lat1-lat0)*vincenty((lat0, lon0),
@@ -161,6 +167,9 @@ fout.createDimension('time')
 fout.createDimension('N', N)
 fout.createDimension('x', pts)
 fout.createVariable('time', 'd', ('time'))
+fout.createVariable('lat', 'd', ('x'))
+fout.createVariable('lon', 'd', ('x'))
+fout.createVariable('dis', 'd', ('x'))
 fout.createVariable('zeta', 'd', ('time', 'x'))
 fout.createVariable('zr', 'd', ('time', 'N', 'x'))
 fout.createVariable('dz', 'd', ('time', 'N', 'x'))
@@ -172,6 +181,9 @@ fout.createVariable('u', 'd', ('time', 'N', 'x'))
 fout.createVariable('v', 'd', ('time', 'N', 'x'))
 
 fout.variables['time'][:] = time
+fout.variables['lat'][:] = lat
+fout.variables['lon'][:] = lon
+fout.variables['dis'][:] = dis
 fout.variables['zeta'][:] = zeta
 fout.variables['zr'][:] = zr
 fout.variables['dz'][:] = dz
@@ -182,5 +194,3 @@ fout.variables['vbar'][:] = vbar
 fout.variables['u'][:] = u
 fout.variables['v'][:] = v
 fout.close()
-
-
