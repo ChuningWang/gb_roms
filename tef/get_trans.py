@@ -44,9 +44,13 @@ my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
-xpos0 = 184
-xpos1 = 175
-ypos0 = 126
+# xpos0 = 184
+# xpos1 = 175
+# ypos0 = 126
+# ypos1 = 145
+xpos0 = 211
+xpos1 = 211
+ypos0 = 127
 ypos1 = 145
 
 if len(sys.argv)>1:
@@ -97,12 +101,18 @@ for i in range(pts):
     dis[i] = vincenty((lat[i], lon[i]),
                       (lat0, lon0)).meters
 
-# correct the angle
-disx = np.sign(lat1-lat0)*vincenty((lat0, lon0),
-                                   (lat1, lon0)).meters
-disy = np.sign(lon1-lon0)*vincenty((lat0, lon0),
-                                   (lat0, lon1)).meters
-ang_corr = np.arctan(disx/disy)
+if xpos0 == xpos1:
+    ang_corr = 0
+elif ypos0 == ypos1:
+    ang_corr = 0.5*np.pi
+else:
+    # correct the angle
+    disx = np.sign(lat1-lat0)*vincenty((lat0, lon0),
+                                       (lat1, lon0)).meters
+    disy = np.sign(lon1-lon0)*vincenty((lat0, lon0),
+                                       (lat0, lon1)).meters
+    ang_corr = np.arctan(disx/disy)
+
 ang = ang - ang_corr
 
 tt = len(flist)*ts
@@ -126,35 +136,60 @@ v = np.zeros((tt, N, pts))
 for i, fname in enumerate(flist):
 
     print('Loading file ' + fname)
+
     fin = nc.Dataset(fname, 'r')
     time[i*ts:(i+1)*ts] = fin.variables['ocean_time'][:]
-    # load vars for this file
-    zetai = fin.variables['zeta'][:]
-    salti = fin.variables['salt'][:]
-    tempi = fin.variables['temp'][:]
     ubari = fin.variables['ubar'][:]
     vbari = fin.variables['vbar'][:]
     ui = fin.variables['u'][:]
     vi = fin.variables['v'][:]
+
     ubari[ubari.mask] = 0
     vbari[vbari.mask] = 0
     ui[ui.mask] = 0
     vi[vi.mask] = 0
+
+    if xpos0 == xpos1:
+        zeta[i*ts:(i+1)*ts, :] = fin.variables['zeta'][:, xx[0], yy]
+        salt[i*ts:(i+1)*ts, :] = fin.variables['salt'][:, :, xx[0], yy]
+        temp[i*ts:(i+1)*ts, :] = fin.variables['temp'][:, :, xx[0], yy]
+
+        ubar[i*ts:(i+1)*ts, :] = 0.5*(ubari[:, xx[0], yy] + ubari[:, xx[0], yy-1])
+        vbar[i*ts:(i+1)*ts, :] = 0.5*(vbari[:, xx[0], yy] + vbari[:, xx[0]-1, yy])
+        u[i*ts:(i+1)*ts, :, :] = 0.5*(ui[:, :, xx[0], yy] + ui[:, :, xx[0], yy-1])
+        v[i*ts:(i+1)*ts, :, :] = 0.5*(vi[:, :, xx[0], yy] + vi[:, :, xx[0]-1, yy])
+
+    elif ypos0 == ypos1:
+        zeta[i*ts:(i+1)*ts, :] = fin.variables['zeta'][:, xx, yy[0]]
+        salt[i*ts:(i+1)*ts, :] = fin.variables['salt'][:, :, xx, yy[0]]
+        temp[i*ts:(i+1)*ts, :] = fin.variables['temp'][:, :, xx, yy[0]]
+
+        ubar[i*ts:(i+1)*ts, :] = 0.5*(ubari[:, xx, yy[0]] + ubari[:, xx, yy[0]-1])
+        vbar[i*ts:(i+1)*ts, :] = 0.5*(vbari[:, xx, yy[0]] + vbari[:, xx-1, yy[0]])
+        u[i*ts:(i+1)*ts, :, :] = 0.5*(ui[:, :, xx, yy[0]] + ui[:, :, xx, yy[0]-1])
+        v[i*ts:(i+1)*ts, :, :] = 0.5*(vi[:, :, xx, yy[0]] + vi[:, :, xx-1, yy[0]])
+
+    else:
+        # load vars for this file
+        zetai = fin.variables['zeta'][:]
+        salti = fin.variables['salt'][:]
+        tempi = fin.variables['temp'][:]
+
+        for p in range(pts):
+            # zeta
+            zeta[i*ts:(i+1)*ts, p] = zetai[:, xx[p], yy[p]]
+
+            # salt, temp
+            salt[i*ts:(i+1)*ts, :, p] = salti[:, :, xx[p], yy[p]]
+            temp[i*ts:(i+1)*ts, :, p] = tempi[:, :, xx[p], yy[p]]
+
+            # u, v, ubar, vbar
+            ubar[i*ts:(i+1)*ts, p] = 0.5*(ubari[:, xx[p], yy[p]] + ubari[:, xx[p], yy[p]-1])
+            vbar[i*ts:(i+1)*ts, p] = 0.5*(vbari[:, xx[p], yy[p]] + vbari[:, xx[p]-1, yy[p]])
+            u[i*ts:(i+1)*ts, :, p] = 0.5*(ui[:, :, xx[p], yy[p]] + ui[:, :, xx[p], yy[p]-1])
+            v[i*ts:(i+1)*ts, :, p] = 0.5*(vi[:, :, xx[p], yy[p]] + vi[:, :, xx[p]-1, yy[p]])
+
     fin.close()
-
-    for p in range(pts):
-        # zeta
-        zeta[i*ts:(i+1)*ts, p] = zetai[:, xx[p], yy[p]]
-
-        # salt, temp
-        salt[i*ts:(i+1)*ts, :, p] = salti[:, :, xx[p], yy[p]]
-        temp[i*ts:(i+1)*ts, :, p] = tempi[:, :, xx[p], yy[p]]
-
-        # u, v, ubar, vbar
-        ubar[i*ts:(i+1)*ts, p] = 0.5*(ubari[:, xx[p], yy[p]] + ubari[:, xx[p], yy[p]-1])
-        vbar[i*ts:(i+1)*ts, p] = 0.5*(vbari[:, xx[p], yy[p]] + vbari[:, xx[p]-1, yy[p]])
-        u[i*ts:(i+1)*ts, :, p] = 0.5*(ui[:, :, xx[p], yy[p]] + ui[:, :, xx[p], yy[p]-1])
-        v[i*ts:(i+1)*ts, :, p] = 0.5*(vi[:, :, xx[p], yy[p]] + vi[:, :, xx[p]-1, yy[p]])
 
 zr = get_z(h, grd.vgrid.hc, N, grd.vgrid.s_rho,
            grd.vgrid.Cs_r, zeta, grd.vgrid.Vtrans)
