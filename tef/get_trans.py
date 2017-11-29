@@ -167,6 +167,10 @@ fout.createDimension('time')
 fout.createDimension('N', N)
 fout.createDimension('x', pts)
 fout.createVariable('time', 'd', ('time'))
+fout.createVariable('xx', 'd', ('x'))
+fout.createVariable('yy', 'd', ('x'))
+fout.createVariable('h', 'd', ('x'))
+fout.createVariable('ang', 'd', ('x'))
 fout.createVariable('lat', 'd', ('x'))
 fout.createVariable('lon', 'd', ('x'))
 fout.createVariable('dis', 'd', ('x'))
@@ -181,6 +185,10 @@ fout.createVariable('u', 'd', ('time', 'N', 'x'))
 fout.createVariable('v', 'd', ('time', 'N', 'x'))
 
 fout.variables['time'][:] = time
+fout.variables['xx'][:] = xx
+fout.variables['yy'][:] = yy
+fout.variables['h'][:] = h
+fout.variables['ang'][:] = ang
 fout.variables['lat'][:] = lat
 fout.variables['lon'][:] = lon
 fout.variables['dis'][:] = dis
