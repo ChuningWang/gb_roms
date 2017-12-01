@@ -392,8 +392,8 @@ fig.colorbar(pctf2, cax=cbar_ax2, ticks=np.linspace(-1., 1., 6))
 fig.colorbar(pctf3, cax=cbar_ax3, ticks=np.linspace(7., 9., 6))
 fig.colorbar(pctf4, cax=cbar_ax4, ticks=np.linspace(-.5, .5, 6))
 
-cbar_ax1.set_ylabel(r'Salinity [PSU]')
-cbar_ax3.set_ylabel(r'Temperature [$^{\circ}$C]')
+cbar_ax2.set_ylabel(r'                  Salinity [PSU]')
+cbar_ax4.set_ylabel(r'                  Temperature [$^{\circ}$C]')
 
 # cbar_ax1 = fig.add_axes([0.85, 0.10, 0.02, 0.8])
 # cb1 = fig.colorbar(pctf1, cax=cbar_ax1, ticks=np.linspace(-0.3, 0.3, 13))

@@ -3,12 +3,12 @@ extract cross transect data from model output history files.
 perform eulerian decomposition for U and S.
 """
 
-import glob
 import sys
 from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import netCDF4 as nc
 from scipy.signal import filtfilt
 
@@ -37,16 +37,24 @@ def filter(data, dt, dt_filter):
 my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
-xpos0 = 184
-xpos1 = 175
-ypos0 = 126
-ypos1 = 145
-t0 = 720
-t1 = 1080
+xpos0 = 327
+xpos1 = 337
+ypos0 = 112
+ypos1 = 138
+# xpos0 = 211
+# xpos1 = 211
+# ypos0 = 127
+# ypos1 = 144
+# xpos0 = 184
+# xpos1 = 175
+# ypos0 = 126
+# ypos1 = 145
+t0 = 720 + 52*12
+t1 = 1080 + 60*12
 
-xx = ypos1 - ypos0
 tt = t1 - t0
 grd = pyroms.grid.get_ROMS_grid(grd1)
+N = grd.vgrid.N
 
 if len(sys.argv)>1:
     tag = sys.argv[-1]
@@ -62,6 +70,10 @@ out_file = out_dir + 'tef/trans_' + \
 # transect data
 fin = nc.Dataset(out_file, 'r')
 time = fin.variables['time'][:]
+xx = fin.variables['xx'][:]
+yy = fin.variables['yy'][:]
+h = fin.variables['h'][:]
+ang = fin.variables['ang'][:]
 lat = fin.variables['lat'][:]
 lon = fin.variables['lon'][:]
 dis = fin.variables['dis'][:]
@@ -76,8 +88,10 @@ u = fin.variables['u'][:]
 v = fin.variables['v'][:]
 fin.close()
 
-ur = u - np.tile(np.expand_dims(ubar, axis=1), (1, 40, 1))
-vr = v - np.tile(np.expand_dims(vbar, axis=1), (1, 40, 1))
+pts = len(h)
+
+ur = u - np.tile(np.expand_dims(ubar, axis=1), (1, N, 1))
+vr = v - np.tile(np.expand_dims(vbar, axis=1), (1, N, 1))
 
 # time convertion
 time = time/24./3600.
@@ -90,7 +104,7 @@ yearday = time - \
 # perform harmonic analysis
 ut = np.zeros(zeta.shape)
 vt = np.zeros(zeta.shape)
-for i in range(xx):
+for i in range(pts):
     tfit = ttide.t_tide(ubar[:, i] + 1j*vbar[:, i], dt=2,
                         stime=pytime[0], out_style=None, errcalc='wboot')
     Ut = tfit(pytime)
@@ -99,6 +113,11 @@ for i in range(xx):
 
 ue = ubar - ut
 ve = vbar - vt
+
+urf = filter(ur, 2, 30)
+vrf = filter(ur, 2, 30)
+urr = ur - urf
+vrr = vr - vrf
 
 # only use a piece of the data
 time = time[t0:t1]
@@ -119,6 +138,10 @@ ue = ue[t0:t1, :]
 ve = ve[t0:t1, :]
 ur = ur[t0:t1, :, :]
 vr = vr[t0:t1, :, :]
+urf = urf[t0:t1, :, :]
+vrf = vrf[t0:t1, :, :]
+urr = urr[t0:t1, :, :]
+vrr = vrr[t0:t1, :, :]
 
 # -------------- area weighted average ----------------------
 Ut = np.zeros(tt)
@@ -127,31 +150,39 @@ Ue = np.zeros(tt)
 Ve = np.zeros(tt)
 
 for i in range(tt):
-    Ut[i] = np.sum((h-zeta[i, :])*dx*ut[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
-    Vt[i] = np.sum((h-zeta[i, :])*dx*vt[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
-    Ue[i] = np.sum((h-zeta[i, :])*dx*ue[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
-    Ve[i] = np.sum((h-zeta[i, :])*dx*ve[i, :]) / \
-        np.sum((h-zeta[i, :])*dx)
+    Ut[i] = np.sum((h-zeta[i, :])*pts*ut[i, :]) / \
+        np.sum((h-zeta[i, :])*pts)
+    Vt[i] = np.sum((h-zeta[i, :])*pts*vt[i, :]) / \
+        np.sum((h-zeta[i, :])*pts)
+    Ue[i] = np.sum((h-zeta[i, :])*pts*ue[i, :]) / \
+        np.sum((h-zeta[i, :])*pts)
+    Ve[i] = np.sum((h-zeta[i, :])*pts*ve[i, :]) / \
+        np.sum((h-zeta[i, :])*pts)
 
 # -------------- make plots ---------------------------------
-fig, (axt, axe, ax) = plt.subplots(3, gridspec_kw={'height_ratios': [2, 2, 6]})
-ax.set_position([0.15, 0.1, 0.7, 0.4])
-axe.set_position([0.15, 0.6, 0.7, 0.15])
-axt.set_position([0.15, 0.76, 0.7, 0.15])
+fig, (axt, axe, ax, ax2) = plt.subplots(4, gridspec_kw={'height_ratios': [2, 2, 4, 4]})
+fig.subplots_adjust(right=0.83, hspace=.05)
+# ax.set_position([0.15, 0.1, 0.7, 0.4])
+# axe.set_position([0.15, 0.6, 0.7, 0.15])
+# axt.set_position([0.15, 0.76, 0.7, 0.15])
 
-ax.set_xlabel(r'Longitude [$^{\circ}$W]')
-ax.set_ylabel(r'Depth [m]')
+# ax.set_ylabel(r'Depth [m]')
 ax.set_xlim(lon.min(), lon.max())
-ax.set_ylim(-5, 60)
-ax.set_xticks([-136.08, -136.04, -136.00])
-ax.set_xticklabels(['136.08', '136.04', '136.00'])
+ax.set_ylim(-5, h.max())
 ax.invert_yaxis()
-ax.fill_between(lon, -5, 60, facecolor='lightgrey')
+ax.fill_between(lon, -5, h.max(), facecolor='lightgrey')
 
-axe.set_xlabel(r'Yearday')
+ax2.set_xlim(lon.min(), lon.max())
+ax2.set_ylim(-5, h.max())
+ax2.invert_yaxis()
+ax2.fill_between(lon, -5, h.max(), facecolor='lightgrey')
+
+ax2.set_ylabel(r'Depth [m]')
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax2.set_xlabel(r'Longitude [$^{\circ}$W]')
+
+axt.xaxis.tick_top()
+axt.set_xlabel(r'Yearday')
 axe.set_ylabel(r'$U_e$ [ms$^{-1}$]')
 axt.set_ylabel(r'$U_f$ [ms$^{-1}$]')
 
@@ -167,23 +198,34 @@ axe.plot(yearday, Ve, '--', color='grey', linewidth=.5)
 axe.plot(yearday, filter(Ve, 2, 30), 'k')
 
 for i in range(len(time)):
-# for i in range(2):
+
+    ttag = pytime[i].strftime("%Y-%m-%d_%H:%M:%S")
+    print('processing ' + ttag + ' ...')
     pltue = axe.plot([yearday[i], yearday[i]], [-0.05, 0.05], 'r')
     pltut = axt.plot([yearday[i], yearday[i]], [-2.5, 2.5], 'r')
 
-    pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :], [0],
+    pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urf[i, :, :], [0],
                      colors='k')
-    pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], ur[i, :, :],
+    pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urf[i, :, :],
                        np.linspace(-0.5, 0.5, 51), extend='both',
                        cmap=cmocean.cm.balance)
+
+    pct2 = ax2.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urr[i, :, :], [0],
+                       colors='k')
+    pctf2 = ax2.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urr[i, :, :],
+                         np.linspace(-0.5, 0.5, 51), extend='both',
+                         cmap=cmocean.cm.balance)
+
     cbar_ax = fig.add_axes([0.87, 0.10, 0.02, 0.8])
     cb = fig.colorbar(pctf, cax=cbar_ax, ticks=np.linspace(-0.5, 0.5, 11))
     cbar_ax.set_ylabel(r'$U$ [ms$^{-1}$]')
 
-    ttag = pytime[i].strftime("%Y-%m-%d_%H:%M:%S")
     fig.suptitle(ttag)
     # save fig
-    fig.savefig(out_dir + 'figs/tef/itrans_' + ttag + '.png')
+    fig.savefig(out_dir + 'figs/tef/trans_' +
+                str(xpos0) + '_' + str(xpos1) + '_' +
+                str(ypos0) + '_' + str(ypos1) + '/' + 
+                'trans_' + ttag + '.png')
 
     # remove plot objects
     pltue.pop(0).remove()
@@ -191,6 +233,10 @@ for i in range(len(time)):
     for cc in pct.collections:
         cc.remove()
     for cc in pctf.collections:
+        cc.remove()
+    for cc in pct2.collections:
+        cc.remove()
+    for cc in pctf2.collections:
         cc.remove()
 
     fig.delaxes(cbar_ax)

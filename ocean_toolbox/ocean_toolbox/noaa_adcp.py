@@ -39,6 +39,8 @@ class get_noaa_current(object):
         self.info['file_name'] = self.info['stn'] + '_' + self.info['bdate'] + \
                                                     '_' + self.info['edate'] + '.nc'
 
+        return None
+
     def __call__(self):
         print 'Formating download urls'
         self.time_splitter()

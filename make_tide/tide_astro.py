@@ -4,23 +4,23 @@ from scipy import sparse
 import netCDF4 as nc
 
 def t_astron(d):
-    
+
     D = d/10000.
 
     # Compute astronomical constants at time d1
     args = np.vstack((np.ones(len(d)), d, D*D, D**3))
 
     # These are the coefficients of the formulas in the Explan. Suppl.
-    sc  = np.array([ 270.434164,13.1763965268,-0.0000850, 0.000000039]);
-    hc  = np.array([ 279.696678, 0.9856473354, 0.00002267,0.000000000]);
-    pc  = np.array([ 334.329556, 0.1114040803,-0.0007739,-0.00000026]);
-    npc = np.array([-259.183275, 0.0529539222,-0.0001557,-0.000000050]);
+    sc  = np.array([ 270.434164, 13.1763965268, -0.0000850,  0.000000039])
+    hc  = np.array([ 279.696678,  0.9856473354, 0.00002267,  0.000000000])
+    pc  = np.array([ 334.329556,  0.1114040803, -0.0007739,  -0.00000026])
+    npc = np.array([-259.183275,  0.0529539222, -0.0001557, -0.000000050])
 
     # first coeff was 281.220833 in Foreman but Expl. Suppl. has 44.
-    ppc = np.array([ 281.220844, 0.0000470684, 0.0000339, 0.000000070]);
+    ppc = np.array([ 281.220844, 0.0000470684, 0.0000339, 0.000000070])
 
     # Compute the parameters; we only need the factional part of the cycle.
-    astro = np.fmod(np.dot(np.vstack((sc, hc, pc, npc, ppc)), args)/360.0, 1);
+    astro = np.fmod(np.dot(np.vstack((sc, hc, pc, npc, ppc)), args)/360.0, 1)
 
     # Compute lunar time tau, based on fractional part of solar day.
     # We add the hour angle to the longitude of the sun and subtract the
@@ -38,7 +38,7 @@ def t_astron(d):
     return astro, ader
 
 def t_getconsts(outfile, consts_file = 't_tide/t_constituents.mat'):
-    
+
     consts = 146
 
     c = io.loadmat(consts_file)
@@ -137,10 +137,10 @@ def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
     # Satellite amplitude ratio adjustment for latitude. 
     slat = np.sin(np.pi*lat/180)
 
-    j = np.where(ilatfac==1)  # latitude correction for diurnal constituents
+    j = np.where(ilatfac == 1)  # latitude correction for diurnal constituents
     rr[j] = rr[j]*0.36309*(1.0-5.0*slat*slat)/slat
 
-    j = np.where(ilatfac==2)  # latitude correction for semi-diurnal constituents
+    j = np.where(ilatfac == 2)  # latitude correction for semi-diurnal constituents
     rr[j] = rr[j]*2.59808*slat
 
     # Calculate nodal amplitude and phase corrections.
@@ -170,9 +170,9 @@ def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
         u[k] = np.sum(u[shallow_iname[ik].astype(int)-1]*shallow_coef[ik])
         v[k] = np.sum(v[shallow_iname[ik].astype(int)-1]*shallow_coef[ik])
 
-    f=f[ju]
-    u=u[ju]
-    v=v[ju]
+    f = f[ju]
+    u = u[ju]
+    v = v[ju]
     return v, u, f
 
 t_getconsts('tide_consts.nc')
