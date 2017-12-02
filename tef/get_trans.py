@@ -44,14 +44,18 @@ my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
+xpos0 = 327
+xpos1 = 337
+ypos0 = 112
+ypos1 = 138
+# xpos0 = 211
+# xpos1 = 211
+# ypos0 = 127
+# ypos1 = 144
 # xpos0 = 184
 # xpos1 = 175
 # ypos0 = 126
 # ypos1 = 145
-xpos0 = 211
-xpos1 = 211
-ypos0 = 127
-ypos1 = 145
 
 if len(sys.argv)>1:
     tag = sys.argv[-1]
@@ -101,17 +105,24 @@ for i in range(pts):
     dis[i] = vincenty((lat[i], lon[i]),
                       (lat0, lon0)).meters
 
-if xpos0 == xpos1:
-    ang_corr = 0
-elif ypos0 == ypos1:
-    ang_corr = 0.5*np.pi
-else:
-    # correct the angle
-    disx = np.sign(lat1-lat0)*vincenty((lat0, lon0),
-                                       (lat1, lon0)).meters
-    disy = np.sign(lon1-lon0)*vincenty((lat0, lon0),
-                                       (lat0, lon1)).meters
-    ang_corr = np.arctan(disx/disy)
+# if xpos0 == xpos1:
+#     ang_corr = 0
+# elif ypos0 == ypos1:
+#     ang_corr = 0.5*np.pi
+# else:
+#     # correct the angle
+#     disx = np.sign(lat1-lat0)*vincenty((lat0, lon0),
+#                                        (lat1, lon0)).meters
+#     disy = np.sign(lon1-lon0)*vincenty((lat0, lon0),
+#                                        (lat0, lon1)).meters
+#     ang_corr = np.arctan(disx/disy)
+
+# correct the angle
+disx = np.sign(lat1-lat0)*vincenty((lat0, lon0),
+                                   (lat1, lon0)).meters
+disy = np.sign(lon1-lon0)*vincenty((lat0, lon0),
+                                   (lat0, lon1)).meters
+ang_corr = np.arctan(disx/disy)
 
 ang = ang - ang_corr
 
@@ -196,6 +207,19 @@ zr = get_z(h, grd.vgrid.hc, N, grd.vgrid.s_rho,
 zw = get_z(h, grd.vgrid.hc, N+1, grd.vgrid.s_w,
            grd.vgrid.Cs_w, zeta, grd.vgrid.Vtrans)
 dz = np.diff(zw, axis=1)
+
+# rotate velocity vector
+Ubar = ubar + 1j*vbar
+U = u + 1j*v
+
+for i in range(pts):
+    Ubar[:, i] = Ubar[:, i]*np.exp(-ang[i]*1j)
+    U[:, :, i] = U[:, :, i]*np.exp(-ang[i]*1j)
+
+ubar = Ubar.real
+vbar = Ubar.imag
+u = U.real
+v = U.imag
 
 fout = nc.Dataset(out_file, 'w')
 fout.createDimension('time')

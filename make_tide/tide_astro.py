@@ -126,6 +126,14 @@ def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
     shallow_coef = fh.variables['shallow_coef'][:]
     fh.close()
 
+    # msk = ~np.isfinite(ishallow)
+    # ishallow = ishallow.astype(int)
+    # nshallow = nshallow.astype(int)
+    # ishallow[msk] = np.NaN
+    # nshallow[msk] = np.NaN
+    # shallow_iname = shallow_iname.astype(int)
+    # shallow_coef = shallow_coef.astype(int)
+
     # Calculate astronomical arguments at mid-point of data time series.
     astro, ader = t_astron(d)
 
@@ -153,8 +161,8 @@ def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
 
     fsum = (1 + np.sum(
         sparse.csr_matrix(
-            ((rr*np.exp(1j*2*np.pi*uu)).squeeze(), (np.arange(nsat), iconst.squeeze()-1)), 
-            shape=(nsat, nfreq)).todense(), 
+            ((rr*np.exp(1j*2*np.pi*uu)).squeeze(), (np.arange(nsat), iconst.squeeze()-1)),
+            shape=(nsat, nfreq)).todense(),
         axis = 0))
 
     fsum = np.asarray(fsum).squeeze()
@@ -164,15 +172,18 @@ def t_vuf(d, ju, lat, consts_file = 'tide_consts.nc', ltype = 'nodal'):
 
     # Compute amplitude and phase corrections for shallow water constituents. 
     for k in np.where(np.isfinite(ishallow.squeeze()))[0].tolist():
-        ik = (ishallow[k] + np.arange(nshallow[k]) - 1).tolist()
+        ik = ishallow[k] + np.arange(nshallow[k]) - 1
+        ik = ik.astype(int)
+        shallow_idx = shallow_iname[ik].astype(int)
 
-        f[k] = np.prod(f[shallow_iname[ik].astype(int)-1]**abs(shallow_coef[ik]))
-        u[k] = np.sum(u[shallow_iname[ik].astype(int)-1]*shallow_coef[ik])
-        v[k] = np.sum(v[shallow_iname[ik].astype(int)-1]*shallow_coef[ik])
+        f[k] = np.prod(f[shallow_idx-1]**abs(shallow_coef[ik]))
+        u[k] = np.sum(u[shallow_idx-1]*shallow_coef[ik])
+        v[k] = np.sum(v[shallow_idx-1]*shallow_coef[ik])
 
     f = f[ju]
     u = u[ju]
     v = v[ju]
+
     return v, u, f
 
 t_getconsts('tide_consts.nc')
