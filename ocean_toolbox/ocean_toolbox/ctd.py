@@ -429,7 +429,7 @@ class ctd(object):
 # ------------------------------ plot making ---------------------------------------
 
     def get_cruise(self):
-        ''' Find indices for each cruise '''
+        """ Find indices for each cruise """
         dt = np.diff(np.floor(mdates.date2num(self.data['datetime'])))
         dt = np.hstack([0, dt])
         k1 = np.squeeze(np.where(dt>=7))
@@ -439,7 +439,7 @@ class ctd(object):
         return k1, k2, k3
 
     def get_trans(self, var_list, stn_list, time, highres = -1):
-        ''' get transect data '''
+        """ get transect data """
 
         self.trans = {}
         # get data, geo information
@@ -488,7 +488,7 @@ class ctd(object):
         return None
 
     def plt_scatter(self, var, stn, plt_rho=-1, clim='auto', depth=100, fig=-1, ax=-1):
-        '''
+        """
         Plot hovmuller diagram of Glacier Bay CTD data.
         Input
             var - variable name to plot
@@ -502,7 +502,7 @@ class ctd(object):
             fig - figure handle
             ax - axes handle
         Chuning Wang 2016/05/27
-        '''
+        """
 
         if fig==-1 and ax==-1:
             fig = plt.figure()

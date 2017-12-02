@@ -27,20 +27,21 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-box0 = np.array([[-136.65, 58.55],
+box0 = np.array([[-136.90, 58.55],
                  [-137.30, 58.65],
                  [-137.30, 59.15],
                  [-135.70, 59.15],
                  [-135.60, 58.75],
                  [-135.60, 58.55]])
 
-box1 = np.array([[-136.65, 58.55],
-                 [-135.60, 58.55],
+box1 = np.array([[-136.90, 58.55],
+                 [-136.90, 58.45],
+                 [-136.00, 58.35],
                  [-135.60, 58.50],
-                 [-136.00, 58.35]])
+                 [-135.60, 58.55]])
 
-box2 = np.array([[-136.65, 58.55],
-                 [-136.75, 58.25],
+box2 = np.array([[-136.90, 58.45],
+                 [-136.65, 58.25],
                  [-136.50, 58.05],
                  [-135.20, 58.05],
                  [-135.40, 58.55],
@@ -62,6 +63,8 @@ gb_ctd()
 lat_ctd = gb_ctd.data_info['lat']
 lon_ctd = gb_ctd.data_info['lon']
 
+core_stn = [1, 4, 7, 12, 13, 16, 20, 24]
+
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon = grd.hgrid.lon_rho
@@ -81,17 +84,15 @@ a0 = np.array(a0)
 a0 = a0.astype(float)
 
 # cross channel transects
-lon_c0 = np.array([lon[378, 100], lon[378, 112]])
-lat_c0 = np.array([lat[378, 100], lat[378, 112]])
-lon_c1 = np.array([lon[280, 128], lon[280, 182]])
-lat_c1 = np.array([lat[280, 128], lat[280, 182]])
-lon_c2 = np.array([lon[210, 127], lon[210, 145]])
-lat_c2 = np.array([lat[210, 127], lat[210, 145]])
-lon_c3 = np.array([lon[129, 100], lon[180, 100]])
-lat_c3 = np.array([lat[129, 100], lat[180, 100]])
+lon_c0 = np.array([lon[327, 112], lon[337, 138]])
+lat_c0 = np.array([lat[327, 112], lat[337, 138]])
+lon_c1 = np.array([lon[211, 127], lon[211, 144]])
+lat_c1 = np.array([lat[211, 127], lat[211, 144]])
+lon_c2 = np.array([lon[184, 126], lon[175, 145]])
+lat_c2 = np.array([lat[184, 126], lat[175, 145]])
 
 # ------------------- make plot ------------------------------------------
-fig = plt.figure()
+fig, ax = plt.subplots()
 
 lat_min = 58.00
 lat_max = 59.20
@@ -103,55 +104,79 @@ lon_0 = 0.5 * (lon_min + lon_max)
 
 m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-            resolution='f')
+            resolution='f', ax=ax)
 
 m.fillcontinents(color='lightgrey')
-mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.04), 
-                     labels=[0, 0, 1, 1], fontsize=3, linewidth=.1)
-pr = m.drawparallels(np.arange(lat_min, lat_max, 0.02), 
-                     labels=[1, 1, 0, 0], fontsize=3, linewidth=.1)
-# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2),
-#                      labels=[0, 0, 0, 1], fontsize=10, linewidth=.1)
-# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.1),
-#                      labels=[1, 0, 0, 0], fontsize=10, linewidth=.1)
-setlabelrot(mr,-90)
-setlabelrot(pr,0)
+mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2),
+                     labels=[0, 0, 0, 1], fontsize=10, linewidth=.1)
+pr = m.drawparallels(np.arange(lat_min, lat_max, 0.1),
+                     labels=[1, 0, 0, 0], fontsize=10, linewidth=.1)
+# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.04), 
+#                      labels=[0, 0, 1, 1], fontsize=3, linewidth=.1)
+# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.02), 
+#                      labels=[1, 1, 0, 0], fontsize=3, linewidth=.1)
+
+setlabelrot(mr, -30)
+setlabelrot(pr, 0)
+
+m.drawmapscale(-137.1, 58.25, lon_0, lat_0, 50,
+               barstyle='fancy', labelstyle='simple')
 
 xlon, ylat = m(lon, lat)
 # m.contourf(xlon, ylat, z, 50, cmap=cmocean.cm.deep)
-m.pcolormesh(xlon, ylat, z, cmap=cmocean.cm.deep)
-plt.clim(0, 500)
-plt.colorbar()
+pcm = ax.pcolormesh(xlon, ylat, z,
+                    vmin=0, vmax=450,
+                    alpha=0.8, cmap=cmocean.cm.deep)
+
+# plot colorbar
+cbar_ax = fig.add_axes([0.70, 0.50, 0.02, 0.35])
+cb = fig.colorbar(pcm, cax=cbar_ax, ticks=np.linspace(0, 450, 10))
+cbar_ax.set_ylabel(r'Depth [m]')
 
 # plot CTD stations
 x2, y2 = m(lon_ctd, lat_ctd)
-m.plot(x2, y2, '^k', markersize=.5)
+ax.plot(x2, y2, '^r', markersize=3, label='CTD Station')
+ax.plot(x2[core_stn], y2[core_stn], '^r',
+        markeredgecolor='k', markeredgewidth=1,
+        markerfacecolor='r', markersize=4,
+        label='Core Station')
 
-# plot transect
+# # plot transect
 xtr, ytr = m(a0[:, 0], a0[:, 1])
-m.plot(xtr, ytr, '--ok', linewidth=.3, markersize=.3)
+ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
 xtr, ytr = m(lon_c0, lat_c0)
-m.plot(xtr, ytr, '--ok', linewidth=.3, markersize=.3)
+ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
 xtr, ytr = m(lon_c1, lat_c1)
-m.plot(xtr, ytr, '--ok', linewidth=.3, markersize=.3)
+ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
 xtr, ytr = m(lon_c2, lat_c2)
-m.plot(xtr, ytr, '--ok', linewidth=.3, markersize=.3)
-xtr, ytr = m(lon_c3, lat_c3)
-m.plot(xtr, ytr, '--ok', linewidth=.3, markersize=.3)
+ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
 
 # plot boxes
 xbox, ybox = m(box0[:, 0], box0[:, 1])
-plt.plot(xbox, ybox, '--k', linewidth=0.5)
-plt.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
+ax.plot(xbox, ybox, '--k', linewidth=0.5)
+ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
 
 xbox, ybox = m(box1[:, 0], box1[:, 1])
-plt.plot(xbox, ybox, '--k', linewidth=0.5)
-plt.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
+ax.plot(xbox, ybox, '--k', linewidth=0.5)
+ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
 
 xbox, ybox = m(box2[:, 0], box2[:, 1])
-plt.plot(xbox, ybox, '--k', linewidth=0.5)
-plt.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
+ax.plot(xbox, ybox, '--k', linewidth=0.5)
+ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
+
+# plot texts
+x1, y1 = m(-135.7, 58.25)
+ax.text(x1, y1, 'Icy Strait', fontsize=10, rotation=-30)
+x1, y1 = m(-136.5, 58.25)
+ax.text(x1, y1, 'Cross Sound', fontsize=10, rotation=30)
+x1, y1 = m(-136.8, 58.475)
+ax.text(x1, y1, 'Lower Bay', fontsize=10)
+x1, y1 = m(-137.1, 58.7)
+ax.text(x1, y1, 'Upper Bay', fontsize=10)
+
+# plot legend
+ax.legend(loc=3)
 
 # save figure
-plt.savefig(out_dir + 'figs/'+grd1+'_map.png', format='png', dpi=600)
+plt.savefig(out_dir + 'figs/' + grd1 + '_map.png', format='png', dpi=600)
 plt.close()
