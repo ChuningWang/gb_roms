@@ -37,14 +37,14 @@ def filter(data, dt, dt_filter):
 my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
-xpos0 = 327
-xpos1 = 337
-ypos0 = 112
-ypos1 = 138
-# xpos0 = 211
-# xpos1 = 211
-# ypos0 = 127
-# ypos1 = 144
+# xpos0 = 327
+# xpos1 = 337
+# ypos0 = 112
+# ypos1 = 138
+xpos0 = 211
+xpos1 = 211
+ypos0 = 127
+ypos1 = 144
 # xpos0 = 184
 # xpos1 = 175
 # ypos0 = 126
@@ -115,7 +115,7 @@ ue = ubar - ut
 ve = vbar - vt
 
 urf = filter(ur, 2, 30)
-vrf = filter(ur, 2, 30)
+vrf = filter(vr, 2, 30)
 urr = ur - urf
 vrr = vr - vrf
 
@@ -179,12 +179,14 @@ ax2.fill_between(lon, -5, h.max(), facecolor='lightgrey')
 
 ax2.set_ylabel(r'Depth [m]')
 ax2.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax2.set_xticks([-136.08, -136.06, -136.04, -136.02])
+ax2.set_xticklabels(['136.08', '136.06', '136.04', '136.02'])
 ax2.set_xlabel(r'Longitude [$^{\circ}$W]')
 
 axt.xaxis.tick_top()
 axt.set_xlabel(r'Yearday')
-axe.set_ylabel(r'$U_e$ [ms$^{-1}$]')
-axt.set_ylabel(r'$U_f$ [ms$^{-1}$]')
+# axe.set_ylabel(r'$U_e$ [ms$^{-1}$]')
+# axt.set_ylabel(r'$U_f$ [ms$^{-1}$]')
 
 axt.set_xlim(yearday[0], yearday[-1])
 axe.set_xlim(yearday[0], yearday[-1])
@@ -204,21 +206,21 @@ for i in range(len(time)):
     pltue = axe.plot([yearday[i], yearday[i]], [-0.05, 0.05], 'r')
     pltut = axt.plot([yearday[i], yearday[i]], [-2.5, 2.5], 'r')
 
-    pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urf[i, :, :], [0],
+    pct = ax.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], vrf[i, :, :], [0],
                      colors='k')
-    pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urf[i, :, :],
+    pctf = ax.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], vrf[i, :, :],
                        np.linspace(-0.5, 0.5, 51), extend='both',
                        cmap=cmocean.cm.balance)
 
-    pct2 = ax2.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urr[i, :, :], [0],
+    pct2 = ax2.contour(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], vrr[i, :, :], [0],
                        colors='k')
-    pctf2 = ax2.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], urr[i, :, :],
+    pctf2 = ax2.contourf(np.tile(lon, (grd.vgrid.N, 1)), zr[i, :, :], vrr[i, :, :],
                          np.linspace(-0.5, 0.5, 51), extend='both',
                          cmap=cmocean.cm.balance)
 
     cbar_ax = fig.add_axes([0.87, 0.10, 0.02, 0.8])
     cb = fig.colorbar(pctf, cax=cbar_ax, ticks=np.linspace(-0.5, 0.5, 11))
-    cbar_ax.set_ylabel(r'$U$ [ms$^{-1}$]')
+    cbar_ax.set_ylabel(r'Velocity [ms$^{-1}$]')
 
     fig.suptitle(ttag)
     # save fig

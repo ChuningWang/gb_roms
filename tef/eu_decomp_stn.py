@@ -53,98 +53,16 @@ def filter(data, dt, dt_filter):
     return data_filtered
 
 
-def extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1):
-    """ load 3d S, U, V from history files and save it to out_file """
-
-    tt = len(flist)*ts
-    dx = ypos1-ypos0
-    N = grd.vgrid.N
-
-    # variables
-    h = grd.vgrid.h[xpos, ypos0:ypos1]
-    time = np.zeros(tt)
-    zeta = np.zeros((tt, dx))
-    zr = np.zeros((tt, N, dx))
-    dz = np.zeros((tt, N, dx))
-
-    salt = np.zeros((tt, N, dx))
-    temp = np.zeros((tt, N, dx))
-
-    ubar = np.zeros((tt, dx))
-    vbar = np.zeros((tt, dx))
-    u = np.zeros((tt, N, dx))
-    v = np.zeros((tt, N, dx))
-
-    for i, fname in enumerate(flist):
-        print('Loading file ' + fname)
-        fin = nc.Dataset(fname, 'r')
-        time[i*ts:(i+1)*ts] = fin.variables['ocean_time'][:]
-
-        # zeta, z, dz
-        zeta[i*ts:(i+1)*ts, :] = fin.variables['zeta'][:, xpos, ypos0:ypos1]
-        zr[i*ts:(i+1)*ts, :] = get_z(h, grd.vgrid.hc, N, grd.vgrid.s_rho,
-                                     grd.vgrid.Cs_r, zeta[i*ts:(i+1)*ts, :], grd.vgrid.Vtrans)
-        zw = get_z(h, grd.vgrid.hc, N+1, grd.vgrid.s_w,
-                   grd.vgrid.Cs_w, zeta[i*ts:(i+1)*ts, :], grd.vgrid.Vtrans)
-        dz[i*ts:(i+1)*ts, :] = np.diff(zw, axis=1)
-
-        # salt, temp
-        salt[i*ts:(i+1)*ts, :, :] = fin.variables['salt'][:, :, xpos, ypos0:ypos1]
-        temp[i*ts:(i+1)*ts, :, :] = fin.variables['temp'][:, :, xpos, ypos0:ypos1]
-
-        # u, v, ubar, vbar
-        ubari = fin.variables['ubar'][:]
-        vbari = fin.variables['vbar'][:]
-        ui = fin.variables['u'][:]
-        vi = fin.variables['v'][:]
-        ubari[ubari.mask] = 0
-        vbari[vbari.mask] = 0
-        ui[ui.mask] = 0
-        vi[vi.mask] = 0
-        ubar[i*ts:(i+1)*ts, :] = 0.5*(ubari[:, xpos, ypos0:ypos1] + ubari[:, xpos, ypos0-1:ypos1-1])
-        vbar[i*ts:(i+1)*ts, :] = 0.5*(vbari[:, xpos, ypos0:ypos1] + vbari[:, xpos-1, ypos0:ypos1])
-        u[i*ts:(i+1)*ts, :, :] = 0.5*(ui[:, :, xpos, ypos0:ypos1] + ui[:, :, xpos, ypos0-1:ypos1-1])
-        v[i*ts:(i+1)*ts, :, :] = 0.5*(vi[:, :, xpos, ypos0:ypos1] + vi[:, :, xpos-1, ypos0:ypos1])
-        fin.close()
-
-    fout = nc.Dataset(out_file, 'w')
-    fout.createDimension('time')
-    fout.createDimension('N', N)
-    fout.createDimension('x', dx)
-    fout.createVariable('time', 'd', ('time'))
-    fout.createVariable('zeta', 'd', ('time', 'x'))
-    fout.createVariable('zr', 'd', ('time', 'N', 'x'))
-    fout.createVariable('dz', 'd', ('time', 'N', 'x'))
-    fout.createVariable('salt', 'd', ('time', 'N', 'x'))
-    fout.createVariable('temp', 'd', ('time', 'N', 'x'))
-    fout.createVariable('ubar', 'd', ('time', 'x'))
-    fout.createVariable('vbar', 'd', ('time', 'x'))
-    fout.createVariable('u', 'd', ('time', 'N', 'x'))
-    fout.createVariable('v', 'd', ('time', 'N', 'x'))
-
-    fout.variables['time'][:] = time
-    fout.variables['zeta'][:] = zeta
-    fout.variables['zr'][:] = zr
-    fout.variables['dz'][:] = dz
-    fout.variables['salt'][:] = salt
-    fout.variables['temp'][:] = temp
-    fout.variables['ubar'][:] = ubar
-    fout.variables['vbar'][:] = vbar
-    fout.variables['u'][:] = u
-    fout.variables['v'][:] = v
-    fout.close()
-
-    return None
-
 # -------------- extract data -------------------------------
 my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
 itrans_sl = 'l'
-xpos = 211
+xpos0 = 211
+xpos1 = 211
 ypos0 = 127
-ypos1 = 145
+ypos1 = 144
 t0 = 720 + 52*12
 t1 = 1080 + 60*12
 yidx = 10
@@ -152,31 +70,28 @@ yidx = 10
 xx = ypos1 - ypos0
 tt = t1 - t0
 grd = pyroms.grid.get_ROMS_grid(grd1)
-lat = grd.hgrid.lat_rho[xpos, ypos0:ypos1]
-lon = grd.hgrid.lon_rho[xpos, ypos0:ypos1]
-ang = grd.hgrid.angle_rho[xpos, ypos0:ypos1]
-h = grd.vgrid.h[xpos, ypos0:ypos1]
-dx = grd.hgrid.dx[xpos, ypos0:ypos1]
 
-if len(sys.argv)>1:
+if len(sys.argv) > 1:
     tag = sys.argv[-1]
 else:
     tag = 'GB-ref'
 
 model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
 outputs_dir = model_dir + model
-out_file = out_dir + 'tef/i_trans_' + \
-           str(xpos) + '_' + str(ypos0) + '_' + str(ypos1) + '.nc'
-flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-flist = flist[1:]
-# flist = flist[1:5]
+out_file = out_dir + 'tef/trans_' + \
+           str(xpos0) + '_' + str(xpos1) + '_' + \
+           str(ypos0) + '_' + str(ypos1) + '.nc'
 
 # transect data
-if itrans_sl == 's':
-    extr_itrans(out_file, flist, grd, ts, xpos, ypos0, ypos1)
-
 fin = nc.Dataset(out_file, 'r')
 time = fin.variables['time'][:]
+xx = fin.variables['xx'][:]
+yy = fin.variables['yy'][:]
+h = fin.variables['h'][:]
+ang = fin.variables['ang'][:]
+lat = fin.variables['lat'][:]
+lon = fin.variables['lon'][:]
+dis = fin.variables['dis'][:]
 zeta = fin.variables['zeta'][:, yidx]
 zr = -fin.variables['zr'][:, :, yidx]
 dz = fin.variables['dz'][:, :, yidx]
@@ -340,7 +255,7 @@ pctf4 = axbcl4.contourf(yearday2, z2, vr2.T - vr2f.T,
 
 cbar_ax = fig.add_axes([0.85, 0.10, 0.02, 0.8])
 cb = fig.colorbar(pctf1, cax=cbar_ax, ticks=np.linspace(-0.3, 0.3, 13))
-cbar_ax.set_ylabel(r'Baroclinic [ms$^{-1}$]')
+cbar_ax.set_ylabel(r'Velocity [ms$^{-1}$]')
 plt.savefig(out_dir + 'figs/tef/stn_cmp.png', dpi=300)
 plt.close()
 

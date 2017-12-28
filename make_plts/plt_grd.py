@@ -87,7 +87,7 @@ if plt_proj == 1:
 elif plt_proj == 0:
 
     plt.pcolor(z, cmap=cmocean.cm.deep, edgecolors='k', linewidth=0.005)
-    plt.clim(0, 20)
+    plt.clim(0, 100)
     plt.colorbar()
     # plt.contour(msk, [0.5], linewidths=0.05, colors='k')
 

@@ -3,20 +3,18 @@ standard SEABIRD CTD data wrapper
 '''
 
 import os
-import sys
-from glob import glob
 import fnmatch
-import re
 from datetime import datetime
-from geopy.distance import vincenty
 
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import filtfilt
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.colors import LogNorm
 import netCDF4 as nc
 from cmocean import cm
+from geopy.distance import vincenty
 
 import pdb
 
@@ -155,13 +153,14 @@ class ctd(object):
             for filename in fnmatch.filter(filenames, pattern):
                 matches.append(os.path.join(root, filename))
 
+        # matches = matches.sort()
+
         return matches
 
     def get_raw_data(self):
         ''' read, interpolate and combine ctd casts. '''
 
         flist = self.recursive_glob(pattern='*.cnv')
-        pr_num = len(flist)  # number of total entry
         # create variables
         z = np.arange(self.info['zlev'])
         self.data['z'] = z
@@ -209,6 +208,15 @@ class ctd(object):
             self.data[i] = np.array(self.data[i])
         for var in self.info['var']:
             self.data[var] = np.array(self.data[var]).T
+
+        # sort the data with time
+        idx = np.argsort(self.data['time'])
+        for i in self.data_info_list:
+            self.data[i] = self.data[i][idx]
+        for var in self.info['var']:
+            self.data[var] = self.data[var][:, idx]
+
+        return None
 
     def qc_data(self):
         '''data quality control. get rid of bad data using a salinity critiria.'''
@@ -432,10 +440,11 @@ class ctd(object):
         """ Find indices for each cruise """
         dt = np.diff(np.floor(mdates.date2num(self.data['datetime'])))
         dt = np.hstack([0, dt])
-        k1 = np.squeeze(np.where(dt>=7))
+        k1 = np.squeeze(np.where(dt >= 10))
         k1 = np.hstack([0, k1])
         k2 = np.hstack([k1[1:]-1, np.size(dt)-1])
-        k3 = np.squeeze(np.where((k2-k1)>15))
+        k3 = np.squeeze(np.where((k2-k1) > 15))
+        # pdb.set_trace()
         return k1, k2, k3
 
     def get_trans(self, var_list, stn_list, time, highres = -1):
@@ -516,12 +525,12 @@ class ctd(object):
             print 'Please specify fig when ax is specified!!!'
             fig = plt.gcf()
 
-        if var == 'temp':
-            cmap = cm.thermal
-        elif var == 'salt':
-            cmap = cm.haline
-        else:
-            cmap = cm.matter
+        cmap = {'temp': cm.thermal,
+                'salt': cm.haline,
+                'fluor': cm.algae,
+                'o2': cm.oxy,
+                'par': cm.solar,
+                'tur': cm.turbid}
 
         t = self.data['datetime']
         z = self.data['z']
@@ -545,7 +554,7 @@ class ctd(object):
         zz = zz.flatten()
         dd = data.flatten()
         plt.scatter(tt, zz, s=8,
-                    c=dd, vmin=cmin, vmax=cmax, cmap=cmap,
+                    c=dd, vmin=cmin, vmax=cmax, cmap=cmap[var],
                     marker='s', edgecolor='none')
         plt.ylim(0, depth)
         plt.xlim(min(t),max(t))
@@ -570,24 +579,52 @@ class ctd(object):
 
         return fig, ax
 
-    def plt_trans(self, var, time, plt_rho=-1, clim='auto', depth0=50, depth1=450):
-        ''' pcolor transect. '''
+    def plt_contour(self, var, stn, plt_rho=False, plt_log=False,
+                    clim='auto', depth=100, fig=-1, ax=-1):
+        """
+        Plot hovmuller diagram of Glacier Bay CTD data.
+        Input
+            var - variable name to plot
+            stn - station number to plot
+            rho (optional) - if not -1, contour density on top of scatter plot
+            clim (optional) - upper and lower boundary for colormap
+            depth (optional) - maximum depth of y axis
+            fig (optional) - figure handle
+            ax (optional) - axes handle
+        Output
+            fig - figure handle
+            ax - axes handle
+        Chuning Wang 2016/05/27
+        """
 
-        # define colormap
-        if var == 'temp':
-            cmap = cm.thermal
-        elif var == 'salt':
-            cmap = cm.haline
+        if fig==-1 and ax==-1:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        elif fig!=-1 and ax==-1:
+            ax = fig.add_subplot(111)
+            print 'Using input figure handle...'
+        elif fig!=-1 and ax!=-1:
+            print 'Using input figure and axes handle...'
         else:
-            cmap = cm.matter
+            print 'Please specify fig when ax is specified!!!'
+            fig = plt.gcf()
 
-        if plt_rho == 1:
-            self.get_trans([var, 'rho'], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
-        else:
-            self.get_trans([var], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
-        data = self.trans[var]
+        cmap = {'temp': cm.thermal,
+                'salt': cm.haline,
+                'fluor': cm.algae,
+                'o2': cm.oxy,
+                'par': cm.solar,
+                'tur': cm.turbid}
+
+        t = self.data['datetime']
+        z = self.data['z']
+        data = self.data[var]
+        msk = self.data['station'] == stn
+        t = t[msk]
+        data = data[:, msk]
         data = np.ma.masked_invalid(data)
 
+        ax.set_axis_bgcolor((.85, .85, .85))
         if clim == 'auto':
             cmax = np.max(data)
             cmin = np.min(data)
@@ -595,92 +632,192 @@ class ctd(object):
             cmax = clim[1]
             cmin = clim[0]
 
-        if np.ma.is_masked(cmax):
-            cmax = 1
-            cmin = 0
+        if plt_log:
+            clevs = np.logspace(np.log10(cmin), np.log10(cmax), 101)
+        else:
+            clevs = np.linspace(cmin, cmax, 101)
 
-        clevs = np.linspace(cmin, cmax, 5)
+        mt = mdates.date2num(t)
+        if plt_log:
 
-        data[data>cmax] = cmax
-        data[data<cmin] = cmin
+            data[data < cmin] = cmin
+            data[data > cmax] = cmax
 
-        # make plot
-        try:
-            plt.style.use('classic')
-        except:
-            pass
-        # set the axises
-        fig, ax = plt.subplots(2, sharex=True)
-        fig.subplots_adjust(hspace=0.05)
-        ax[0].set_xlim(self.trans['dis'][0], self.trans['dis'][-1])
-        ax[0].set_ylim(0, depth0)
-        ax[0].set_yticks(range(0, depth0, 10))
-        ax[0].invert_yaxis()
-        ax[1].set_ylim(depth0, depth1)
-        ax[1].set_yticks(range(depth0, depth1, 100))
-        ax[1].invert_yaxis()
+            plt.contourf(mt, z, data, clevs,
+                         norm=LogNorm(vmin=cmin, vmax=cmax),
+                         cmap=cmap[var])
 
-        # set axis position
-        pos = ax[0].get_position()
-        pos2 = [pos.x0-0.04, pos.y0,  pos.width, pos.height]
-        ax[0].set_position(pos2)
-        pos = ax[1].get_position()
-        pos2 = [pos.x0-0.04, pos.y0,  pos.width, pos.height]
-        ax[1].set_position(pos2)
+        else:
 
-        # plot bathymetry
-        ax[0].fill_between(self.trans['dis'], self.trans['fathometer_depth'], depth1, facecolor='lightgrey')
-        ax[1].fill_between(self.trans['dis'], self.trans['fathometer_depth'], depth1, facecolor='lightgrey')
+            plt.contourf(mt, z, data, clevs,
+                         extend='both', vmin=cmin, vmax=cmax,
+                         cmap=cmap[var])
 
-        # plt.pcolormesh(self.trans['dis'], self.trans['z'], data, cmap=cmap)
-        varc0 = ax[0].contour(self.trans['dis'], self.trans['z'], data, clevs, linestyle='--', colors='k', linewidths=.4)
-        varc1 = ax[1].contour(self.trans['dis'], self.trans['z'], data, clevs, linestyle='--', colors='k', linewidths=.4)
-        varc0.clabel(fontsize=5)
-        varc1.clabel(fontsize=5)
-        ctf1 = ax[0].contourf(self.trans['dis'], self.trans['z'], data, 100, cmap=cmap)
-        ctf2 = ax[1].contourf(self.trans['dis'], self.trans['z'], data, 100, cmap=cmap)
-        ctf1.set_clim(cmin,cmax)
-        ctf2.set_clim(cmin,cmax)
+        plt.ylim(0, depth)
+        plt.xlim(min(t), max(t))
+        plt.gca().invert_yaxis()
+        plt.colorbar(ticks=clevs[::10])
+        plt.title(var + '_stn ' + "%02d" % stn)
+        # reset xticks
+        years = mdates.YearLocator()
+        ax.xaxis.set_major_locator(years)
+        fig.autofmt_xdate()
 
-        # labels
-        ax[1].set_xlabel('Distance [km]')
-        ax[0].set_ylabel('Depth [m]')
-
-        # add colorbar axis handle
-        cbar_ax = fig.add_axes([0.88, 0.1, 0.02, 0.8])
-        cb = fig.colorbar(ctf1, cax=cbar_ax)
-
-        # plt.gca().xaxis.tick_top()
-        # plt.xticks(self.trans['dis'], ["%02d"%i for i in self.trans['station']], rotation=90)
-
-        # plot station location
-        ax[1].plot(self.trans['dis'], depth1*np.ones(self.trans['dis'].shape), '^')
-        plt.grid('on', linewidth=0.1)
-        ttl = nc.num2date(self.trans['time'], 'days since 1900-01-01').strftime('%Y-%m-%d')
-        ax[0].set_title(ttl)
-
-        if plt_rho == 1:
+        if plt_rho:
             # contour density
-            rho = self.trans['rho']
+            rho = self.data['rho']
+            rho = rho[:, msk]
             rho = np.ma.masked_invalid(rho)
             clevs = np.arange(20, 31, 1)
-            rhoc0 = ax[0].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.4)
-            rhoc1 = ax[1].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.4)
+            rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.4)
             clevs = clevs[::5]
-            rhoc0 = ax[0].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.8)
-            rhoc1 = ax[1].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.8)
-            rhoc0.clabel(fontsize=5)
-            rhoc1.clabel(fontsize=5)
+            rhoc = plt.contour(mdates.date2num(t), z, rho, clevs, colors='w', linewidths=.8)
+            plt.clabel(rhoc, fontsize=5)
 
         return fig, ax
 
-    def plt_all_trans(self, var, save_dir, clim='auto'):
+    def plt_trans(self, var, time, plt_rho=False, plt_log=False,
+                  clim='auto', depth0=50, depth1=450):
+        ''' pcolor transect. '''
+
+        # define colormap
+        cmap = {'temp': cm.thermal,
+                'salt': cm.haline,
+                'fluor': cm.algae,
+                'o2': cm.oxy,
+                'par': cm.solar,
+                'tur': cm.turbid}
+
+        # define long name
+        longname = {'temp': r'Temperature [$^{\circ}$C]',
+                    'salt': r'Salinity [PSU]',
+                    'fluor': r'Fluorescence [mg$\cdot$m$^{-3}$]',
+                    'o2': r'Oxygen [ml$\cdot$l$^{-1}$]',
+                    'par': r'PAR',
+                    'tur': r'Turbidity [NTU]'}
+
+        if plt_rho:
+            self.get_trans([var, 'rho'], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
+        else:
+            self.get_trans([var], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
+        data = self.trans[var]
+        if np.any(np.isfinite(data)):
+            data = np.ma.masked_invalid(data)
+
+            if clim == 'auto':
+                cmax = np.max(data)
+                cmin = np.min(data)
+            else:
+                cmax = clim[1]
+                cmin = clim[0]
+
+            if np.ma.is_masked(cmax):
+                cmax = 1
+                cmin = 0
+
+            if plt_log:
+                clevs = np.logspace(np.log10(cmin), np.log10(cmax), 101)
+            else:
+                clevs = np.linspace(cmin, cmax, 101)
+
+            # make plot
+            try:
+                plt.style.use('classic')
+            except:
+                pass
+            # set the axises
+            fig, ax = plt.subplots(2, sharex=True)
+            fig.subplots_adjust(hspace=0.05)
+            ax[0].set_xlim(self.trans['dis'][0], self.trans['dis'][-1])
+            ax[0].set_ylim(0, depth0)
+            ax[0].set_yticks(range(0, depth0, 10))
+            ax[0].invert_yaxis()
+            ax[1].set_ylim(depth0, depth1)
+            ax[1].set_yticks(range(depth0, depth1, 100))
+            ax[1].invert_yaxis()
+
+            # set axis position
+            pos = ax[0].get_position()
+            pos2 = [pos.x0-0.04, pos.y0,  pos.width, pos.height]
+            ax[0].set_position(pos2)
+            pos = ax[1].get_position()
+            pos2 = [pos.x0-0.04, pos.y0,  pos.width, pos.height]
+            ax[1].set_position(pos2)
+
+            # plot bathymetry
+            ax[0].fill_between(self.trans['dis'], self.trans['fathometer_depth'], depth1, facecolor='lightgrey')
+            ax[1].fill_between(self.trans['dis'], self.trans['fathometer_depth'], depth1, facecolor='lightgrey')
+
+            varc0 = ax[0].contour(self.trans['dis'], self.trans['z'], data, clevs[::10],
+                                  linestyle='--', colors='k', linewidths=.4)
+            varc1 = ax[1].contour(self.trans['dis'], self.trans['z'], data, clevs[::10],
+                                  linestyle='--', colors='k', linewidths=.4)
+
+            if plt_log:
+
+                data[data < cmin] = cmin
+                data[data > cmax] = cmax
+                ctf1 = ax[0].contourf(self.trans['dis'], self.trans['z'], data, clevs,
+                                      norm=LogNorm(vmin=cmin, vmax=cmax),
+                                      cmap=cmap[var])
+                ctf2 = ax[1].contourf(self.trans['dis'], self.trans['z'], data, clevs,
+                                      norm=LogNorm(vmin=cmin, vmax=cmax),
+                                      cmap=cmap[var])
+
+            else:
+
+                ctf1 = ax[0].contourf(self.trans['dis'], self.trans['z'], data, clevs,
+                                      vmin=cmin, vmax=cmax, cmap=cmap[var], extend='both')
+                ctf2 = ax[1].contourf(self.trans['dis'], self.trans['z'], data, clevs,
+                                      vmin=cmin, vmax=cmax, cmap=cmap[var], extend='both')
+
+            varc0.clabel(fontsize=5)
+            varc1.clabel(fontsize=5)
+
+            # labels
+            ax[1].set_xlabel('Distance [km]')
+            ax[0].set_ylabel('Depth [m]')
+
+            # add colorbar axis handle
+            cbar_ax = fig.add_axes([0.88, 0.1, 0.02, 0.8])
+            cb = fig.colorbar(ctf1, cax=cbar_ax, ticks=clevs[::10])
+            cbar_ax.set_ylabel(longname[var])
+
+            # plt.gca().xaxis.tick_top()
+            # plt.xticks(self.trans['dis'], ["%02d"%i for i in self.trans['station']], rotation=90)
+
+            # plot station location
+            ax[1].plot(self.trans['dis'], depth1*np.ones(self.trans['dis'].shape), '^')
+            plt.grid('on', linewidth=0.1)
+            ttl = var + '_' + nc.num2date(self.trans['time'], 'days since 1900-01-01').strftime('%Y-%m-%d')
+            ax[0].set_title(ttl)
+
+            if plt_rho:
+                # contour density
+                rho = self.trans['rho']
+                rho = np.ma.masked_invalid(rho)
+                clevs = np.arange(20, 31, 1)
+                rhoc0 = ax[0].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.4)
+                rhoc1 = ax[1].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.4)
+                clevs = clevs[::5]
+                rhoc0 = ax[0].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.8)
+                rhoc1 = ax[1].contour(self.trans['dis'], self.trans['z'], rho, clevs, colors='w', linewidths=.8)
+                rhoc0.clabel(fontsize=5)
+                rhoc1.clabel(fontsize=5)
+
+            return fig, ax
+
+        else:
+
+            return None
+
+    def plt_all_trans(self, var, save_dir, clim='auto', plt_log=False):
         """ pcolor all transect use plt_trans. """
         k1, k2, k3 = self.get_cruise()
         time0 = self.data['time'][k1[k3]]
         for time in time0:
             ttag = nc.num2date(time, 'days since 1900-01-01').strftime('%Y-%m-%d')
-            self.plt_trans(var, time, clim=clim)
+            self.plt_trans(var, time, clim=clim, plt_log=plt_log)
             plt.savefig(save_dir + var + '_' + ttag + '.png')
             plt.close()
 
@@ -690,8 +827,8 @@ class ctd(object):
         t = self.data['time']
         stn = self.data['station']
         z = self.data['z']
-        for i in range(data.shape[-1]):
-            plt.plot(data[:, i], z)
+        for i in range(self.data.shape[-1]):
+            plt.plot(self.data[:, i], z)
             tstr = nc.num2date(t[i], 'days since 1900-01-01 00:00:00').strftime('%Y-%m-%d %H:%M')
             plt.title(tstr + '_' + str(stn[i]))
             plt.savefig(self.info['file_dir'] + 'figs/ctd/' + tstr + '_' + str(stn[i]) + '.png')
