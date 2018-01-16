@@ -44,18 +44,18 @@ my_year = 2008
 ts = 12
 grd1 = 'GB_lr'
 ftype = 'his'
-xpos0 = 327
-xpos1 = 337
-ypos0 = 112
-ypos1 = 138
+# xpos0 = 327
+# xpos1 = 337
+# ypos0 = 112
+# ypos1 = 138
 # xpos0 = 211
 # xpos1 = 211
 # ypos0 = 127
 # ypos1 = 144
-# xpos0 = 184
-# xpos1 = 175
-# ypos0 = 126
-# ypos1 = 145
+xpos0 = 184
+xpos1 = 175
+ypos0 = 126
+ypos1 = 145
 
 if len(sys.argv)>1:
     tag = sys.argv[-1]

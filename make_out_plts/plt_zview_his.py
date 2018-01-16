@@ -44,6 +44,7 @@ outputs_dir = model_dir + model
 fig_dir = out_dir + 'figs/zview/' + tag + '/' + ftype + '/'
 
 flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
+flist = flist[90:100]
 
 # dicts for variable clims, colormaps, and other properties
 clim = {'temp': [2, 10],

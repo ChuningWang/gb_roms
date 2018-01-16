@@ -69,7 +69,7 @@ flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
 
 # dicts for variable clims, colormaps, and other properties
 clim = {'temp': [2, 10],
-        'salt': [15, 30],
+        'salt': [12, 32],
         'zeta': [-0.15, 0.15],
         'wetdry_mask_rho': [0, 1],
         'dye_01': [0, 1],

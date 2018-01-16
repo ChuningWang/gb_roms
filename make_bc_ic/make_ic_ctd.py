@@ -104,7 +104,7 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-month = 4
+month = 1
 my_year = 2008
 src_grd_name = str(my_year) + '_' + "%02d" % month + '_15_CTD_floodFill'
 
