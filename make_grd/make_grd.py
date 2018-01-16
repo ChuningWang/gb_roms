@@ -17,16 +17,16 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_150m_orig'
-grd_name = 'GlacierBay_150m_orig'
+grd1 = 'GB_300m_orig'
+grd_name = 'GlacierBay_300m_orig'
 tag = ''
 bathy_dir = in_dir + 'ARDEMv2.0.nc'
 out_file = out_dir + 'grd/' + grd_name + '_grd' + tag + '.nc'
 
 # ----------------------------------------------------------------------------------------------------------
 # grid dimension
-Lg = 500   # horizontal
-Mg = 1000  # vertical
+Lg = 250   # horizontal
+Mg = 500  # vertical
 
 # Lg = 250   # horizontal
 # Mg = 500   # vertical
