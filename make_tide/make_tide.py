@@ -105,7 +105,7 @@ out_file = dst_grd.name + '_tides_otps.nc'
 
 # -------------------------------------------------------------------------
 # preparation for nodal correction
-if nodal_corr==1:
+if nodal_corr == 1:
     d0 = datetime(1899, 12, 31, 12, 00, 00)
     # jd = [datetime(2000, 07, 01, 00, 00, 00), datetime(2001, 07, 01, 00, 00, 00)]
     jd = [datetime(2008, 01, 01, 00, 00, 00)]
@@ -120,7 +120,7 @@ if nodal_corr==1:
     # idx = np.zeros(consts_num)*np.NaN
     idx = list()
     for i in range(consts_num):
-        idx.append(np.where(np.all(name==tide_name[i], axis=1))[0][0])
+        idx.append(np.where(np.all(name == tide_name[i], axis=1))[0][0])
 
     V, U, F = t_vuf(d, idx, lat)
     V = V*360  # convert phase to degree

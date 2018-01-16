@@ -13,7 +13,8 @@ def add_to_lists(pairs, i, j, sign, dir):
         if x2 > x1:
             # negative v-velocity
             i.append(x1)
-            j.append(y1)
+            # j.append(y1)
+            j.append(y1+1)
             sign.append(-1)
             dir.append(1)
         elif x1 > x2:
@@ -30,7 +31,8 @@ def add_to_lists(pairs, i, j, sign, dir):
             dir.append(0)
         elif y1 > y2:
             # negative u-velocity
-            i.append(x1)
+            # i.append(x1)
+            i.append(x1+1)
             j.append(y2)
             sign.append(-1)
             dir.append(0)
@@ -49,7 +51,7 @@ else:
     grd1 = 'GB_lr'
 
 my_year = 2008
-tag = 'Hill'
+tag = 'Hill_ana'
 
 # load GB grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -116,13 +118,13 @@ out.variables['river_sign'][:] = sign
 xi = out.createVariable('river_Xposition', 'i4', ('river'))
 xi.long_name = 'river XI-position at RHO-points'
 xi.valid_min = 1
-xi.valid_max = 793    # WARNING - hardcoded Lm+1
+xi.valid_max = 251    # WARNING - hardcoded Lm+1
 out.variables['river_Xposition'][:] = i
 
 eta = out.createVariable('river_Eposition', 'i4', ('river'))
 eta.long_name = 'river ETA-position at RHO-points'
 eta.valid_min = 1
-eta.valid_max = 361    # WARNING - hardcoded Mm+1
+eta.valid_max = 501    # WARNING - hardcoded Mm+1
 out.variables['river_Eposition'][:] = j
 
 dirs = out.createVariable('river_direction', 'i4', ('river'))

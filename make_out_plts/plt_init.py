@@ -1,5 +1,5 @@
 '''
-Contour transect along Glacier Bay.
+Contour transect along Glacier Bay for initial condition.
 
 2017/10/12
 Use nearest neighbor instead griddata to get the transect data.
@@ -22,13 +22,12 @@ in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
+file_in = out_dir + 'bc_ic/GlacierBay_lr_ic_2008_06_15_CTD_floodFill.nc'
+
 # my inputs
-my_year = 2008
-plt_uv = 1
 plt_contourf = 1
-ftype = 'avg'
 varlist = ['salt', 'temp', 'dye_01', 'dye_03']
-# varlist = ['tke', 'gls']
+varlist = ['salt']
 dd = 3
 depth1 = 450
 depth0 = 50
@@ -59,29 +58,10 @@ cmap = {'temp': cmocean.cm.thermal,
 var_omega = ['tke', 'gls']
 var_log = ['tke', 'gls']
 
-if len(sys.argv)>1:
-    grd1 = sys.argv[-1]
-else:
-    grd1 = 'GB_lr'
-
+grd1 = 'GB_lr'
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
-if grd1=='GB_lr':
-    tag = 'GB-CIRC'
-if grd1=='GB_hr':
-    tag = 'GB-TIDE'
-
-model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
-outputs_dir = model_dir + model
-fig_dir = out_dir + 'figs/trans/' + tag +'/' + str(my_year) + '/'
-
-flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-# flist = flist[-1:]
-
 zlev = grd.vgrid.N
-uvar = 'u'
-vvar = 'v'
-wvar = 'w'
 
 c0 = np.array([[-137.05000708,   59.05576767],
                [-137.02431432,   59.03650282],
@@ -115,7 +95,7 @@ c0 = np.array([[-137.05000708,   59.05576767],
                [-136.44156675,   58.80997111],
                [-136.42326055,   58.7974122 ],
                [-136.40953089,   58.7954268 ],
-               [-136.38969917,   58.77366195],
+               [-136.38969917,   58.78166195],
                [-136.37291848,   58.77250898],
                [-136.34851021,   58.77260303],
                [-136.330204  ,   58.76560303],
@@ -213,49 +193,8 @@ dis = np.cumsum(dis)
 dis = dis/1000  # [km]
 dis = np.tile(dis, (zlev, 1))
 
-# initiate vairables
-# var_tr = np.zeros((zlev, ct_tr))
-
-# -------------------------------------------------------------------------------
-# if plot velocity vector, also calculate and define these variables
-if plt_uv==1:
-    latu = grd.hgrid.lat_u
-    lonu = grd.hgrid.lon_u
-    latv = grd.hgrid.lat_v
-    lonv = grd.hgrid.lon_v
-    msku = grd.hgrid.mask_u
-    mskv = grd.hgrid.mask_v
-
-    lonu = lonu[msku==1]
-    latu = latu[msku==1]
-    lonv = lonv[mskv==1]
-    latv = latv[mskv==1]
-
-    eta_tr2 = eta_tr[::dd]
-    xi_tr2 = xi_tr[::dd]
-    lon_tr2 = lon_tr[::dd]
-    lat_tr2 = lat_tr[::dd]
-    h_tr2 = h_tr[::dd]
-    z_tr2 = z_tr[:, ::dd]
-    dis2 = dis[:, ::dd]
-
-    # calculate angle
-    ang_tr = ang[eta_tr.tolist(), xi_tr.tolist()]
-    ang_tr2 = ang_tr[::dd]
-    ang_add = np.zeros(len(ang_tr2))
-    dx = 59
-    dy = 111
-    dvec = np.diff(lon_tr2*dx + 1j*lat_tr2*dy)
-    ang_add[:-1] = np.angle(dvec)
-    ang_add[-1] = ang_add[-2]
-    ang_tr2 = ang_tr2-ang_add
-
-    U_tr2 = np.zeros((zlev, len(lon_tr2)))
-    w_tr2_sw = np.zeros((zlev+1, len(lon_tr2)))
-
 # -------------------------------------------------------------------------------
 # make plots
-plt.switch_backend('Agg')
 try:
     plt.style.use('classic')
 except:
@@ -286,75 +225,59 @@ for var in varlist:
         cmap_var = cmocean.cm.matter
 
     if var in var_log:
-        clevs = np.logspace(clim_var[0], clim_var[1], 3)
+        clevs = np.logspace(clim_var[0], clim_var[1], 11)
     else:
-        clevs = np.linspace(clim_var[0], clim_var[1], 5)
+        clevs = np.linspace(clim_var[0], clim_var[1], 21)
 
-    for fn in flist:
-        # read data
-        tag = fn.split('/')[-1].split('.')[0]
-        print('processing ' + tag + ' ...')
-        fh = nc.Dataset(fn)
-        t = fh.variables['ocean_time'][:]
-        tunit = (fh.variables['ocean_time']).units
-        data = fh.variables[var][:]
-        if plt_uv==1:
-            u = fh.variables[uvar][:]
-            v = fh.variables[vvar][:]
-            w = fh.variables[wvar][:]
-            u = 0.5*(u[:, :, 1:, :]+u[:, :, :-1, :])
-            v = 0.5*(v[:, :, :, 1:]+v[:, :, :, :-1])
-            w = 0.5*(w[:, 1:, :, :]+w[:, :-1, :, :])
-        fh.close()
+    fh = nc.Dataset(file_in)
+    t = fh.variables['ocean_time'][:]
+    tunit = (fh.variables['ocean_time']).units
+    data = fh.variables[var][:]
+    fh.close()
 
-        if var in var_omega:
-            data = 0.5*(data[:, :-1, :, :] + data[:, 1:, :, :])
+    if var in var_omega:
+        data = 0.5*(data[:, :-1, :, :] + data[:, 1:, :, :])
 
-        for tt in range(len(t)):
-            ttag = nc.num2date(t[tt], tunit).strftime("%Y-%m-%d_%H:%M:%S")
-            var_tr = data[tt, :, eta_tr.tolist(), xi_tr.tolist()].T
+    for tt in range(len(t)):
+        ttag = nc.num2date(t[tt], tunit).strftime("%Y-%m-%d_%H:%M:%S")
+        var_tr = data[tt, :, eta_tr.tolist(), xi_tr.tolist()].T
 
-            if plt_uv==1:
-                u_tr2 = u[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
-                v_tr2 = u[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
-                U_tr2 = u_tr2*np.cos(np.tile(ang_tr2, (40, 1)))-v_tr2*np.sin(np.tile(ang_tr2, (40, 1)))
-                w_tr2 = w[tt, :, eta_tr2.tolist(), xi_tr2.tolist()].T
+        # make plot
+        if var in var_log:
+            pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
+            pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
+        else:
+            pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
+            pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
+            pcm1.set_clim(clim_var[0], clim_var[1])
+            pcm2.set_clim(clim_var[0], clim_var[1])
+        # add colorbar axis handle
+        cbar_ax = f.add_axes([0.92, 0.10, 0.02, 0.8])
+        cb = f.colorbar(pcm1, cax=cbar_ax)
 
-            # make plot
-            if var in var_log:
-                pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
-                pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, norm=LogNorm(vmin=clim_var[0], vmax=clim_var[1]), cmap=cmap_var)
-            else:
-                pcm1 = ax1.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
-                pcm2 = ax2.pcolormesh(dis, z_tr, var_tr, cmap=cmap_var)
-                pcm1.set_clim(clim_var[0], clim_var[1])
-                pcm2.set_clim(clim_var[0], clim_var[1])
-            # add colorbar axis handle
-            cbar_ax = f.add_axes([0.92, 0.10, 0.02, 0.8])
-            cb = f.colorbar(pcm1, cax=cbar_ax)
+        if plt_contourf==1:
+            varc1 = ax1.contour(dis, z_tr, var_tr, clevs, linestyle='--', linewidths=.4, colors='w')
+            varc2 = ax2.contour(dis, z_tr, var_tr, clevs, linestyle='--', linewidths=.4, colors='w')
+            varc3 = ax1.contour(dis, z_tr, var_tr, clevs[::5], linestyle='--', linewidths=1.0, colors='k')
+            varc4 = ax2.contour(dis, z_tr, var_tr, clevs[::5], linestyle='--', linewidths=1.0, colors='k')
+            cl3 = plt.clabel(varc3, fontsize=5)
+            cl4 = plt.clabel(varc4, fontsize=5)
 
-            if plt_contourf==1:
-                varc1 = ax1.contour(dis, z_tr, var_tr, clevs, linestyle='--', linewidths=.4, colors='k')
-                varc2 = ax2.contour(dis, z_tr, var_tr, clevs, linestyle='--', linewidths=.4, colors='k')
-                # plt.clabel(varc, fontsize=5)
-            if plt_uv==1:
-                qv1 = ax1.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
-                qv2 = ax2.quiver(dis2, z_tr2, U_tr2, w_tr2, scale=100)
+        ax1.set_title(var + '_' + grd.name + '_' + ttag)
+        f.savefig(out_dir + 'figs/init/' + var + '_' + grd.name + '_' + ttag + '.png', dpi=300)
 
-            ax1.set_title(var + '_' + grd.name + '_' + ftype + '_' + ttag)
-            f.savefig(fig_dir + var + '_' + grd.name + '_' + ftype + '_' + ttag + '.png')
+        pcm1.remove()
+        pcm2.remove()
+        f.delaxes(cbar_ax)
+        # cb.remove()
+        if plt_contourf==1:
+            for cc in varc1.collections:
+                cc.remove()
+            for cc in varc2.collections:
+                cc.remove()
+            for cc in varc3.collections:
+                cc.remove()
+            for cc in varc4.collections:
+                cc.remove()
 
-            pcm1.remove()
-            pcm2.remove()
-            f.delaxes(cbar_ax)
-            # cb.remove()
-            if plt_contourf==1:
-                for cc in varc1.collections:
-                    cc.remove()
-                for cc in varc2.collections:
-                    cc.remove()
-            if plt_uv==1:
-                qv1.remove()
-                qv2.remove()
-
-plt.close()
+# plt.close()

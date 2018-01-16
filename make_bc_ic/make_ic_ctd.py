@@ -106,7 +106,7 @@ else:
 
 month = 4
 my_year = 2008
-src_grd_name = '2008_04_15_CTD_floodFill'
+src_grd_name = str(my_year) + '_' + "%02d" % month + '_15_CTD_floodFill'
 
 # Load target grid and land mask
 grd = pyroms.grid.get_ROMS_grid(grd1)

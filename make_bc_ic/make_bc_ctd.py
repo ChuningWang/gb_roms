@@ -4,6 +4,7 @@ This is a messy script, since it involves a lot of subjective choices of profile
 '''
 
 import sys
+import glob
 import numpy as np
 from datetime import datetime
 from scipy.signal import filtfilt
@@ -26,11 +27,9 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-my_year = 2008
+my_year = 2009
 zlev_ts = 500
 grd = pyroms.grid.get_ROMS_grid(grd1)
-ang_rho = grd.hgrid.angle_rho
-ang = ang_rho.mean()
 
 class nctime(object):
     pass
@@ -164,7 +163,7 @@ if cal_ts == 1:
 # second process velocity
 # load ADCP data near the grid boundary
 stn_list = ['SEA1008', 'SEA1009', 'SEA1010', 'SEA0839']
-zlev_uv = 425
+zlev_uv = 450
 
 t = {}
 u = {}
@@ -174,20 +173,31 @@ lat = {}
 lon = {}
 
 for stn in stn_list:
-    info = {'stn' : stn,
-            'file_dir': in_dir + 'NOAA_ADCP/',
-            'sl': 'l',
-            'Wp_hrs': -1}
 
-    crt = noaa_adcp.get_noaa_current(info)
-    crt()
+    # info = {'stn' : stn,
+    #         'file_dir': in_dir + 'NOAA_ADCP/',
+    #         'sl': 'l',
+    #         'Wp_hrs': -1}
 
-    t[stn] = crt.ctime
-    u[stn] = crt.u
-    v[stn] = crt.v
-    z[stn] = crt.z
-    lat[stn] = crt.info['lat']
-    lon[stn] = crt.info['lon']
+    # crt = noaa_adcp.get_noaa_current(info)
+    # crt()
+
+    # t[stn] = crt.ctime
+    # u[stn] = crt.u
+    # v[stn] = crt.v
+    # z[stn] = crt.z
+    # lat[stn] = crt.info['lat']
+    # lon[stn] = crt.info['lon']
+
+    fname = glob.glob(in_dir + 'NOAA_ADCP/' + stn + '*.nc')[0]
+
+    fin = nc.Dataset(fname, 'r')
+    t[stn] = fin.variables['time'][:]
+    u[stn] = fin.variables['u'][:]
+    v[stn] = fin.variables['v'][:]
+    z[stn] = fin.variables['z'][:]
+    lat[stn] = fin.lat
+    lon[stn] = fin.lon
 
 # process, interpolate and smooth data
 lat08 = lat['SEA1008']
@@ -226,8 +236,10 @@ msk10 = (z_uv<z10[0]) & (z_uv>z10[-1])
 uu10[msk10] = interp1d(z10, u10)(z_uv[msk10])
 vv10[msk10] = interp1d(z10, v10)(z_uv[msk10])
 
-uu = np.nanmean(np.array([uu08, uu09, uu10]), axis=0)
-vv = np.nanmean(np.array([vv08, vv09, vv10]), axis=0)
+# uu = np.nanmean(np.array([uu08, uu09, uu10]), axis=0)
+# vv = np.nanmean(np.array([vv08, vv09, vv10]), axis=0)
+uu = np.nanmean(np.array([uu08, uu10]), axis=0)
+vv = np.nanmean(np.array([vv08, vv10]), axis=0)
 
 uu[0] = -0.15
 uu[350] = 0.
@@ -243,11 +255,7 @@ vv = interp1d(z_uv[msk], vv[msk])(z_uv)
 uu = filtfilt(np.ones(10)/10, 1, uu)
 vv = filtfilt(np.ones(10)/10, 1, vv)
 
-# rotate the velocity vector
-UU = uu+1j*vv
-UU = UU*np.exp(ang*1j)
-u_west = UU.real
-v_west = UU.imag
+UU_west = uu+1j*vv
 
 lat39 = lat['SEA0839']
 lon39 = lon['SEA0839']
@@ -274,10 +282,7 @@ vv39 = interp1d(z_uv[msk], vv39[msk])(z_uv)
 uu39 = filtfilt(np.ones(10)/10, 1, uu39)
 vv39 = filtfilt(np.ones(10)/10, 1, vv39)
 
-UU = uu39+1j*vv39
-UU = UU*np.exp(ang*1j)
-u_east = UU.real
-v_east = UU.imag
+UU_east = uu39+1j*vv39
 
 # --------------------------------------------------------------------------------
 # remap TS and write into nc file
@@ -293,10 +298,12 @@ fh = nc.Dataset(bc_file, 'r+')
 fh.variables['ocean_time'][:] = t_clim + dt
 spval = -1.0e20
 
+# --------------------------------------------------------------------------------
 varlist = ['temp', 'salt', 'u', 'v']
 for var in varlist:
     var_name_east = var + '_east'
     var_name_west = var + '_west'
+    # write var info
     if var in['temp']:
         h = h_ts.copy()
         msk = grd.hgrid.mask_rho.copy()
@@ -346,6 +353,7 @@ for var in varlist:
         field_west2 = 'vbar_west, scalar, series'
         units2 = 'meter second-1'
 
+    # some grid info
     eta, xi = h.shape
     h_east = h[:, -1]
     h_west = h[:, 0]
@@ -353,8 +361,16 @@ for var in varlist:
     msk_west = msk[:, 0]
     h_east[msk_east==0] = np.NaN
     h_west[msk_west==0] = np.NaN
-    z_east = -np.array(np.dot(np.matrix(Cs_r).T, np.matrix(h_east)))
-    z_west = -np.array(np.dot(np.matrix(Cs_r).T, np.matrix(h_west)))
+    z_east = -grd.vgrid.z_r[:][:, :, -1]
+    z_west = -grd.vgrid.z_r[:][:, :, 0]
+    ang_east = grd.hgrid.angle_rho[: ,-1]
+    ang_west = grd.hgrid.angle_rho[: ,0]
+
+    if var in ['v']:
+        z_east = 0.5*(z_east[:, 1:] + z_east[:, :-1])
+        z_west = 0.5*(z_west[:, 1:] + z_west[:, :-1])
+        ang_east = 0.5*(ang_east[1:] + ang_east[:-1])
+        ang_west = 0.5*(ang_west[1:] + ang_west[:-1])
 
     data_east = np.NaN*np.zeros((len(t_clim), zlev, eta))
     data_west = np.NaN*np.zeros((len(t_clim), zlev, eta))
@@ -368,12 +384,18 @@ for var in varlist:
                 data_east[tt, :, i] = interp1d(z_ts, temp_clim_east[:, tt])(z_east[:, i])
                 data_west[tt, :, i] = interp1d(z_ts, temp_clim_west[:, tt])(z_west[:, i])
             elif var == 'u':
+                u_east = (UU_east * np.exp(-ang_east[i]*1j)).real
                 data_east[tt, :, i] = interp1d(z_uv, u_east)(z_east[:, i])
+                u_west = (UU_west * np.exp(-ang_west[i]*1j)).real
                 data_west[tt, :, i] = interp1d(z_uv, u_west)(z_west[:, i])
             elif var == 'v':
+                v_east = (UU_east * np.exp(-ang_east[i]*1j)).imag
                 data_east[tt, :, i] = interp1d(z_uv, v_east)(z_east[:, i])
+                v_west = (UU_west * np.exp(-ang_west[i]*1j)).imag
                 data_west[tt, :, i] = interp1d(z_uv, v_west)(z_west[:, i])
 
+    data_east[:, :, msk_east == 0] = np.NaN
+    data_west[:, :, msk_west == 0] = np.NaN
     data_east = np.ma.masked_invalid(data_east)
     data_west = np.ma.masked_invalid(data_west)
 
@@ -415,8 +437,8 @@ for var in varlist:
             mskz_east = z_uv < h_east[i]
             mskz_west = z_uv < h_west[i]
             for tt in range(len(t_clim)):
-                ubar_east[tt, i] = u_east[mskz_east].mean()
-                ubar_west[tt, i] = u_west[mskz_west].mean()
+                ubar_east[tt, i] = UU_east[mskz_east].mean().real
+                ubar_west[tt, i] = UU_west[mskz_west].mean().real
 
         ubar_east = np.ma.masked_invalid(ubar_east)
         ubar_west = np.ma.masked_invalid(ubar_west)
@@ -440,8 +462,8 @@ for var in varlist:
             mskz_east = z_uv < h_east[i]
             mskz_west = z_uv < h_west[i]
             for tt in range(len(t_clim)):
-                vbar_east[tt, i] = v_east[mskz_east].mean()
-                vbar_west[tt, i] = v_west[mskz_west].mean()
+                vbar_east[tt, i] = UU_east[mskz_east].mean().imag
+                vbar_west[tt, i] = UU_west[mskz_west].mean().imag
 
         vbar_east = np.ma.masked_invalid(vbar_east)
         vbar_west = np.ma.masked_invalid(vbar_west)

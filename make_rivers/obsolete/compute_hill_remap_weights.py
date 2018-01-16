@@ -26,7 +26,7 @@ lon = nc_data.variables['lon'][:]
 lat = nc_data.variables['lat'][:]
 # the coordinate of Hill's grid is slightly off - correct it here
 lon = lon-0.010
-lat = lat-0.005
+lat = lat-0.010
 mask = nc_data.variables['coast'][:]
 # here use polygon to mask data out of Glacier Bay
 box = np.array([[-137.40, 59.10],

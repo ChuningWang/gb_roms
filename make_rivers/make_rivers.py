@@ -1,10 +1,12 @@
 import numpy as np
 import netCDF4 as nc
-from datetime import datetime
+from datetime import datetime, timedelta
+from matplotlib import path
 import sys
 
 import pyroms
 import pyroms_toolbox
+from ocean_toolbox import ctd
 
 import read_host_info
 sv = read_host_info.read_host_info()
@@ -17,104 +19,97 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-my_year = 2008
-
-# load GB grid object
-grd = pyroms.grid.get_ROMS_grid(grd1)
-
-# load 2-dimentional discharge data 
-print 'Load discharge data'
+dis_file = in_dir + 'gb_discharge.nc'
+script_dir = home_dir + 'git/gb_roms/make_rivers/'
 tag = 'Hill'
-in_file = in_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag + '.nc'
-out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
+my_year = 2009
+rspread = 2
+spval = -1e30
+t0 = 10.
+s0 = 0.
 
-nc_data = nc.Dataset(in_file, 'r')
-nc_rivers = nc.Dataset(out_file, 'a')
-data = nc_data.variables['Runoff'][:]
-time = nc_data.variables['time'][:]
-nc_data.close()
-sign = nc_rivers.variables['river_sign'][:]
-xi = nc_rivers.variables['river_Xposition'][:]
-eta = nc_rivers.variables['river_Eposition'][:]
-dir = nc_rivers.variables['river_direction'][:]
-
-# define some variables
-nt = data.shape[0]
-Nr = sign.shape[0]
-Mp, Lp = grd.hgrid.mask_rho.shape
-runoff = np.zeros((Nr))
-count = np.zeros(grd.hgrid.mask_rho.shape, dtype=np.int32)
-
-# from a Python forum - create an array of lists
-filler = np.frompyfunc(lambda x: list(), 1, 1)
-rivers = np.empty((Mp, Lp), dtype=np.object)
-filler(rivers, rivers)
-
-for k in range(Nr):
-    if (sign[k]==1):
-        count[eta[k],xi[k]] += 1
-        rivers[eta[k],xi[k]].append(k)
-    elif (sign[k] == -1 and dir[k] == 0):
-        count[eta[k],xi[k]-1] += 1
-        rivers[eta[k],xi[k]-1].append(k)
-    elif (sign[k]==-1 and dir[k]==1):
-        count[eta[k]-1,xi[k]] += 1
-        rivers[eta[k]-1,xi[k]].append(k)
-
-nct=0
-for t in range(nt):
-    print 'Remapping runoff for time %f' %time[t]
-    for j in range(Mp):
-        for i in range(Lp):
-            for n in range(count[j,i]):
-                frac = 1.0/count[j,i]
-                k = rivers[j,i][n]
-                runoff[k] = frac*data[t,j,i]
-
-    # write data in destination file
-    nc_rivers.variables['river_transport'][nct] = runoff
-    nc_rivers.variables['river_time'][nct] = time[nct]
-    nct = nct + 1
-
-nc_rivers.close()
+# Select time range (days since 1900)
+t_base = datetime(1900, 01, 01)
+t_ini = datetime(my_year, 01, 01)
+t_end = datetime(my_year+1, 01, 01)
+# t_ini = datetime(my_year, 06, 01)
+# t_end = datetime(my_year, 06, 03)
 
 # ---------------------------------------------------------------------
-# scale the total discharge to original Hill product
-def get_discharge_avgbox(t, lat, lon, trs, coast, box):
-    ''' sum up discharge in a region. '''
+# load Glacier Bay grid object
+grd = pyroms.grid.get_ROMS_grid(grd1)
+lat_grd = grd.hgrid.lat_rho
+lon_grd = grd.hgrid.lon_rho
+msk = grd.hgrid.mask_rho
 
-    discharge = trs.copy()
-    from matplotlib import path
-    # Get points in boxes
-    hydro_box = np.ones(lon.shape)*(-1)
-    p0 = path.Path(box)
+out_file = out_dir + 'frc/' + grd.name + '_rivers_' + str(my_year) + '_' + tag + '.nc'
 
-    shp = coast.shape
-    if len(shp) == 2:
-        for i in range(lon.shape[0]):
-            for j in range(lon.shape[1]):
-                if p0.contains_points([(lon[i, j], lat[i, j])]):
-                    hydro_box[i, j] = 0
-    elif len(shp) == 1:
-        for i in range(len(lon)):
-            if p0.contains_points([(lon[i], lat[i])]):
-                hydro_box[i] = 0
+# ---------------------------------------------------------------------
+# read in river location, info.
+idx = []
+idy = []
+sign = []
+rdir = []
+river = []
+# read in coast cells
+river_num = 0
+fin = open('river_cells.txt', 'r')
+for line in fin:
+    llist = line.rstrip('\n').split(',')
+    if int(llist[0]) == -1:
+        river_num += 1
+        irdir = int(llist[1])
+        isign = int(llist[2])
+    elif int(llist[0]) == -10:
+        break
+    else:
+        river.append(river_num)
+        if isign == 1:
+            idx.append(int(llist[0]))
+            idy.append(int(llist[1]))
+        else:
+            if irdir == 1:
+                idx.append(int(llist[0])+1)
+                idy.append(int(llist[1]))
+            else:
+                idx.append(int(llist[0]))
+                idy.append(int(llist[1])+1)
 
-    # Find coastal cells
-    hydro_box[coast.mask] = -1
+        sign.append(isign)
+        rdir.append(irdir)
 
-    print 'Sum up data in box...'
-    d = np.empty(t.size)
-    d[:] = np.NaN
-    for i in range(t.size):
-        if len(shp) == 2:
-            d0 = discharge[i, :, :]
-        elif len(shp) == 1:
-            d0 = discharge[i, :]
-        d0[d0 <= 0] = np.NaN
-        d[i] = np.nansum(d0[hydro_box == 0])
-    return d
+river = np.array(river)
+idx = np.array(idx)
+idy = np.array(idy)
+sign = np.array(sign)
+rdir = np.array(rdir)
+Nriver_grid = len(river)
+Nriver = river.max()
+lat_river = np.zeros(Nriver)
+lon_river = np.zeros(Nriver)
+for i in range(Nriver):
+    ir = river == i+1
+    lat_river[i] = lat_grd[idx[ir], idy[ir]].mean()
+    lon_river[i] = lon_grd[idx[ir], idy[ir]].mean()
 
+# ---------------------------------------------------------------------
+# load 2-dimentional interannual discharge data 
+print 'Load interannual discharge data'
+fh = nc.Dataset(dis_file, 'r')
+time = fh.variables['t'][:]
+lat = fh.variables['lat'][:]
+lon = fh.variables['lon'][:]
+coast = fh.variables['coast'][:]
+t1 = (t_ini-t_base).days
+t2 = (t_end-t_base).days
+mskt = (time>=t1) & (time<=t2)
+time = time[mskt]
+data = fh.variables['discharge'][mskt, :, :]
+fh.close()
+
+nt = len(time)
+
+# only use data in GB region
 box = np.array([[-137.40, 59.10],
                 [-137.00, 58.50],
                 [-136.55, 58.30],
@@ -123,48 +118,131 @@ box = np.array([[-137.40, 59.10],
                 [-135.00, 58.05],
                 [-136.10, 59.35]])
 
-# forcing file
-fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill.nc', 'r')
-t = fh.variables['river_time'][:]
-epos = fh.variables['river_Eposition'][:]
-xpos = fh.variables['river_Xposition'][:]
-trs = fh.variables['river_transport'][:]
-fh.close
+p0 = path.Path(box)
 
-# Hill product
-fh = nc.Dataset(in_dir + 'gb_discharge.nc', 'r')
-t_h = fh.variables['t'][:]
-lat_h = fh.variables['lat'][:]
-lon_h = fh.variables['lon'][:]
-coast_h = fh.variables['coast'][:]
-trs_h = fh.variables['discharge'][:]
-fh.close()
+xp, yp = coast.shape
+for i in range(xp):
+    for j in range(yp):
+        if not p0.contains_point((lon[i, j], lat[i, j])):
+            coast[i, j] = 0
 
-mskt = (t_h >= t[0]) & (t_h <= t[-1])
-t_h = t_h[mskt]
-trs_h = trs_h[mskt, :, :]
+lat = lat[coast == 1]
+lon = lon[coast == 1]
+data = data[:, coast == 1]
+Nriver_hill = len(lat)
 
-lat = np.zeros(xpos.shape)
-lon = np.zeros(xpos.shape)
+# the coordinate of Hill's grid is slightly off - correct it here
+lon = lon-0.010
+lat = lat-0.010
 
-for i in range(len(lat)):
-    lat[i] = grd.hgrid.lat[epos[i], xpos[i]]
-    lon[i] = grd.hgrid.lon[epos[i], xpos[i]]
+# ---------------------------------------------------------------------
+# project Hill product to my grid
+river_idx = np.zeros(Nriver_hill)
+for i in range(Nriver_hill):
+    dis = (lon[i] - lon_river)**2 + (lat[i] - lat_river)**2
+    river_idx[i] = np.argmin(dis) + 1
 
-coast = np.zeros(lon.shape)
-coast = np.ma.masked_invalid(coast)
+# sum up data for each river
+trs_river = np.zeros((nt, Nriver))
+for i in range(Nriver):
+    trs_river[:, i] = data[:, river_idx == i+1].sum(axis=1)
 
-# calculate total discharge
-d = get_discharge_avgbox(t, lat, lon, trs, coast, box)
-d_h = get_discharge_avgbox(t_h, lat_h, lon_h, trs_h, coast_h, box)
+# spread discharge onto grid cells
+trs = np.zeros((nt, Nriver_grid))
+for i in range(Nriver_grid):
+    ngrid = np.sum(river == river[i])
+    trs[:, i] = trs_river[:, river[i]-1]/float(ngrid)
 
-rr = np.nanmean(d_h/d)
-trs = trs*rr
-
-# set discharge direction (sign)
 trs = trs*sign
 
-# overwrite river_transport
-fh = nc.Dataset(out_dir + 'frc/GlacierBay_lr_rivers_2008_Hill.nc', 'r+')
-fh.variables['river_transport'][:] = trs
-fh.close()
+# ---------------------------------------------------------------------
+# generate analytical temp and salt
+# Read in river temperature
+info = {'data_dir': '/glade/p/work/chuning/data/ctd_raw/',
+        'file_dir': '/glade/p/work/chuning/data/',
+        'file_name': 'ctd.nc',
+        'sl': 'l',
+        'var': ['temp'],
+        'clim_station': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20],
+        'clim_deep_interp': 'yes',
+       }
+
+c = ctd.ctd(info)
+c()
+
+# process time
+river_datetime = nc.num2date(time, 'days since 1900-01-01')
+river_yearday = np.array([i.timetuple().tm_yday for i in river_datetime])
+
+temp = c.climatology['temp'][:, :, 12]
+temp = temp[:5, :].mean(axis=0)
+ctd_time = c.climatology['time']
+temp = np.concatenate((np.array([temp[-1]]), temp, np.array([temp[0]])))
+ctd_time = np.concatenate((np.array([ctd_time[-1]-365.]), ctd_time, np.array([ctd_time[0]+365.])))
+
+river_temp = np.interp(river_yearday, ctd_time, temp)
+river_salt = np.zeros(river_temp.shape)
+
+# ---------------------------------------------------------------------
+# generate v_shape
+v_shape = np.ones((grd.vgrid.N, Nriver_grid))/float(grd.vgrid.N)
+
+# ---------------------------------------------------------------------
+# save file
+# create file with all the objects
+fout = nc.Dataset(out_file, 'w', format='NETCDF3_64BIT')
+fout.type = 'ROMS RIVERS file'
+fout.title = 'Glacier Bay'
+fout.source = 'David Hill and Jordan Beamer'
+
+fout.createDimension('river_time', None)
+fout.createDimension('river', Nriver_grid)
+fout.createDimension('s_rho', grd.vgrid.N)
+
+times = fout.createVariable('river_time', 'f8', ('river_time'))
+times.units = 'days since 1900-01-01 00:00:00'
+times.long_name = 'river runoff time'
+fout.variables['river_time'][:] = time
+
+rivers = fout.createVariable('river', 'i4', ('river'))
+rivers.long_name = 'river runoff identification number'
+fout.variables['river'][:] = river
+
+eta = fout.createVariable('river_Eposition', 'i4', ('river'))
+eta.long_name = 'river ETA-position at RHO-points'
+fout.variables['river_Eposition'][:] = idx
+
+xi = fout.createVariable('river_Xposition', 'i4', ('river'))
+xi.long_name = 'river XI-position at RHO-points'
+fout.variables['river_Xposition'][:] = idy
+
+dirs = fout.createVariable('river_direction', 'i4', ('river'))
+dirs.long_name = 'river runoff direction'
+fout.variables['river_direction'][:] = rdir
+
+flag = fout.createVariable('river_sign', 'f8', ('river'))
+flag.long_name = 'river directional sign'
+fout.variables['river_sign'][:] = sign
+
+trans = fout.createVariable('river_transport', 'f8', ('river_time', 'river'))
+trans.long_name = 'river runoff vertically integrated mass transport'
+trans.units = 'meter3 second-1'
+trans.time = 'river_time'
+fout.variables['river_transport'][:] = trs
+
+vshape = fout.createVariable('river_Vshape', 'f8', ('s_rho', 'river'))
+vshape.long_name = 'river runoff mass transport vertical profile'
+fout.variables['river_Vshape'][:] = v_shape
+
+temp = fout.createVariable('river_temp', 'f8', ('river_time'))
+temp.long_name = 'river runoff potential temperature'
+temp.units = 'Celsius'
+temp.time = 'river_time'
+fout.variables['river_temp'][:] = river_temp
+
+salt = fout.createVariable('river_salt', 'f8', ('river_time'))
+salt.long_name = 'river runoff salinity'
+salt.time = 'river_time'
+fout.variables['river_salt'][:] = river_salt
+
+fout.close()

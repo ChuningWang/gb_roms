@@ -54,11 +54,6 @@ lat = lat-0.005
 # load Glacier Bay grid object
 grd = pyroms.grid.get_ROMS_grid(grd1)
 
-# specify output file
-out_dir = in_dir
-tag = 'Hill'
-out_file = out_dir + grd.name + '_runoff_' + str(my_year) + '_' + tag + '.nc'
-
 # define some variables
 wts_file = script_dir + 'remap_weights_runoff_to_' + grd.name + '_conservative_nomask.nc'
 nt = time.shape[0]
@@ -66,7 +61,12 @@ Mp, Lp = grd.hgrid.mask_rho.shape
 spval = -1e30
 runoff_raw = np.zeros((Mp,Lp))
 runoff = np.zeros((Mp,Lp))
-rspread = 15
+rspread = 3
+
+# specify output file
+out_dir = in_dir
+tag = 'Hill'
+out_file = out_dir + grd.name + '_runoff_' + str(rspread) + '_' + str(my_year) + '_' + tag + '.nc'
 
 # get littoral (here 1 cells wide, with diagonals)
 print 'get littoral points'

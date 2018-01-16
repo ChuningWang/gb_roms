@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from gb_toolbox.gb_ctd import rd_ctd
+from ocean_toolbox import ctd
 from matplotlib.mlab import griddata
 import netCDF4 as nc
 import pyroms
@@ -10,11 +10,22 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_USGS'
+grd1 = 'GB_lr'
 
-ctd = rd_ctd(in_dir + 'ctd.nc')
-lat_ctd = ctd['lat_stn']
-lon_ctd = ctd['lon_stn']
+# load CTD data
+info = {'data_dir': in_dir + 'ctd_raw/',
+        'file_dir': in_dir,
+        'file_name': 'ctd.nc',
+        'sl': 'l',
+        'var': ['salt', 'temp', 'o2', 'rho', 'pre', 'fluor', 'tur', 'par'],
+        'clim_station': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20],
+        'clim_deep_interp': 'yes',
+       }
+
+c = ctd.ctd(info)
+c()
+lat_ctd = c.data_info['lat']
+lon_ctd = c.data_info['lon']
 
 # Read grid
 grd = pyroms.grid.get_ROMS_grid(grd1)
@@ -40,11 +51,11 @@ def onclick(event):
 fig = plt.figure()
 plt.pcolor(lon, lat, z, cmap='Greens')
 plt.clim(0, 400)
-plt.contour(lon, lat, msk, np.array([0.5, 0.5]), colors='k')
-# plt.plot(lon_ctd, lat_ctd, '.k', ms=2)
-# coords = []
-# cid = fig.canvas.mpl_connect('button_press_event', onclick)
-plt.plot(c0[:, 0], c0[:, 1], '.k', ms=2)
+plt.contour(lon, lat, msk, [0.5], colors='k')
+plt.plot(lon_ctd, lat_ctd, '.k', ms=2)
+coords = []
+cid = fig.canvas.mpl_connect('button_press_event', onclick)
+# plt.plot(c0[:, 0], c0[:, 1], '.k', ms=2)
 # plt.show()
 
 c0 = np.array([[-137.04719708,   59.05076767],
@@ -125,3 +136,21 @@ c0 = np.array([[-137.04719708,   59.05076767],
                [-135.05792266,   58.10358142]])
 
 
+               [-136.01859570,   58.36218704],
+               [-136.06103693,   58.34781386],
+               [-136.10532343,   58.32769141],
+               [-136.15330047,   58.31906751],
+               [-136.19574170,   58.31044360],
+               [-136.23818293,   58.30325702],
+               [-136.26586199,   58.29894506],
+               [-136.30276740,   58.29463311],
+               [-136.33782755,   58.29463311],
+               [-136.37473296,   58.29032116],
+               [-136.39318567,   58.28744652],
+               [-136.41901946,   58.29319579],
+               [-136.44116271,   58.28025993],
+               [-136.48175867,   58.25438822],
+               [-136.52604516,   58.21989260],
+               [-136.54818841,   58.19977015],
+               [-136.56479585,   58.18395966],
+               [-136.58693910,   58.16958648]])
