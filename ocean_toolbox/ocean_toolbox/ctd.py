@@ -70,12 +70,12 @@ class ctd(object):
         if self.info['sl'] == 's':
             self.cal_clim()
             self.filter(type='climatology')
-            if self.info['clim_deep_interp'] == 'yes':
-                self.clim_deep_interp()
-                self.filter(type='climatology')
             self.save_clim()
         if self.info['sl'] == 'l':
             self.get_clim()
+        if self.info['clim_deep_interp'] == 'yes':
+            self.clim_deep_interp()
+            self.filter(type='climatology')
 
 # ------------------------------ data loading --------------------------------------
 
@@ -354,12 +354,16 @@ class ctd(object):
         # calculate station coordinates
         lat = []
         lon = []
+        fathometer_depth = []
         for ss in self.info['clim_station']:
             msk = self.data['station'] == ss
             lat.append(self.data['lat'][msk].mean())
             lon.append(self.data['lon'][msk].mean())
+            fathometer_depth.append(self.data['fathometer_depth'][msk].mean())
+
         self.climatology['lat'] = np.array(lat)
         self.climatology['lon'] = np.array(lon)
+        self.climatology['fathometer_depth'] = np.array(fathometer_depth)
 
         for mm in range(12):
             ss_cts = 0
@@ -393,6 +397,8 @@ class ctd(object):
         fh.variables['lat_clim'][:] = self.climatology['lat']
         fh.createVariable('lon_clim', 'd', ('stn_clim'))
         fh.variables['lon_clim'][:] = self.climatology['lon']
+        fh.createVariable('fathometer_depth_clim', 'd', ('stn_clim'))
+        fh.variables['fathometer_depth_clim'][:] = self.climatology['fathometer_depth']
 
         # write data
         for var in self.info['var']:
@@ -414,6 +420,7 @@ class ctd(object):
         self.climatology['station'] = fh.variables['station_clim'][:]
         self.climatology['lat'] = fh.variables['lat_clim'][:]
         self.climatology['lon'] = fh.variables['lon_clim'][:]
+        self.climatology['fathometer_depth'] = fh.variables['fathometer_depth_clim'][:]
 
         fh.close()
 
@@ -438,13 +445,14 @@ class ctd(object):
 
     def get_cruise(self):
         """ Find indices for each cruise """
+
         dt = np.diff(np.floor(mdates.date2num(self.data['datetime'])))
         dt = np.hstack([0, dt])
         k1 = np.squeeze(np.where(dt >= 10))
         k1 = np.hstack([0, k1])
         k2 = np.hstack([k1[1:]-1, np.size(dt)-1])
         k3 = np.squeeze(np.where((k2-k1) > 15))
-        # pdb.set_trace()
+
         return k1, k2, k3
 
     def get_trans(self, var_list, stn_list, time, highres = -1):
@@ -493,6 +501,39 @@ class ctd(object):
                 idx = stn_cruise == stn
                 if np.any(idx):
                     self.trans[var][:, j] = data_cruise[:, idx].mean(axis=1)
+
+        return None
+
+    def get_trans_clim(self, var_list, stn_list):
+        """ Get climatology transect data. """
+
+        self.trans = {}
+        # get data, geo information
+        self.trans['station'] = stn_list
+        self.trans['z'] = self.climatology['z']
+        self.trans['lat'] = np.zeros(len(stn_list))
+        self.trans['lon'] = np.zeros(len(stn_list))
+        self.trans['fathometer_depth'] = np.zeros(len(stn_list))
+        for var in var_list:
+            self.trans[var] = np.zeros((self.info['zlev'], 12, len(stn_list)))
+
+        for i, j in enumerate(stn_list):
+            idx = self.climatology['station'] == j
+            self.trans['lat'][i] = self.climatology['lat'][idx]
+            self.trans['lon'][i] = self.climatology['lon'][idx]
+            self.trans['fathometer_depth'][i] = \
+                self.climatology['fathometer_depth'][idx]
+            for var in var_list:
+                self.trans[var][:, :, i] = \
+                    self.climatology[var][:, :, idx].squeeze()
+
+        dis = np.zeros(len(stn_list))
+        for i in range(1, len(dis)):
+            dis[i] = vincenty(
+                (self.trans['lat'][i-1], self.trans['lon'][i-1]),
+                (self.trans['lat'][i],   self.trans['lon'][i])
+                             ).meters
+        self.trans['dis'] = np.cumsum(dis)/1000.  # [km]
 
         return None
 

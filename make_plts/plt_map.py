@@ -27,27 +27,44 @@ if len(sys.argv)>1:
 else:
     grd1 = 'GB_lr'
 
-box0 = np.array([[-136.90, 58.55],
-                 [-137.30, 58.65],
-                 [-137.30, 59.15],
-                 [-135.70, 59.15],
-                 [-135.60, 58.75],
-                 [-135.60, 58.55]])
+boxes = {}
+boxes['box0'] = np.array([
+    [-136.65, 58.65],
+    [-137.30, 58.65],
+    [-137.30, 59.15],
+    [-136.60, 59.15],
+    [-136.30, 58.95],
+    [-136.20, 58.75]])
 
-box1 = np.array([[-136.90, 58.55],
-                 [-136.90, 58.45],
-                 [-136.00, 58.35],
-                 [-135.60, 58.50],
-                 [-135.60, 58.55]])
+boxes['box1'] = np.array([
+    [-136.20, 58.75],
+    [-136.30, 58.95],
+    [-136.60, 59.15],
+    [-135.70, 59.15],
+    [-135.60, 58.75]])
 
-box2 = np.array([[-136.90, 58.45],
-                 [-136.65, 58.25],
-                 [-136.50, 58.05],
-                 [-135.20, 58.05],
-                 [-135.40, 58.55],
-                 [-135.60, 58.55],
-                 [-135.60, 58.50],
-                 [-136.00, 58.35]])
+boxes['box2'] = np.array([
+    [-136.65, 58.55],
+    [-136.65, 58.65],
+    [-136.20, 58.75],
+    [-135.60, 58.75],
+    [-135.60, 58.55]])
+
+boxes['box3'] = np.array([
+    [-136.65, 58.55],
+    [-135.60, 58.55],
+    [-135.60, 58.50],
+    [-136.00, 58.35]])
+
+boxes['box4'] = np.array([
+    [-136.65, 58.55],
+    [-136.75, 58.25],
+    [-136.50, 57.95],
+    [-135.20, 57.95],
+    [-135.40, 58.55],
+    [-135.60, 58.55],
+    [-135.60, 58.50],
+    [-136.00, 58.35]])
 
 # load CTD data
 info = {'data_dir': in_dir + 'ctd_raw/',
@@ -107,19 +124,20 @@ m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             resolution='f', ax=ax)
 
 m.fillcontinents(color='lightgrey')
-mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2),
-                     labels=[0, 0, 0, 1], fontsize=10, linewidth=.1)
-pr = m.drawparallels(np.arange(lat_min, lat_max, 0.1),
-                     labels=[1, 0, 0, 0], fontsize=10, linewidth=.1)
-# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.04), 
-#                      labels=[0, 0, 1, 1], fontsize=3, linewidth=.1)
-# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.02), 
-#                      labels=[1, 1, 0, 0], fontsize=3, linewidth=.1)
+# mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.2),
+#                      labels=[0, 0, 0, 1], fontsize=10, linewidth=.1)
+# pr = m.drawparallels(np.arange(lat_min, lat_max, 0.1),
+#                      labels=[1, 0, 0, 0], fontsize=10, linewidth=.1)
+mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.1), 
+                     labels=[0, 0, 0, 1], fontsize=7, linewidth=.1)
+pr = m.drawparallels(np.arange(lat_min, lat_max, 0.05), 
+                     labels=[1, 0, 0, 0], fontsize=7, linewidth=.1)
 
-setlabelrot(mr, -30)
+setlabelrot(mr, -90)
 setlabelrot(pr, 0)
 
-m.drawmapscale(-137.1, 58.25, lon_0, lat_0, 50,
+# map scale
+m.drawmapscale(-137.1, 58.3, lon_0, lat_0, 50,
                barstyle='fancy', labelstyle='simple')
 
 xlon, ylat = m(lon, lat)
@@ -129,9 +147,10 @@ pcm = ax.pcolormesh(xlon, ylat, z,
                     alpha=0.8, cmap=cmocean.cm.deep)
 
 # plot colorbar
-cbar_ax = fig.add_axes([0.70, 0.50, 0.02, 0.35])
+cbar_ax = fig.add_axes([0.72, 0.50, 0.015, 0.35])
+cbar_ax.tick_params(labelsize=7)
 cb = fig.colorbar(pcm, cax=cbar_ax, ticks=np.linspace(0, 450, 10))
-cbar_ax.set_ylabel(r'Depth [m]')
+cbar_ax.set_ylabel(r'Depth [m]', fontsize=7)
 
 # plot CTD stations
 x2, y2 = m(lon_ctd, lat_ctd)
@@ -141,42 +160,48 @@ ax.plot(x2[core_stn], y2[core_stn], '^r',
         markerfacecolor='r', markersize=4,
         label='Core Station')
 
-# # plot transect
+# plot ADCP stations
+lon_adcp = [-136.03453]
+lat_adcp = [58.467072]
+x3, y3 = m(lon_adcp, lat_adcp)
+ax.plot(x3, y3, 'Hb', markersize=3, label='ADCP Station')
+
+# plot transect
 xtr, ytr = m(a0[:, 0], a0[:, 1])
-ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
-xtr, ytr = m(lon_c0, lat_c0)
-ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
-xtr, ytr = m(lon_c1, lat_c1)
-ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
-xtr, ytr = m(lon_c2, lat_c2)
-ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
+ax.plot(xtr, ytr, '--r', linewidth=.5)
+# xtr, ytr = m(a0[:, 0], a0[:, 1])
+# ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
+# xtr, ytr = m(lon_c0, lat_c0)
+# ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
+# xtr, ytr = m(lon_c1, lat_c1)
+# ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
+# xtr, ytr = m(lon_c2, lat_c2)
+# ax.plot(xtr, ytr, '--or', linewidth=.2, markersize=.2)
 
 # plot boxes
-xbox, ybox = m(box0[:, 0], box0[:, 1])
-ax.plot(xbox, ybox, '--k', linewidth=0.5)
-ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
-
-xbox, ybox = m(box1[:, 0], box1[:, 1])
-ax.plot(xbox, ybox, '--k', linewidth=0.5)
-ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
-
-xbox, ybox = m(box2[:, 0], box2[:, 1])
-ax.plot(xbox, ybox, '--k', linewidth=0.5)
-ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
+for boxi in boxes.keys():
+    xbox, ybox = m(boxes[boxi][:, 0], boxes[boxi][:, 1])
+    ax.plot(xbox, ybox, '--k', linewidth=0.5)
+    ax.plot([xbox[-1], xbox[0]], [ybox[-1], ybox[0]], '--k', linewidth=0.5)
 
 # plot texts
-x1, y1 = m(-135.7, 58.25)
-ax.text(x1, y1, 'Icy Strait', fontsize=10, rotation=-30)
-x1, y1 = m(-136.5, 58.25)
-ax.text(x1, y1, 'Cross Sound', fontsize=10, rotation=30)
-x1, y1 = m(-136.8, 58.475)
-ax.text(x1, y1, 'Lower Bay', fontsize=10)
-x1, y1 = m(-137.1, 58.7)
-ax.text(x1, y1, 'Upper Bay', fontsize=10)
+x1, y1 = m(-135.7, 58.30)
+ax.text(x1, y1, 'Icy Strait', fontsize=8, rotation=-30)
+x1, y1 = m(-136.5, 58.30)
+ax.text(x1, y1, 'Cross Sound', fontsize=8, rotation=30)
+x1, y1 = m(-136.5, 58.50)
+ax.text(x1, y1, 'Lower Bay', fontsize=8)
+x1, y1 = m(-135.9, 58.65)
+ax.text(x1, y1, 'Mid Bay', fontsize=8)
+x1, y1 = m(-137.1, 58.80)
+ax.text(x1, y1, 'West Arm', fontsize=8)
+x1, y1 = m(-136.1, 59.00)
+ax.text(x1, y1, 'East Arm', fontsize=8)
 
 # plot legend
-ax.legend(loc=3)
+ax.legend(loc=3, fontsize=8)
 
 # save figure
 plt.savefig(out_dir + 'figs/' + grd1 + '_map.png', format='png', dpi=600)
+# plt.savefig(out_dir + 'figs/' + grd1 + '_map.eps', format='eps')
 plt.close()
