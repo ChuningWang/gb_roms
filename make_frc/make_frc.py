@@ -14,13 +14,9 @@ dst_dir = sv['out_dir']
 
 grd1 = 'GB_lr'
 
-<<<<<<< HEAD
 # my_year = 2008
 year_begin = 1997
 year_end = 2010
-=======
-my_year = 2009
->>>>>>> 7d3e3cc0c637d794112aace0e70e61e4ab70984f
 tag = 'JRA55v1.1'
 vlist = ['Qair', 'rain', 'snow', 'lwrad_down', 'swrad', 'Pair', 'Tair', 'Uwind', 'Vwind']
 vlist2 = ['huss_10m', 'prrn', 'prsn', 'rlds', 'rsds', 'psl', 'tas_10m', 'uas_10m', 'vas_10m']
