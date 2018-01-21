@@ -126,7 +126,7 @@ dx = np.tile(dx, (tt, N, 1))
 
 for i, sl in enumerate(slev):
     Qi = np.zeros(salt.shape)
-    msk = salt >= sl 
+    msk = salt >= sl
     Qi[msk] = dz[msk]*dx[msk]*v[msk]
     Q[:, i] = np.sum(Qi, axis=(-2, -1))
 
