@@ -78,43 +78,26 @@ elif dtype==3:
 
     r = np.ma.masked_invalid(r)
     h = np.ma.masked_invalid(h)
-    plt.pcolormesh(lon, lat, h, cmap='Greens')
-    plt.savefig(out_dir+'figs/rivers/h.png')
-    plt.close()
 
-tp, xp, yp = r.shape
+r_sum = np.abs(r).sum(axis=(1, 2))
+plt.plot(time, r_sum)
 
-fig, ax1 = plt.subplots()
-
-for i, t in enumerate(time):
-    data = r[i, :, :]
-    # data = np.ma.masked_where(data, msk == 1)
-    ttag = nc.num2date(t, 'days since 1900-01-01').strftime("%Y-%m-%d_%H:%M:%S")
-    pcm = plt.pcolor(lon, lat, abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
-    # pcm = plt.pcolor(abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
-    plt.clim(0, 10)
-
-    if i == 0:
-        plt.xlim(-137.5, -135)
-        plt.ylim(58., 59.25)
-        plt.colorbar()
-
-    plt.savefig(out_dir+'figs/rivers/runoff_proj_' + ttag + '.png', dpi=300)
-    pcm.remove()
-
-plt.close()
-
-# def plt_rivers(t, r, out_dir):
-#     plt.pcolormesh(lon, lat, r, cmap='Greens')
-#     plt.xlim(-137.5, -135)
-#     plt.ylim(58., 59.25)
-#     plt.clim(0, 100)
-#     plt.colorbar()
-#     plt.contour(lon_grd, lat_grd, msk, np.array([0.5, 0.5]), linewidths=0.05, colors='k')
-#     plt.savefig(out_dir+'figs/rivers/runoff_'+str(int(t))+'.png')
-#     plt.close()
-#     return None
-
-# from joblib import Parallel, delayed
-# Parallel(n_jobs=16)(delayed(plt_rivers)(time[i], r[i, :, :], out_dir) for i in range(len(time)))
-# Parallel(n_jobs=16)(delayed(plt_rivers)(time[i], r[i, :, :], out_dir) for i in range(150, 165))
+# fig, ax1 = plt.subplots()
+# 
+# for i, t in enumerate(time):
+#     data = r[i, :, :]
+#     # data = np.ma.masked_where(data, msk == 1)
+#     ttag = nc.num2date(t, 'days since 1900-01-01').strftime("%Y-%m-%d_%H:%M:%S")
+#     pcm = plt.pcolor(lon, lat, abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
+#     # pcm = plt.pcolor(abs(data), cmap='Greens', edgecolors='k', linewidth=0.005)
+#     plt.clim(0, 10)
+# 
+#     if i == 0:
+#         plt.xlim(-137.5, -135)
+#         plt.ylim(58., 59.25)
+#         plt.colorbar()
+# 
+#     plt.savefig(out_dir+'figs/rivers/runoff_proj_' + ttag + '.png', dpi=300)
+#     pcm.remove()
+# 
+# plt.close()
