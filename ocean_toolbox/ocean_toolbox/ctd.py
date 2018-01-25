@@ -852,6 +852,56 @@ class ctd(object):
 
             return None
 
+    def plt_casts(self, var, time,
+                  clim='auto', depth0=50, depth1=450):
+        """ plot CTD casts. """
+
+        # get transect data
+        self.get_trans([var], [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], time, highres=1)
+
+        data = self.trans[var]
+        nz, ns = data.shape
+        z = self.trans['z']
+
+        cmapi = np.linspace(0, 1, ns)
+        cmap = np.vstack((cmapi, cmapi[::-1], np.zeros(ns)))
+
+        # find cmin, cmax
+        if np.any(np.isfinite(data)):
+            data = np.ma.masked_invalid(data)
+
+            if clim == 'auto':
+                cmax = np.max(data)
+                cmin = np.min(data)
+            else:
+                cmax = clim[1]
+                cmin = clim[0]
+
+            if np.ma.is_masked(cmax):
+                cmax = 1
+                cmin = 0
+
+        zmsk0 = (z >= 0) & (z < depth0)
+        zmsk1 = (z >= depth0) & (z < depth1)
+
+        fig, ax = plt.subplots(2, 1)
+        ttl = var + '_' + nc.num2date(self.trans['time'], 'days since 1900-01-01').strftime('%Y-%m-%d')
+        ax[0].set_title(ttl)
+        # ax[0].set_xlim(cmin, cmax)
+        ax[0].set_ylim(depth0, 0)
+        ax[1].set_ylim(depth1, depth0)
+        ax[1].set_xlabel('Salinity [PSU]')
+        ax[1].set_ylabel('Depth [m]')
+
+        for i in range(ns):
+            ax[0].plot(data[zmsk0, i], z[zmsk0],
+                       color=cmap[:, i], label=str(self.trans['station'][i]))
+            ax[1].plot(data[zmsk1, i], z[zmsk1], color=cmap[:, i])
+
+        ax[0].legend(fontsize=5, loc=3)
+
+        return None
+
     def plt_all_trans(self, var, save_dir, clim='auto', plt_log=False):
         """ pcolor all transect use plt_trans. """
         k1, k2, k3 = self.get_cruise()
@@ -862,7 +912,9 @@ class ctd(object):
             plt.savefig(save_dir + var + '_' + ttag + '.png')
             plt.close()
 
-    def plt_casts(self):
+        return None
+
+    def plt_all_casts(self):
         ''' plot all profiles to pick out faulty profiles. '''
 
         t = self.data['time']

@@ -17,8 +17,8 @@ out_dir = sv['out_dir']
 model_dir = sv['model_dir']
 
 # -------------- functionals --------------------------------
-def filter(data, dt, dt_filter):
-    """ filter. """
+def lfilter(data, dt, dt_filter):
+    """ low pass filter. """
 
     wp = int(float(dt_filter)/dt)
     b = np.ones(wp)/float(wp)
@@ -28,54 +28,65 @@ def filter(data, dt, dt_filter):
     return data_filtered
 
 
-# -------------- load data ----------------------------------
-# xpos0 = 327
-# xpos1 = 337
-# ypos0 = 112
-# ypos1 = 138
-# xpos0 = 211
-# xpos1 = 211
-# ypos0 = 127
-# ypos1 = 144
-xpos0 = 184
-xpos1 = 175
-ypos0 = 126
-ypos1 = 145
-t0 = 0
-t1 = -1
-ds = .05
+def tef(v, salt, slev, dy, dz, t, h, zeta):
+    """ calculate total exchange flow. """
 
-frs_lim = [0, 2500]
-vt_lim = [-2.5, 2.5]
-Q_lim = [-10e4, 10e4]
-F_lim = [-5e6, 5e6]
-S_lim = [21, 33]
+    # salinity levels
+    ds = np.mean(np.diff(slev))
+    Q = np.zeros((len(t), len(slev)))
+    dQds = np.zeros((len(t), len(slev)))
+
+    for i, sl in enumerate(slev):
+        Qi = np.zeros(salt.shape)
+        msk = salt >= sl
+        Qi[msk] = dz[msk]*v[msk]*dy
+        Q[:, i] = np.sum(Qi, axis=(-2, -1))
+
+    # calculate dQds, use second order
+    dQds[:, 2:-2] = (1/ds) * (- (1./12.)*Q[:, 4:] + (8./12.)*Q[:, 3:-1]
+                              - (8./12.)*Q[:, 1:-3] + (1./12.)*Q[:, :-4])
+
+    dQds = lfilter(dQds, 2, 336)
+
+    Qini = np.zeros(dQds.shape)
+    Qouti = np.zeros(dQds.shape)
+
+    msk = -dQds > 0
+
+    Qini[msk] = -dQds[msk]*ds
+    Qouti[~msk] = -dQds[~msk]*ds
+    Qin = np.sum(Qini, axis=-1)
+    Qout = np.sum(Qouti, axis=-1)
+
+    return Q, dQds, Qin, Qout
+
+# -------------- transect coords ----------------------------
+xpos0 = np.array([184, 199, 211, 232, 246, 280, 317, 327, 362])
+xpos1 = np.array([175, 190, 211, 232, 246, 280, 317, 337, 372])
+ypos0 = np.array([126, 128, 127, 134, 131, 128, 115, 112, 106])
+ypos1 = np.array([145, 155, 144, 160, 167, 180, 179, 138, 113])
+
+# -------------- data prep ----------------------------------
+t0 = 0
+t1 = 1000
+ds = .1
+slev = np.arange(0., 35., ds)
+# spring-neap time
+spt = np.arange(0, 365, 14.76) + 107
+npt = np.arange(0, 365, 14.76) + 107 + 7.38
+
+Qa = []
+dQdsa = []
+Qina = []
+Qouta = []
 
 out_file = out_dir + 'tef/trans_' + \
-           str(xpos0) + '_' + str(xpos1) + '_' + \
-           str(ypos0) + '_' + str(ypos1) + '.nc'
+           str(xpos0[0]) + '_' + str(xpos1[0]) + '_' + \
+           str(ypos0[0]) + '_' + str(ypos1[0]) + '.nc'
 
-river_file = '/Users/CnWang/git/gb_box/data/gb_box_rivers.nc'
-
-# transect data
+# load basic info
 fin = nc.Dataset(out_file, 'r')
 time = fin.variables['time'][t0:t1]
-xx = fin.variables['xx'][:]
-yy = fin.variables['yy'][:]
-h = fin.variables['h'][:]
-ang = fin.variables['ang'][:]
-lat = fin.variables['lat'][:]
-lon = fin.variables['lon'][:]
-dis = fin.variables['dis'][:]
-zeta = fin.variables['zeta'][t0:t1, :]
-zr = -fin.variables['zr'][t0:t1, :, :]
-dz = fin.variables['dz'][t0:t1, :, :]
-salt = fin.variables['salt'][t0:t1, :, :]
-temp = fin.variables['temp'][t0:t1, :, :]
-ubar = fin.variables['ubar'][t0:t1, :]
-vbar = fin.variables['vbar'][t0:t1, :]
-u = fin.variables['u'][t0:t1, :, :]
-v = fin.variables['v'][t0:t1, :, :]
 fin.close()
 
 # seconds to days
@@ -85,143 +96,48 @@ yearday = time - \
     nc.date2num(datetime(pytime[0].year, 1, 1), 'days since 1900-01-01') + \
     1
 
-# river data
-fin = nc.Dataset(river_file, 'r')
-river_time = fin.variables['time'][:]
-river0 = fin.variables['river0'][:]
-river1 = fin.variables['river1'][:]
-river2 = fin.variables['river2'][:]
-fin.close()
+# -------------- loop through to calculate tef --------------
+for i in range(len(xpos0)):
+    out_file = out_dir + 'tef/trans_' + \
+               str(xpos0[i]) + '_' + str(xpos1[i]) + '_' + \
+               str(ypos0[i]) + '_' + str(ypos1[i]) + '.nc'
 
-river_yearday = river_time - \
-    nc.date2num(datetime(pytime[0].year, 1, 1), 'days since 1900-01-01') + \
-    1
+    # transect data
+    fin = nc.Dataset(out_file, 'r')
+    xx = fin.variables['xx'][:]
+    yy = fin.variables['yy'][:]
+    h = fin.variables['h'][:]
+    ang = fin.variables['ang'][:]
+    lat = fin.variables['lat'][:]
+    lon = fin.variables['lon'][:]
+    dis = fin.variables['dis'][:]
+    zeta = fin.variables['zeta'][t0:t1, :]
+    zr = -fin.variables['zr'][t0:t1, :, :]
+    dz = fin.variables['dz'][t0:t1, :, :]
+    salt = fin.variables['salt'][t0:t1, :, :]
+    temp = fin.variables['temp'][t0:t1, :, :]
+    ubar = fin.variables['ubar'][t0:t1, :]
+    vbar = fin.variables['vbar'][t0:t1, :]
+    u = fin.variables['u'][t0:t1, :, :]
+    v = fin.variables['v'][t0:t1, :, :]
+    fin.close()
 
-[tt, N, pts] = zr.shape
+    # -------------- tef analysis -------------------------------
+    dy = np.mean(np.diff(dis))
+    Q, dQds, Qin, Qout = tef(v, salt, slev, dy, dz, time, h, zeta)
+    Q = lfilter(Q, 2, 336)
 
-# -------------- harmonic analysis --------------------------
-# perform harmonic analysis
-ut = np.zeros(zeta.shape)
-vt = np.zeros(zeta.shape)
-for i in range(pts):
-    tfit = ttide.t_tide(ubar[:, i] + 1j*vbar[:, i], dt=2,
-                        stime=pytime[0], out_style=None, errcalc='wboot')
-    Ut = tfit(pytime)
-    ut[:, i] = Ut.real
-    vt[:, i] = Ut.imag
+    Qa.append(Q)
+    dQdsa.append(dQds)
+    Qina.append(Qin)
+    Qouta.append(Qout)
 
-# -------------- tef analysis -------------------------------
-# salinity levels
-slev = np.arange(1., 35., ds)
-Q = np.zeros((tt, len(slev)))
-dQds = np.zeros((tt, len(slev)))
+# -------------- analyze transect ---------------------------
+sptime = 348
+nptime = 348 + 12*7
 
-dx = np.zeros(pts)
-for i in range(1, pts-1):
-    dx[i] = 0.5*(dis[i+1] - dis[i-1])
-
-dx[0] = dis[1] - dis[0]
-dx[-1] = dis[-1] - dis[-2]
-dx = np.tile(dx, (tt, N, 1))
-
-for i, sl in enumerate(slev):
-    Qi = np.zeros(salt.shape)
-    msk = salt >= sl
-    Qi[msk] = dz[msk]*dx[msk]*v[msk]
-    Q[:, i] = np.sum(Qi, axis=(-2, -1))
-
-# filter the data
-Q = filter(Q, 2, 30)
-# dQds = np.diff(Q, axis=-1)/ds
-# use second order
-dQds[:, 2:-2] = (1/ds) * (- (1./12.)*Q[:, 4:] + (8./12.)*Q[:, 3:-1]
-                          - (8./12.)*Q[:, 1:-3] + (1./12.)*Q[:, :-4])
-
-Qini = np.zeros(dQds.shape)
-Qouti = np.zeros(dQds.shape)
-
-msk = -dQds > 0
-
-Qini[msk] = -dQds[msk]*ds
-Qouti[~msk] = -dQds[~msk]*ds
-Qin = np.sum(Qini, axis=-1)
-Qout = np.sum(Qouti, axis=-1)
-
-slevt = np.tile(slev, (tt, 1))
-Fini = Qini*slevt
-Fouti = Qouti*slevt
-Fin = np.sum(Fini, axis=-1)
-Fout = np.sum(Fouti, axis=-1)
-
-Sin = Fin/Qin
-Sout = Fout/Qout
-
-# -------------- make plots ---------------------------------
-fig, (axR, axT, axQ, axS) = plt.subplots(4, 1, sharex=True)
-fig.subplots_adjust(hspace=0.05)
-
-axF = axQ.twinx()
-axQ.tick_params('y', colors='g')
-axF.tick_params('y', colors='r')
-axR.set_xlim(yearday[0], yearday[-1])
-axS.set_xlabel('Yearday')
-
-axR.set_yticks([0, 1, 2])
-axR.set_ylim(frs_lim[0]/1e3, frs_lim[1]/1e3)
-axR.set_ylabel(r'$R$ [$10^3$m$^3$s$^{-1}$]')
-
-axT.set_yticks([-2, -1, 0, 1, 2])
-axT.set_ylim(vt_lim[0], vt_lim[1])
-axT.set_ylabel(r'$V_T$ [m$\cdot$s$^{-1}$]')
-
-axQ.set_yticks([-9, -6, -3, 0, 3, 6, 9])
-axQ.set_ylim(Q_lim[0]/1e4, Q_lim[1]/1e4)
-axQ.set_ylabel(r'$Q$ [$10^4$m$^3$s$^{-1}$]', color='g')
-
-axF.set_yticks([-4, -2, 0, 2, 4])
-axF.set_ylim(F_lim[0]/1e6, F_lim[1]/1e6)
-axF.set_ylabel(r'$F$ [$10^6$kg$\cdot$s$^{-1}$]', color='r')
-
-axS.set_yticks([24, 26, 28, 30, 32])
-axS.set_ylim(S_lim[0], S_lim[1])
-axS.set_ylabel(r'$S$ [PSU]')
-
-axR.plot(river_yearday, river0/1000, 'k', lw=0.5)
-axT.plot(yearday, vt[:, 10], 'grey', lw=0.5)
-
-axQ.plot(yearday, Qin/10000, '--g', label=r'$Q_{in}$', lw=0.5)
-axQ.plot(yearday, Qout/10000, 'g', label=r'$Q_{out}$', lw=0.5)
-axQ.plot(yearday, np.zeros(len(yearday)), '--', color='lightgrey', lw=0.5)
-axQ.legend(loc=3, framealpha=0.1)
-axF.plot(yearday, Fin/1e6, '--r', label=r'$F_{in}$', lw=0.5)
-axF.plot(yearday, Fout/1e6, 'r', label=r'$F_{out}$', lw=0.5)
-axF.plot(yearday, np.zeros(len(yearday)), '--', color='lightgrey', lw=0.5)
-axF.legend(loc=4, framealpha=0.1)
-axS.plot(yearday, Sin, 'r', label=r'$S_{in}$', lw=0.5)
-axS.plot(yearday, Sout, 'k', label=r'$S_{out}$', lw=0.5)
-axS.legend(loc=3)
-
-# plot spring-neap time
-spr = np.arange(0, 365, 14.76) + 107
-spr = np.vstack((spr, spr))
-ver = np.ones(spr.shape[-1])
-axT.plot(spr, np.vstack((vt_lim[0]*ver, vt_lim[1]*ver)), '--k', lw=0.3)
-axQ.plot(spr, np.vstack((Q_lim[0]*ver, Q_lim[1]*ver))/1e4, '--k', lw=0.3)
-axS.plot(spr, np.vstack((S_lim[0]*ver, S_lim[1]*ver)), '--k', lw=0.3)
-
-# plot freshet
-frs = np.array([199, 207, 226, 242, 275])
-axR.plot(frs, frs_lim[0]*np.ones(frs.shape)/1e3, '^k')
-axR.plot(frs, frs_lim[1]*np.ones(frs.shape)/1e3, 'vk')
-
-axQ.plot(frs, Q_lim[0]*np.ones(frs.shape)/1e4, '^k')
-axQ.plot(frs, Q_lim[1]*np.ones(frs.shape)/1e4, 'vk')
-
-axS.plot(frs, S_lim[0]*np.ones(frs.shape), '^k')
-axS.plot(frs, S_lim[1]*np.ones(frs.shape), 'vk')
-
-plt.savefig(out_dir + 'figs/tef/tef_' +
-            str(xpos0) + '_' + str(xpos1) + '_' +
-            str(ypos0) + '_' + str(ypos1) + '.png',
-            dpi=500)
-plt.close()
+Qs = np.zeros((len(xpos0), len(slev)))
+Qn = np.zeros((len(xpos0), len(slev)))
+for i in range(len(xpos0)):
+    Qs[i, :] = Qa[i][sptime, :]
+    Qn[i, :] = Qa[i][nptime, :]
