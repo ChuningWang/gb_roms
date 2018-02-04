@@ -123,7 +123,7 @@ lon_0 = 0.5 * (lon_min + lon_max)
 
 m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-            resolution='f', ax=ax)
+            resolution='i', ax=ax)
 
 m.fillcontinents(color='lightgrey')
 mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.4), 
@@ -146,7 +146,7 @@ pcm = ax.pcolormesh(xlon, ylat, z,
                     alpha=0.8, cmap=cmocean.cm.deep)
 
 # plot colorbar
-cbar_ax = fig.add_axes([0.67, 0.50, 0.015, 0.35])
+cbar_ax = fig.add_axes([0.69, 0.50, 0.015, 0.35])
 cbar_ax.tick_params(labelsize=7)
 cb = fig.colorbar(pcm, cax=cbar_ax, ticks=np.linspace(0, 450, 10))
 cbar_ax.set_ylabel(r'Depth [m]', fontsize=7)
@@ -208,6 +208,7 @@ ax.plot(x2[core_stn], y2[core_stn], '^r',
         markeredgecolor='k', markeredgewidth=1,
         markerfacecolor='r', markersize=4,
         label='Core Station')
+ax.text(x2[core_stn], y2[core_stn], ['1', '4', '7', '12', '13', '16', '20', '24'])
 
 # # plot ADCP stations
 # lon_adcp = [-136.03453]
@@ -262,5 +263,5 @@ x0, y0 = m2(lon_0, lat_0)
 m2.plot(x0, y0, 'k', marker=(5, 1))
 
 # save figure
-plt.savefig(out_dir + 'figs/osm_' + grd1 + '_map.png', format='png', dpi=600)
+plt.savefig(out_dir + 'figs/osm2018/osm_' + grd1 + '_map.png', format='png', dpi=600)
 plt.close()
