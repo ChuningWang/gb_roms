@@ -123,7 +123,7 @@ lon_0 = 0.5 * (lon_min + lon_max)
 
 m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-            resolution='i', ax=ax)
+            resolution='f', ax=ax)
 
 m.fillcontinents(color='lightgrey')
 mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.4), 
@@ -208,7 +208,9 @@ ax.plot(x2[core_stn], y2[core_stn], '^r',
         markeredgecolor='k', markeredgewidth=1,
         markerfacecolor='r', markersize=4,
         label='Core Station')
-ax.text(x2[core_stn], y2[core_stn], ['1', '4', '7', '12', '13', '16', '20', '24'])
+for i in range(len(core_stn)):
+    ax.text(x2[core_stn[i]]-5000, y2[core_stn[i]]-5000, str(core_stn[i]),
+            ha='center', va='center', fontsize=5)
 
 # # plot ADCP stations
 # lon_adcp = [-136.03453]
