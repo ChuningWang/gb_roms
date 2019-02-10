@@ -559,11 +559,11 @@ class ctd(object):
             ax = fig.add_subplot(111)
         elif fig!=-1 and ax==-1:
             ax = fig.add_subplot(111)
-            print 'Using input figure handle...'
+            print('Using input figure handle...')
         elif fig!=-1 and ax!=-1:
-            print 'Using input figure and axes handle...'
+            print('Using input figure and axes handle...')
         else:
-            print 'Please specify fig when ax is specified!!!'
+            print('Please specify fig when ax is specified!!!')
             fig = plt.gcf()
 
         cmap = {'temp': cm.thermal,
@@ -643,11 +643,11 @@ class ctd(object):
             ax = fig.add_subplot(111)
         elif fig!=-1 and ax==-1:
             ax = fig.add_subplot(111)
-            print 'Using input figure handle...'
+            print('Using input figure handle...')
         elif fig!=-1 and ax!=-1:
-            print 'Using input figure and axes handle...'
+            print('Using input figure and axes handle...')
         else:
-            print 'Please specify fig when ax is specified!!!'
+            print('Please specify fig when ax is specified!!!')
             fig = plt.gcf()
 
         cmap = {'temp': cm.thermal,

@@ -119,175 +119,175 @@ tbase = nc.date2num(pytbase, 'days since 1900-01-01')
 pyt0 = datetime(2008, mm, 15)
 t0 = nc.date2num(pyt0, 'days since 1900-01-01')
 
-# # ---------- load salinity -------------------------------------------
-# tag = 'GB-clim'
-# ftype = 'avg'
-# my_year = 2008
-# model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
-# outputs_dir = model_dir + model
-# flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
-# fn = len(flist)
-# timef = np.zeros(fn)
-# saltf = np.zeros((fn, zlev) + msk.shape)
-# tempf = np.zeros((fn, zlev) + msk.shape)
-# zetaf = np.zeros((fn, ) + msk.shape)
-# for i in range(fn):
-#     fin = nc.Dataset(flist[i], 'r')
-#     timef[i] = fin.variables['ocean_time'][:]/24./60./60.
-#     saltf[i, :] = fin.variables['salt'][:]
-#     tempf[i, :] = fin.variables['temp'][:]
-#     zetaf[i, :] = fin.variables['zeta'][:]
-#     fin.close()
-# 
-# pytimef = nc.num2date(timef, 'days since 1900-01-01')
-# monthf = np.array([i.month for i in pytimef])
-# 
-# salt = np.zeros((12, zlev) + msk.shape)
-# temp = np.zeros((12, zlev) + msk.shape)
-# zeta = np.zeros((12, ) + msk.shape)
-# 
-# for i in range(12):
-#     mskt = monthf == i+1
-#     salt[i, :] = saltf[mskt, :].mean(axis=0)
-#     temp[i, :] = tempf[mskt, :].mean(axis=0)
-#     zeta[i, :] = zetaf[mskt, :].mean(axis=0)
-# 
-# salt = np.ma.masked_where(np.tile(msk, (12, zlev, 1, 1)), salt)
-# temp = np.ma.masked_where(np.tile(msk, (12, zlev, 1, 1)), temp)
-# zeta = np.ma.masked_where(np.tile(msk, (12, 1, 1)), zeta)
-# 
-# salt_s = salt[:, -1, :, :]
-# temp_s = temp[:, -1, :, :]
-# 
-# # ---------- get transect data ---------------------------------------
-# a0 = []
-# fh = open('../../data/a0.txt')
-# csvr = csv.reader(fh, delimiter=',')
-# for line in csvr:
-#     a0.append(line)
-# fh.close()
-# a0 = np.array(a0)
-# a0 = a0.astype(float)
-# 
-# lon_ct = a0[:, 0]
-# lat_ct = a0[:, 1]
-# 
-# dd = 3
-# 
-# ct_tr = (len(lon_ct)-1)*dd
-# lon_tr = np.zeros(ct_tr)
-# lat_tr = np.zeros(ct_tr)
-# 
-# for i in range(len(lon_ct)-1):
-#     lon_tr[i*dd:(i+1)*dd] = np.linspace(lon_ct[i], lon_ct[i+1], dd+1)[:-1]
-#     lat_tr[i*dd:(i+1)*dd] = np.linspace(lat_ct[i], lat_ct[i+1], dd+1)[:-1]
-# 
-# # instead of using griddata to find interpolated values, use distance to find the nearest rho point and
-# # represent the value at (lon_tr, lat_tr).
-# eta_tr = np.zeros(lat_tr.shape)
-# xi_tr = np.zeros(lon_tr.shape)
-# 
-# for i in range(len(eta_tr)):
-#     D2 = (lat-lat_tr[i])**2+(lon-lon_tr[i])**2
-#     eta_tr[i], xi_tr[i] = np.where(D2==D2.min())
-# 
-# eta_tr = eta_tr.astype(int)
-# xi_tr = xi_tr.astype(int)
-# h_tr = h[eta_tr, xi_tr]
-# 
-# # calculate distance
-# dis = np.zeros(h_tr.size)
-# for i in range(1, lat_tr.size):
-#     dis[i] = vincenty((lat_tr[i-1], lon_tr[i-1]),
-#                       (lat_tr[i], lon_tr[i])
-#                      ).meters
-# dis = np.cumsum(dis)
-# dis = dis/1000  # [km]
-# dis = np.tile(dis, (zlev, 1))
-# 
-# zeta_tr = zeta[:, eta_tr.tolist(), xi_tr.tolist()]
-# z_tr = -get_zr(zeta_tr, h_tr, grd.vgrid)
-# zw_tr = -get_zw(zeta_tr, h_tr, grd.vgrid)
-# salt_tr = salt[:, :, eta_tr.tolist(), xi_tr.tolist()]
-# 
-# # ---------- get tidal velocity --------------------------------------
-# xpos0 = 184
-# xpos1 = 175
-# ypos0 = 126
-# ypos1 = 145
-# file_in = out_dir + 'tef/trans_' + \
-#           str(xpos0) + '_' + str(xpos1) + '_' + \
-#           str(ypos0) + '_' + str(ypos1) + '.nc'
-# 
-# # transect data
-# fin = nc.Dataset(file_in, 'r')
-# time_tr2 = fin.variables['time'][:]
-# xx_tr2 = fin.variables['xx'][:]
-# yy_tr2 = fin.variables['yy'][:]
-# h_tr2 = fin.variables['h'][:]
-# ang_tr2 = fin.variables['ang'][:]
-# lat_tr2 = fin.variables['lat'][:]
-# lon_tr2 = fin.variables['lon'][:]
-# dis_tr2 = fin.variables['dis'][:]
-# zeta_tr2 = fin.variables['zeta'][:]
-# zr_tr2 = -fin.variables['zr'][:]
-# dz_tr2 = fin.variables['dz'][:]
-# salt_tr2 = fin.variables['salt'][:]
-# temp_tr2 = fin.variables['temp'][:]
-# ubar_tr2 = fin.variables['ubar'][:]
-# vbar_tr2 = fin.variables['vbar'][:]
-# u_tr2 = fin.variables['u'][:]
-# v_tr2 = fin.variables['v'][:]
-# fin.close()
-# 
-# time_tr2 = time_tr2/24./3600.
-# yearday_tr2 = time_tr2-tbase+1
-# dy_tr2 = np.diff(dis_tr2).mean()
-# v0, ve, vt = decomp(v_tr2, dy_tr2, dz_tr2, time_tr2, h_tr2, zeta_tr2)
-# vt2 = (vt*dz_tr2*dy_tr2).mean(axis=(1, 2))
-# yearday = np.arange(1, 367)
-# vtmax = np.zeros(yearday.shape)*np.nan
-# for i, yd in enumerate(yearday):
-#     msk = (yearday_tr2 > yd) & (yearday_tr2 < yd+1)
-#     if msk.sum()>0:
-#         vtmax[i] = vt2[msk].max()
-# 
-# # ---------- get ctd data --------------------------------------------
-# from ocean_toolbox import ctd
-# 
-# info = {'data_dir': '/glade/p/work/chuning/data/',
-#         'file_dir': '/glade/p/work/chuning/data/',
-#         'file_name': 'ctd_clim_all.nc',
-#         'sl': 'l',
-#         'var': ['salt', 'temp'],
-#         'clim_station': range(25),
-#         'clim_deep_interp': 'no',
-#         'filter': 'no'}
-# gb_ctd = ctd.ctd(info)
-# gb_ctd()
-# stn_list = [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 24]
-# gb_ctd.get_trans_clim(['salt', 'temp'], stn_list)
-# lat_ctd = gb_ctd.trans['lat']
-# lon_ctd = gb_ctd.trans['lon']
-# s_ctd = gb_ctd.trans['salt']
-# t_ctd = gb_ctd.trans['temp']
-# z_ctd = gb_ctd.trans['z']
-# 
-# dis_ctd = np.zeros(len(stn_list))
-# idx_i = np.zeros(len(lat_ctd), dtype=np.int)
-# for i in range(len(lat_ctd)):
-#     dd = (lon_tr-lon_ctd[i])**2 + (lat_tr-lat_ctd[i])**2
-#     idx_i[i] = np.argmin(dd)
-#     dis_ctd[i] = dis[0, idx_i[i]]
-# 
-# # ---------- get river data ------------------------------------------
-# river_file = out_dir + 'frc/GlacierBay_lr_rivers_clim_Hill.nc'
-# tbase = nc.date2num(datetime(2008, 1, 1), 'days since 1900-01-01')
-# fin = nc.Dataset(river_file, 'r')
-# river_time = fin.variables['river_time'][:] - tbase + 1
-# river_transport = np.sum(np.abs(fin.variables['river_transport'][:]), axis=-1)
-# river_temp = fin.variables['river_temp'][:]
-# fin.close()
+# ---------- load salinity -------------------------------------------
+tag = 'GB-clim'
+ftype = 'avg'
+my_year = 2008
+model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
+outputs_dir = model_dir + model
+flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
+fn = len(flist)
+timef = np.zeros(fn)
+saltf = np.zeros((fn, zlev) + msk.shape)
+tempf = np.zeros((fn, zlev) + msk.shape)
+zetaf = np.zeros((fn, ) + msk.shape)
+for i in range(fn):
+    fin = nc.Dataset(flist[i], 'r')
+    timef[i] = fin.variables['ocean_time'][:]/24./60./60.
+    saltf[i, :] = fin.variables['salt'][:]
+    tempf[i, :] = fin.variables['temp'][:]
+    zetaf[i, :] = fin.variables['zeta'][:]
+    fin.close()
+
+pytimef = nc.num2date(timef, 'days since 1900-01-01')
+monthf = np.array([i.month for i in pytimef])
+
+salt = np.zeros((12, zlev) + msk.shape)
+temp = np.zeros((12, zlev) + msk.shape)
+zeta = np.zeros((12, ) + msk.shape)
+
+for i in range(12):
+    mskt = monthf == i+1
+    salt[i, :] = saltf[mskt, :].mean(axis=0)
+    temp[i, :] = tempf[mskt, :].mean(axis=0)
+    zeta[i, :] = zetaf[mskt, :].mean(axis=0)
+
+salt = np.ma.masked_where(np.tile(msk, (12, zlev, 1, 1)), salt)
+temp = np.ma.masked_where(np.tile(msk, (12, zlev, 1, 1)), temp)
+zeta = np.ma.masked_where(np.tile(msk, (12, 1, 1)), zeta)
+
+salt_s = salt[:, -1, :, :]
+temp_s = temp[:, -1, :, :]
+
+# ---------- get transect data ---------------------------------------
+a0 = []
+fh = open('../../data/a0.txt')
+csvr = csv.reader(fh, delimiter=',')
+for line in csvr:
+    a0.append(line)
+fh.close()
+a0 = np.array(a0)
+a0 = a0.astype(float)
+
+lon_ct = a0[:, 0]
+lat_ct = a0[:, 1]
+
+dd = 3
+
+ct_tr = (len(lon_ct)-1)*dd
+lon_tr = np.zeros(ct_tr)
+lat_tr = np.zeros(ct_tr)
+
+for i in range(len(lon_ct)-1):
+    lon_tr[i*dd:(i+1)*dd] = np.linspace(lon_ct[i], lon_ct[i+1], dd+1)[:-1]
+    lat_tr[i*dd:(i+1)*dd] = np.linspace(lat_ct[i], lat_ct[i+1], dd+1)[:-1]
+
+# instead of using griddata to find interpolated values, use distance to find the nearest rho point and
+# represent the value at (lon_tr, lat_tr).
+eta_tr = np.zeros(lat_tr.shape)
+xi_tr = np.zeros(lon_tr.shape)
+
+for i in range(len(eta_tr)):
+    D2 = (lat-lat_tr[i])**2+(lon-lon_tr[i])**2
+    eta_tr[i], xi_tr[i] = np.where(D2==D2.min())
+
+eta_tr = eta_tr.astype(int)
+xi_tr = xi_tr.astype(int)
+h_tr = h[eta_tr, xi_tr]
+
+# calculate distance
+dis = np.zeros(h_tr.size)
+for i in range(1, lat_tr.size):
+    dis[i] = vincenty((lat_tr[i-1], lon_tr[i-1]),
+                      (lat_tr[i], lon_tr[i])
+                     ).meters
+dis = np.cumsum(dis)
+dis = dis/1000  # [km]
+dis = np.tile(dis, (zlev, 1))
+
+zeta_tr = zeta[:, eta_tr.tolist(), xi_tr.tolist()]
+z_tr = -get_zr(zeta_tr, h_tr, grd.vgrid)
+zw_tr = -get_zw(zeta_tr, h_tr, grd.vgrid)
+salt_tr = salt[:, :, eta_tr.tolist(), xi_tr.tolist()]
+
+# ---------- get tidal velocity --------------------------------------
+xpos0 = 184
+xpos1 = 175
+ypos0 = 126
+ypos1 = 145
+file_in = out_dir + 'tef/trans_' + \
+          str(xpos0) + '_' + str(xpos1) + '_' + \
+          str(ypos0) + '_' + str(ypos1) + '.nc'
+
+# transect data
+fin = nc.Dataset(file_in, 'r')
+time_tr2 = fin.variables['time'][:]
+xx_tr2 = fin.variables['xx'][:]
+yy_tr2 = fin.variables['yy'][:]
+h_tr2 = fin.variables['h'][:]
+ang_tr2 = fin.variables['ang'][:]
+lat_tr2 = fin.variables['lat'][:]
+lon_tr2 = fin.variables['lon'][:]
+dis_tr2 = fin.variables['dis'][:]
+zeta_tr2 = fin.variables['zeta'][:]
+zr_tr2 = -fin.variables['zr'][:]
+dz_tr2 = fin.variables['dz'][:]
+salt_tr2 = fin.variables['salt'][:]
+temp_tr2 = fin.variables['temp'][:]
+ubar_tr2 = fin.variables['ubar'][:]
+vbar_tr2 = fin.variables['vbar'][:]
+u_tr2 = fin.variables['u'][:]
+v_tr2 = fin.variables['v'][:]
+fin.close()
+
+time_tr2 = time_tr2/24./3600.
+yearday_tr2 = time_tr2-tbase+1
+dy_tr2 = np.diff(dis_tr2).mean()
+v0, ve, vt = decomp(v_tr2, dy_tr2, dz_tr2, time_tr2, h_tr2, zeta_tr2)
+vt2 = (vt*dz_tr2*dy_tr2).mean(axis=(1, 2))
+yearday = np.arange(1, 367)
+vtmax = np.zeros(yearday.shape)*np.nan
+for i, yd in enumerate(yearday):
+    msk = (yearday_tr2 > yd) & (yearday_tr2 < yd+1)
+    if msk.sum()>0:
+        vtmax[i] = vt2[msk].max()
+
+# ---------- get ctd data --------------------------------------------
+from ocean_toolbox import ctd
+
+info = {'data_dir': '/glade/p/work/chuning/data/',
+        'file_dir': '/glade/p/work/chuning/data/',
+        'file_name': 'ctd_clim_all.nc',
+        'sl': 'l',
+        'var': ['salt', 'temp'],
+        'clim_station': range(25),
+        'clim_deep_interp': 'no',
+        'filter': 'no'}
+gb_ctd = ctd.ctd(info)
+gb_ctd()
+stn_list = [21, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 24]
+gb_ctd.get_trans_clim(['salt', 'temp'], stn_list)
+lat_ctd = gb_ctd.trans['lat']
+lon_ctd = gb_ctd.trans['lon']
+s_ctd = gb_ctd.trans['salt']
+t_ctd = gb_ctd.trans['temp']
+z_ctd = gb_ctd.trans['z']
+
+dis_ctd = np.zeros(len(stn_list))
+idx_i = np.zeros(len(lat_ctd), dtype=np.int)
+for i in range(len(lat_ctd)):
+    dd = (lon_tr-lon_ctd[i])**2 + (lat_tr-lat_ctd[i])**2
+    idx_i[i] = np.argmin(dd)
+    dis_ctd[i] = dis[0, idx_i[i]]
+
+# ---------- get river data ------------------------------------------
+river_file = out_dir + 'frc/GlacierBay_lr_rivers_clim_Hill.nc'
+tbase = nc.date2num(datetime(2008, 1, 1), 'days since 1900-01-01')
+fin = nc.Dataset(river_file, 'r')
+river_time = fin.variables['river_time'][:] - tbase + 1
+river_transport = np.sum(np.abs(fin.variables['river_transport'][:]), axis=-1)
+river_temp = fin.variables['river_temp'][:]
+fin.close()
 
 # ---------- process data --------------------------------------------
 dsep1 = 10
@@ -412,7 +412,7 @@ pcm2 = axt2.contourf(dis_ctd, z_ctd2, s_ctd[:, mm-1, :], np.linspace(smin, smax,
 
 m = Basemap(projection='merc', llcrnrlon=lon_min, llcrnrlat=lat_min,
             urcrnrlon=lon_max, urcrnrlat=lat_max, lat_0=lat_0, lon_0=lon_0,
-            resolution='i', ax=axz)
+            resolution='f', ax=axz)
 
 m.fillcontinents(color='lightgrey', alpha=0.5)
 mr = m.drawmeridians(np.arange(lon_min, lon_max, 0.5),
@@ -462,9 +462,16 @@ axr2.plot(tm, s7s_2, '--', lw=0.75, color='b')
 axr2.plot(tm, s7i_2, '--', lw=0.75, color='g')
 axr2.plot(tm, s7b_2, '--', lw=0.75, color='lawngreen')
 
-axr2.legend(loc=3, fontsize=5)
+axr2.legend(loc=3, fontsize=6)
 axr.grid('on')
 axr2.grid('on')
+
+x2, y2 = m(-137.4, 58.0)
+axz.text(x2, y2, 'a)', fontsize=7)
+axt.text(5, 0.95, 'b)', fontsize=7)
+axt2.text(5, 0.95, 'c)', fontsize=7)
+axr.text(18, 26.5, 'd)', fontsize=7)
+axr2.text(18, 26.5, 'e)', fontsize=7)
 
 plt.savefig(out_dir + 'figs/osm2018/snap.png', dpi=600)
 plt.close()

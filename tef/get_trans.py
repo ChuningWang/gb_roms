@@ -41,7 +41,7 @@ def get_z(h, hc, N, s, Cs, zeta, Vtrans):
 
 # -------------- data preparation ---------------------------
 my_year = 2008
-ts = 12
+ts = 24
 grd1 = 'GB_lr'
 ftype = 'his'
 # xpos0 = 327
@@ -59,10 +59,10 @@ ftype = 'his'
 # ypos0 = 128
 # ypos1 = 155
 
-# xpos0 = 211
-# xpos1 = 211
-# ypos0 = 127
-# ypos1 = 144
+xpos0 = 211
+xpos1 = 211
+ypos0 = 127
+ypos1 = 144
 
 # xpos0 = 232
 # xpos1 = 232
@@ -84,15 +84,15 @@ ftype = 'his'
 # ypos0 = 115
 # ypos1 = 179
 
-xpos0 = 362
-xpos1 = 372
-ypos0 = 106
-ypos1 = 113
+# xpos0 = 362
+# xpos1 = 372
+# ypos0 = 106
+# ypos1 = 113
 
 if len(sys.argv)>1:
     tag = sys.argv[-1]
 else:
-    tag = 'GB-ref'
+    tag = 'GB-clim'
 
 model = 'tmpdir_' + tag + '/outputs/' + str(my_year) + '/'
 outputs_dir = model_dir + model

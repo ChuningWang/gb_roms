@@ -51,7 +51,7 @@ elif dtype==2:
     fh.close()
 elif dtype==3:
     # load original data
-    fh = nc.Dataset(out_dir + 'frc/' + tag + '_rivers_clim_Hill.nc', 'r')
+    fh = nc.Dataset(out_dir + 'frc/' + tag + '_rivers_gb_only_Hill.nc', 'r')
     time = fh.variables['river_time'][:]
     eta = fh.variables['river_Eposition'][:]
     xi = fh.variables['river_Xposition'][:].astype(int)

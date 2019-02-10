@@ -1,0 +1,220 @@
+""" calculate total exchange flow. """
+
+import sys
+import glob
+from datetime import datetime
+import pdb
+
+import numpy as np
+import matplotlib.pyplot as plt
+import netCDF4 as nc
+from scipy.signal import filtfilt
+
+import pyroms
+# import cmocean
+# import ttide
+
+import read_host_info
+sv = read_host_info.read_host_info()
+out_dir = sv['out_dir']
+model_dir = sv['model_dir']
+
+# -------------- functionals --------------------------------
+def lfilter(data, dt, dt_filter):
+    """ low pass filter. """
+
+    wp = int(float(dt_filter)/dt)
+    b = np.ones(wp)/float(wp)
+    a = 1
+    data_filtered = filtfilt(b, a, data, axis=0)
+
+    return data_filtered
+
+
+def get_zr(zeta, h, vgrid):
+    """ get z at rho points from grid and zeta info. """
+
+    ti = zeta.shape[0]
+    zr = np.empty((ti, vgrid.N) + h.shape, 'd')
+    if vgrid.Vtrans == 1:
+        for n in range(ti):
+            for k in range(vgrid.N):
+                z0 = vgrid.hc * vgrid.s_rho[k] + (h - vgrid.hc) * vgrid.Cs_r[k]
+                zr[n, k, :] = z0 + zeta[n, :] * (1.0 + z0 / h)
+    elif vgrid.Vtrans == 2 or vgrid.Vtrans == 4 or vgrid.Vtrans == 5:
+        for n in range(ti):
+            for k in range(vgrid.N):
+                z0 = (vgrid.hc * vgrid.s_rho[k] + h * vgrid.Cs_r[k]) / (vgrid.hc + h)
+                zr[n, k, :] = zeta[n, :] + (zeta[n, :] + h) * z0
+
+    return zr
+
+
+def get_zw(zeta, h, vgrid):
+    """ get z at rho points from grid and zeta info. """
+
+    ti = zeta.shape[0]
+    zw = np.empty((ti, vgrid.Np) + h.shape, 'd')
+    if vgrid.Vtrans == 1:
+        for n in range(ti):
+            for k in range(vgrid.Np):
+                z0 = vgrid.hc * vgrid.s_w[k] + (h - vgrid.hc) * vgrid.Cs_w[k]
+                zw[n, k, :] = z0 + zeta[n, :] * (1.0 + z0 / h)
+    elif vgrid.Vtrans == 2 or vgrid.Vtrans == 4 or vgrid.Vtrans == 5:
+        for n in range(ti):
+            for k in range(vgrid.Np):
+                z0 = (vgrid.hc * vgrid.s_w[k] + h * vgrid.Cs_w[k]) / (vgrid.hc + h)
+                zw[n, k, :] = zeta[n, :] + (zeta[n, :] + h) * z0
+
+    return zw
+
+
+def tef(v, salt, dy, dz, slev, t):
+    """ calculate total exchange flow. """
+
+    # salinity levels
+    ds = np.mean(np.diff(slev))
+    Q = np.zeros((len(t), len(slev)))
+    dQds = np.zeros((len(t), len(slev)))
+
+    for i, sl in enumerate(slev):
+        Qi = np.zeros(salt.shape)
+        msks = (salt >= sl).data & ~salt.mask
+        Qi[msks] = dz[msks]*v[msks]*dy[msks]
+        Q[:, i] = np.sum(Qi, axis=(-2, -1))
+
+    # calculate dQds, use second order
+    dQds[:, 2:-2] = (1/ds) * (- (1./12.)*Q[:, 4:] + (8./12.)*Q[:, 3:-1]
+                              - (8./12.)*Q[:, 1:-3] + (1./12.)*Q[:, :-4])
+
+    dQds = lfilter(dQds, 1, 24)
+    Q = lfilter(Q, 1, 24)
+
+    Qini = np.zeros(dQds.shape)
+    Qouti = np.zeros(dQds.shape)
+
+    msk = -dQds > 0
+
+    Qini[msk] = -dQds[msk]*ds
+    Qouti[~msk] = -dQds[~msk]*ds
+    Qin = np.sum(Qini, axis=-1)
+    Qout = np.sum(Qouti, axis=-1)
+
+    return Q, dQds, Qin, Qout
+
+# -------------- my inputs ----------------------------------
+grd1 = 'GB_lr'
+outputs_dir = model_dir + 'tmpdir_GB-clim/outputs/2008/'
+ftype = 'his'
+ts = 24
+# xx = [450, 500]
+xx = [450, 480]
+yy = [40, 65]
+slev = np.arange(0, 32, 0.1)
+
+read_data = True
+
+# -------------- data prep ----------------------------------
+flist = sorted(glob.glob(outputs_dir + '*' + ftype + '*.nc'))
+# flist = flist[150:200]
+flist = flist[150:155]
+tt = len(flist)*ts
+
+eta = xx[1] - xx[0]
+xi = yy[1] - yy[0]
+Ns = len(slev)
+
+# -------------- load grid info -----------------------------
+grd = pyroms.grid.get_ROMS_grid(grd1)
+lat = grd.hgrid.lat_rho[xx[0]:xx[1], yy[0]:yy[1]]
+lon = grd.hgrid.lon_rho[xx[0]:xx[1], yy[0]:yy[1]]
+dx = grd.hgrid.dx[xx[0]:xx[1], yy[0]:yy[1]]
+dy = grd.hgrid.dy[xx[0]:xx[1], yy[0]:yy[1]]
+
+msk = grd.hgrid.mask_rho[xx[0]:xx[1], yy[0]:yy[1]]==0
+msku = grd.hgrid.mask_u[xx[0]:xx[1], yy[0]-1:yy[1]]==0
+mskv = grd.hgrid.mask_v[xx[0]-1:xx[1], yy[0]:yy[1]]==0
+
+ang = grd.hgrid.angle_rho[xx[0]:xx[1], yy[0]:yy[1]]
+h = grd.vgrid.h[xx[0]:xx[1], yy[0]:yy[1]]
+N = grd.vgrid.N
+
+h = np.ma.masked_where(msk, h)
+ang = np.ma.masked_where(msk, ang)
+
+msk3d = np.tile(msk, (tt, 1, 1))
+msk4d = np.tile(msk, (tt, N, 1, 1))
+msku3d = np.tile(msku, (tt, 1, 1))
+msku4d = np.tile(msku, (tt, N, 1, 1))
+mskv3d = np.tile(mskv, (tt, 1, 1))
+mskv4d = np.tile(mskv, (tt, N, 1, 1))
+
+# -------------- load data ----------------------------------
+if read_data:
+    # define variables
+    time = np.zeros(tt)
+    zeta = np.zeros((tt, xx[1]-xx[0], yy[1]-yy[0]))
+    zr = np.zeros((tt, N, xx[1]-xx[0], yy[1]-yy[0]))
+    dz = np.zeros((tt, N, xx[1]-xx[0], yy[1]-yy[0]))
+
+    salt = np.zeros((tt, N, xx[1]-xx[0], yy[1]-yy[0]))
+    temp = np.zeros((tt, N, xx[1]-xx[0], yy[1]-yy[0]))
+
+    ubar = np.zeros((tt, xx[1]-xx[0], yy[1]-yy[0]+1))
+    vbar = np.zeros((tt, xx[1]-xx[0]+1, yy[1]-yy[0]))
+    u = np.zeros((tt, N, xx[1]-xx[0], yy[1]-yy[0]+1))
+    v = np.zeros((tt, N, xx[1]-xx[0]+1, yy[1]-yy[0]))
+
+    for i, fname in enumerate(flist):
+
+        print('Loading file ' + fname)
+
+        fin = nc.Dataset(fname, 'r')
+        time[i*ts:(i+1)*ts] = fin.variables['ocean_time'][:]/24/60/60
+        zeta[i*ts:(i+1)*ts, :, :] = fin.variables['zeta'][:, xx[0]:xx[1], yy[0]:yy[1]]
+        salt[i*ts:(i+1)*ts, :, :, :] = fin.variables['salt'][:, :, xx[0]:xx[1], yy[0]:yy[1]]
+        temp[i*ts:(i+1)*ts, :, :, :] = fin.variables['temp'][:, :, xx[0]:xx[1], yy[0]:yy[1]]
+        ubar[i*ts:(i+1)*ts, :, :] = fin.variables['ubar'][:, xx[0]:xx[1], yy[0]-1:yy[1]]
+        vbar[i*ts:(i+1)*ts, :, :] = fin.variables['vbar'][:, xx[0]-1:xx[1], yy[0]:yy[1]]
+        u[i*ts:(i+1)*ts, :, :, :] = fin.variables['u'][:, :, xx[0]:xx[1], yy[0]-1:yy[1]]
+        v[i*ts:(i+1)*ts, :, :, :] = fin.variables['v'][:, :, xx[0]-1:xx[1], yy[0]:yy[1]]
+        fin.close()
+
+    ubar[msku3d] = 0
+    vbar[mskv3d] = 0
+    ubar = 0.5*(ubar[:, :, :-1] + ubar[:, :, 1:])
+    vbar = 0.5*(vbar[:, :-1, :] + vbar[:, 1:, :])
+    u[msku4d] = 0
+    v[mskv4d] = 0
+    u = 0.5*(u[:, :, :, :-1] + u[:, :, :, 1:])
+    v = 0.5*(v[:, :, :-1, :] + v[:, :, 1:, :])
+
+    zeta = np.ma.masked_where(msk3d, zeta)
+    ubar = np.ma.masked_where(msk3d, ubar)
+    vbar = np.ma.masked_where(msk3d, vbar)
+    salt = np.ma.masked_where(msk4d, salt)
+    temp = np.ma.masked_where(msk4d, temp)
+    u = np.ma.masked_where(msk4d, u)
+    v = np.ma.masked_where(msk4d, v)
+
+# -------------- calculate grid dz --------------------------
+zr = get_zr(zeta, h, grd.vgrid)
+zw = get_zw(zeta, h, grd.vgrid)
+zr = np.ma.masked_where(np.tile(msk, (tt, grd.vgrid.N, 1, 1)), zr)
+zw = np.ma.masked_where(np.tile(msk, (tt, grd.vgrid.Np, 1, 1)), zw)
+
+dz = np.diff(zw, axis=1)
+dy = np.tile(dy, (tt, N, 1, 1))
+dy = np.ma.masked_where(dz.mask, dy)
+
+# -------------- calculate tef ------------------------------
+Q = np.zeros((tt, Ns, eta))
+dQds = np.zeros((tt, Ns, eta))
+Qin = np.zeros((tt, eta))
+Qout = np.zeros((tt, eta))
+
+for yi in range(eta):
+    Q[:, :, yi], dQds[:, :, yi], Qin[:, yi], Qout[:, yi] = \
+        tef(v[:, :, yi, :], salt[:, :, yi, :],
+            dy[:, :, yi, :], dz[:, :, yi, :],
+            slev, time)

@@ -4,6 +4,7 @@
 *.out
 *.tiff
 *.o
+*.png
 log.txt
 
 build/

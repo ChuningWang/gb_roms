@@ -17,19 +17,23 @@ sv = read_host_info.read_host_info()
 in_dir = sv['in_dir']
 out_dir = sv['out_dir']
 
-grd1 = 'GB_300m_orig'
-grd_name = 'GlacierBay_300m_orig'
+# grd1 = 'GB_300m_orig'
+# grd_name = 'GlacierBay_300m_orig'
+
+grd1 = 'GB_150m_orig'
+grd_name = 'GlacierBay_150m_orig'
+
 tag = ''
 bathy_dir = in_dir + 'ARDEMv2.0.nc'
 out_file = out_dir + 'grd/' + grd_name + '_grd' + tag + '.nc'
 
 # ----------------------------------------------------------------------------------------------------------
 # grid dimension
-Lg = 250   # horizontal
-Mg = 500  # vertical
-
 # Lg = 250   # horizontal
-# Mg = 500   # vertical
+# Mg = 500  # vertical
+
+Lg = 500   # horizontal
+Mg = 1000   # vertical
 
 # ----------------------------------------------------------------------------------------------------------
 # defind the boundary of mapping domain
@@ -108,7 +112,7 @@ else:
     # load grid that has been generated before
     hgrd = pyroms.grid.get_ROMS_hgrid(grd1)
 
-print 'hgrid generated'
+print('hgrid generated')
 
 if (bdryInteractor == 1) | (bdryInteractor == 2):
 
@@ -123,7 +127,7 @@ if (bdryInteractor == 1) | (bdryInteractor == 2):
 
         hgrd.mask_polygon(verts)
 
-print 'mask done'
+print('mask done')
 
 # generate the bathy
 fh = netCDF4.Dataset(bathy_dir, mode='r')
@@ -151,7 +155,7 @@ topo = pyroms_toolbox.change(topo, '<', hmin, hmin)
 lon, lat = np.meshgrid(lons, lats)
 h = griddata((lon.flatten(), lat.flatten()), topo.flatten(), (hgrd.lon_rho, hgrd.lat_rho), method='linear')
 
-print 'griddata done...'
+print('griddata done...')
 
 # save raw bathymetry
 hraw = h.copy()
@@ -159,10 +163,10 @@ hraw = h.copy()
 # smooth bathymetry
 rx0_max = 0.35
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, hgrd.mask_rho)
-print 'Max Roughness value is: ', RoughMat.max()
+print('Max Roughness value is: ' + RoughMat.max())
 h = bathy_smoother.bathy_smoothing.smoothing_Positive_rx0(hgrd.mask_rho, h, rx0_max)
 RoughMat = bathy_smoother.bathy_tools.RoughnessMatrix(h, hgrd.mask_rho)
-print 'Max Roughness value is: ', RoughMat.max()
+print('Max Roughness value is: ' + RoughMat.max())
 
 # ensure that depth is always deeper than hmin
 h = pyroms_toolbox.change(h, '<', hmin, hmin)

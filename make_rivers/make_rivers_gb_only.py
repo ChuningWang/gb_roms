@@ -43,7 +43,7 @@ lat_grd = grd.hgrid.lat_rho
 lon_grd = grd.hgrid.lon_rho
 msk = grd.hgrid.mask_rho
 
-out_file = out_dir + 'frc/' + grd.name + '_rivers_clim_' + tag + '.nc'
+out_file = out_dir + 'frc/' + grd.name + '_rivers_gb_only_' + tag + '.nc'
 
 # ---------------------------------------------------------------------
 # read in river location, info.
@@ -54,7 +54,7 @@ rdir = []
 river = []
 # read in coast cells
 river_num = 0
-fin = open('river_cells.txt', 'r')
+fin = open('river_cells_gb_only.txt', 'r')
 for line in fin:
     llist = line.rstrip('\n').split(',')
     if int(llist[0]) == -1:
@@ -127,13 +127,13 @@ fh.close()
 nt = len(time)
 
 # only use data in GB region
-box = np.array([[-137.40, 59.10],
-                [-137.00, 58.50],
-                [-136.55, 58.30],
-                [-136.40, 58.15],
-                [-136.00, 57.95],
-                [-135.00, 58.05],
-                [-136.10, 59.35]])
+box = np.array([[-137.30, 59.15],
+                [-137.30, 58.75],
+                [-136.70, 58.55],
+                [-136.00, 58.35],
+                [-135.60, 58.50],
+                [-135.60, 58.75],
+                [-135.70, 59.15]])
 
 p0 = path.Path(box)
 

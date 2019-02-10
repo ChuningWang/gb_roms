@@ -13,7 +13,7 @@ def read_host_info():
     elif hostname in ['Cod', 'nwk', 'nbp']:
         file_in = '/Users/CnWang/git/gb_roms/Modules/cod.info'
 
-    f = open(file_in, 'rb')
+    f = open(file_in, 'rt')
     reader = csv.reader(f)
     sv = dict(reader)
     f.close()

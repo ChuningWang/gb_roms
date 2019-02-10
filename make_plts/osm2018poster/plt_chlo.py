@@ -14,8 +14,24 @@ import pyroms
 from geopy.distance import vincenty
 from cmocean import cm
 
+import read_host_info
+sv = read_host_info.read_host_info()
+data_dir = sv['in_dir']
+out_dir = sv['out_dir']
+model_dir = sv['model_dir']
+
+if len(sys.argv)>1:
+    grd1 = sys.argv[-1]
+else:
+    grd1 = 'GB_lr'
+
+if grd1=='GB_hr':
+    tag = 'GlacierBay_hr'
+elif grd1=='GB_lr':
+    tag = 'GlacierBay_lr'
+
+
 # ---------- load grid info, etc -------------------------------------
-grd1 = 'GB_lr'
 grd = pyroms.grid.get_ROMS_grid(grd1)
 lon = grd.hgrid.lon_rho
 lat = grd.hgrid.lat_rho

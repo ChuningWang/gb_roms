@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib import style
@@ -112,6 +113,7 @@ vw = Uw2.imag
 
 # ---------------- make plots ----------------------------------------
 style.use('classic')
+mpl.rcParams['font.size'] = 7
 
 gs = gridspec.GridSpec(12, 9)
 axr1 = plt.subplot(gs[0:3, :])
